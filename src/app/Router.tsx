@@ -28,6 +28,10 @@ const IntegrationsPage  = lazy(() => import("@/pages/management/IntegrationsPage
 const SystemSettingsPage = lazy(() => import("@/pages/settings/SystemSettingsPage"));
 const HelpCenterPage    = lazy(() => import("@/pages/settings/HelpCenterPage"));
 const SupportPage       = lazy(() => import("@/pages/settings/SupportPage"));
+const EquipmentPage     = lazy(() => import("@/pages/equipment/EquipmentPage"));
+const SafetyPage        = lazy(() => import("@/pages/safety/SafetyPage"));
+const ShiftSchedulePage = lazy(() => import("@/pages/team/ShiftSchedulePage"));
+const DocumentsPage     = lazy(() => import("@/pages/documents/DocumentsPage"));
 const ComingSoon        = lazy(() => import("@/pages/ComingSoon"));
 const NotFound          = lazy(() => import("@/pages/NotFound"));
 
@@ -72,6 +76,12 @@ export default function Router() {
           <Route path="/reports"    element={<BoundedRoute element={<ReportsPage />} />} />
           <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
           <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />
+
+          {/* Phase 6 */}
+          <Route path="/equipment"        element={<BoundedRoute element={<EquipmentPage />} />} />
+          <Route path="/safety"           element={<BoundedRoute element={<SafetyPage />} />} />
+          <Route path="/team/schedule"    element={<BoundedRoute element={<ShiftSchedulePage />} />} />
+          <Route path="/documents"        element={<BoundedRoute element={<DocumentsPage />} />} />
 
           {/* Phase 3 — Supply Chain */}
           <Route path="/supply/suppliers" element={<BoundedRoute element={<SuppliersPage />} />} />

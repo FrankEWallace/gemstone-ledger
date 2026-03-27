@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Trash2, ArrowUpCircle, ArrowDownCircle, RefreshCw } from "lucide-react";
+import { Plus, Download, Upload, Trash2, ArrowUpCircle, ArrowDownCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -53,7 +53,9 @@ import {
   createTransaction,
   updateTransactionStatus,
   deleteTransaction,
+  type TransactionPayload,
 } from "@/services/transactions.service";
+import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -394,7 +396,27 @@ export default function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+
+  const txCsvColumns: CsvColumn<TransactionPayload>[] = [
+    { header: "Description",      key: "description" },
+    { header: "Reference No",     key: "reference_no" },
+    { header: "Category",         key: "category" },
+    { header: "Type",             key: "type",             required: true, transform: (v) => { if (!["income","expense","refund"].includes(v)) throw new Error("must be income/expense/refund"); return v as TransactionType; } },
+    { header: "Status",           key: "status",           required: true, transform: (v) => { if (!["success","pending","refunded","cancelled"].includes(v)) throw new Error("must be success/pending/refunded/cancelled"); return v as TransactionStatus; } },
+    { header: "Quantity",         key: "quantity",         required: true, transform: (v) => { const n = Number(v); if (isNaN(n) || n < 1) throw new Error("must be ≥ 1"); return n; } },
+    { header: "Unit Price",       key: "unit_price",       required: true, transform: (v) => { const n = Number(v); if (isNaN(n)) throw new Error("not a number"); return n; } },
+    { header: "Transaction Date", key: "transaction_date", required: true, transform: (v) => { if (!v) throw new Error("required"); return v; } },
+  ];
+
+  async function handleTxCsvImport(rows: Record<string, unknown>[]) {
+    for (const row of rows) {
+      await createTransaction(activeSiteId!, row as TransactionPayload, user?.id);
+    }
+    queryClient.invalidateQueries({ queryKey: ["transactions", activeSiteId] });
+    queryClient.invalidateQueries({ queryKey: ["tx-categories", activeSiteId] });
+  }
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions", activeSiteId, typeFilter, statusFilter, categoryFilter],
@@ -532,6 +554,10 @@ export default function TransactionsPage() {
             <Download className="h-4 w-4 mr-1.5" />
             Export CSV
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1.5" />
+            Import CSV
+          </Button>
           <Button size="sm" onClick={() => setModalOpen(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
             Add Transaction
@@ -613,6 +639,17 @@ export default function TransactionsPage() {
             )}
           </>
         }
+      />
+
+      {/* CSV Import */}
+      <CsvImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        entityName="Transactions"
+        columns={txCsvColumns as CsvColumn<Record<string, unknown>>[]}
+        onImport={handleTxCsvImport}
+        templateHeaders="Description,Reference No,Category,Type,Status,Quantity,Unit Price,Transaction Date"
+        exampleRow='Diesel fuel,INV-001,Fuel,expense,success,1,450.00,2026-03-15'
       />
 
       {/* Add Modal */}

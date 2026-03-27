@@ -490,6 +490,158 @@ export interface Database {
           created_at?: string;
         };
       };
+      equipment: {
+        Row: {
+          id: string;
+          site_id: string;
+          name: string;
+          type: string | null;
+          serial_number: string | null;
+          status: "operational" | "maintenance" | "retired";
+          last_service_date: string | null;
+          next_service_date: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          site_id: string;
+          name: string;
+          type?: string | null;
+          serial_number?: string | null;
+          status?: "operational" | "maintenance" | "retired";
+          last_service_date?: string | null;
+          next_service_date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          site_id?: string;
+          name?: string;
+          type?: string | null;
+          serial_number?: string | null;
+          status?: "operational" | "maintenance" | "retired";
+          last_service_date?: string | null;
+          next_service_date?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      safety_incidents: {
+        Row: {
+          id: string;
+          site_id: string;
+          reported_by: string | null;
+          severity: "low" | "medium" | "high" | "critical";
+          type: "near-miss" | "injury" | "equipment" | "environmental" | "other";
+          title: string;
+          description: string | null;
+          actions_taken: string | null;
+          resolved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          site_id: string;
+          reported_by?: string | null;
+          severity?: "low" | "medium" | "high" | "critical";
+          type?: "near-miss" | "injury" | "equipment" | "environmental" | "other";
+          title: string;
+          description?: string | null;
+          actions_taken?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          site_id?: string;
+          reported_by?: string | null;
+          severity?: "low" | "medium" | "high" | "critical";
+          type?: "near-miss" | "injury" | "equipment" | "environmental" | "other";
+          title?: string;
+          description?: string | null;
+          actions_taken?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      planned_shifts: {
+        Row: {
+          id: string;
+          site_id: string;
+          worker_id: string;
+          shift_date: string;
+          start_time: string;
+          end_time: string;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          site_id: string;
+          worker_id: string;
+          shift_date: string;
+          start_time: string;
+          end_time: string;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          site_id?: string;
+          worker_id?: string;
+          shift_date?: string;
+          start_time?: string;
+          end_time?: string;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+      };
+      site_documents: {
+        Row: {
+          id: string;
+          site_id: string;
+          uploaded_by: string | null;
+          name: string;
+          category: string | null;
+          storage_path: string;
+          file_size: number | null;
+          mime_type: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          site_id: string;
+          uploaded_by?: string | null;
+          name: string;
+          category?: string | null;
+          storage_path: string;
+          file_size?: number | null;
+          mime_type?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          site_id?: string;
+          uploaded_by?: string | null;
+          name?: string;
+          category?: string | null;
+          storage_path?: string;
+          file_size?: number | null;
+          mime_type?: string | null;
+          created_at?: string;
+        };
+      };
       integration_configs: {
         Row: {
           id: string;
@@ -557,3 +709,10 @@ export type WorkerStatus = Worker["status"];
 export type MessageChannel = Message["channel"];
 export type CampaignStatus = Campaign["status"];
 export type NotificationType = Notification["type"];
+export type Equipment = Database["public"]["Tables"]["equipment"]["Row"];
+export type EquipmentStatus = Equipment["status"];
+export type SafetyIncident = Database["public"]["Tables"]["safety_incidents"]["Row"];
+export type IncidentSeverity = SafetyIncident["severity"];
+export type IncidentType = SafetyIncident["type"];
+export type PlannedShift = Database["public"]["Tables"]["planned_shifts"]["Row"];
+export type SiteDocument = Database["public"]["Tables"]["site_documents"]["Row"];

@@ -19,6 +19,10 @@ import {
   Settings,
   X,
   Pickaxe,
+  Wrench,
+  ShieldAlert,
+  CalendarDays,
+  FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -52,6 +56,13 @@ const management: NavItem[] = [
   { label: "Roles & Permissions", icon: Shield, to: "/management/roles" },
   { label: "Billing & Subscription", icon: CreditCard, to: "/management/billing" },
   { label: "Integrations", icon: Plug, to: "/management/integrations" },
+];
+
+const operations: NavItem[] = [
+  { label: "Equipment",       icon: Wrench,       to: "/equipment" },
+  { label: "Safety",          icon: ShieldAlert,  to: "/safety" },
+  { label: "Shift Schedule",  icon: CalendarDays, to: "/team/schedule" },
+  { label: "Documents",       icon: FolderOpen,   to: "/documents" },
 ];
 
 const settingsItems: NavItem[] = [
@@ -165,6 +176,7 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           <NavSection title="Main Menu" items={mainMenuWithBadge} onNavigate={onClose} />
+          <NavSection title="Operations" items={operations} onNavigate={onClose} />
           <NavSection title="Supply Chain" items={supplyChain} onNavigate={onClose} />
           <NavSection title="Management" items={management} onNavigate={onClose} />
           <NavSection title="Settings" items={settingsItems} onNavigate={onClose} />

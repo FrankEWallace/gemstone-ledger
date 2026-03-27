@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSite } from "@/hooks/useSite";
@@ -52,6 +52,7 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
 } from "@/services/inventory.service";
+import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -284,6 +285,7 @@ export default function InventoryPage() {
 
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
 
@@ -402,6 +404,24 @@ export default function InventoryPage() {
     },
   ];
 
+  const csvColumns: CsvColumn<Omit<InventoryItem, "id" | "site_id" | "supplier_id" | "created_at" | "updated_at">>[] = [
+    { header: "Name",          key: "name",          required: true },
+    { header: "Category",      key: "category" },
+    { header: "SKU",           key: "sku" },
+    { header: "Quantity",      key: "quantity",      required: true, transform: (v) => { const n = Number(v); if (isNaN(n)) throw new Error("not a number"); return n; } },
+    { header: "Unit",          key: "unit" },
+    { header: "Unit Cost",     key: "unit_cost",     transform: (v) => v ? Number(v) : null },
+    { header: "Reorder Level", key: "reorder_level", transform: (v) => v ? Number(v) : null },
+  ];
+
+  async function handleCsvImport(rows: Record<string, unknown>[]) {
+    for (const row of rows) {
+      await createInventoryItem(activeSiteId!, row as Parameters<typeof createInventoryItem>[1]);
+    }
+    queryClient.invalidateQueries({ queryKey: ["inventory", activeSiteId] });
+    queryClient.invalidateQueries({ queryKey: ["inventory-categories", activeSiteId] });
+  }
+
   function openAdd() {
     setEditing(null);
     setModalOpen(true);
@@ -424,6 +444,10 @@ export default function InventoryPage() {
           <Button variant="outline" size="sm" onClick={() => exportCSV(filteredItems)}>
             <Download className="h-4 w-4 mr-1.5" />
             Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1.5" />
+            Import CSV
           </Button>
           <Button size="sm" onClick={openAdd}>
             <Plus className="h-4 w-4 mr-1.5" />
@@ -462,6 +486,17 @@ export default function InventoryPage() {
             </SelectContent>
           </Select>
         }
+      />
+
+      {/* CSV Import */}
+      <CsvImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        entityName="Inventory Items"
+        columns={csvColumns as CsvColumn<Record<string, unknown>>[]}
+        onImport={handleCsvImport}
+        templateHeaders="Name,Category,SKU,Quantity,Unit,Unit Cost,Reorder Level"
+        exampleRow='Safety Helmet,PPE,PPE-001,100,pcs,12.50,20'
       />
 
       {/* Add / Edit Modal */}
