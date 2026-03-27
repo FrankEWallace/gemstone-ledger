@@ -171,8 +171,8 @@ export default function MessagesPage() {
 
   return (
     <div className="flex h-[calc(100vh-57px)] overflow-hidden">
-      {/* Channel sidebar */}
-      <div className="w-56 shrink-0 border-r border-border bg-muted/20 flex flex-col">
+      {/* Channel sidebar — desktop only */}
+      <div className="hidden sm:flex w-56 shrink-0 border-r border-border bg-muted/20 flex-col">
         <div className="p-3 border-b border-border">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Channels</p>
         </div>
@@ -200,8 +200,30 @@ export default function MessagesPage() {
 
       {/* Chat area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Channel header */}
-        <div className="border-b border-border px-4 py-3 shrink-0">
+        {/* Mobile channel tab bar */}
+        <div className="sm:hidden flex border-b border-border bg-muted/20 shrink-0">
+          {CHANNELS.map((ch) => {
+            const Icon = ch.icon;
+            return (
+              <button
+                key={ch.id}
+                onClick={() => switchChannel(ch.id)}
+                className={cn(
+                  "flex-1 flex flex-col items-center gap-0.5 py-2 px-1 text-xs font-medium transition-colors border-b-2",
+                  activeChannel === ch.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{ch.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Channel header — desktop */}
+        <div className="hidden sm:block border-b border-border px-4 py-3 shrink-0">
           <div className="flex items-center gap-2">
             <activeMeta.icon className="h-4 w-4 text-muted-foreground" />
             <h2 className="font-semibold capitalize">{activeMeta.label}</h2>

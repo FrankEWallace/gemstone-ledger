@@ -301,12 +301,26 @@ export default function InventoryPage() {
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => deleteInventoryItem(id),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["inventory", activeSiteId] });
+      const previous = queryClient.getQueryData<InventoryItem[]>(["inventory", activeSiteId]);
+      queryClient.setQueryData<InventoryItem[]>(
+        ["inventory", activeSiteId],
+        (old) => old?.filter((item) => item.id !== id) ?? []
+      );
+      setDeleteTarget(null);
+      return { previous };
+    },
+    onError: (err: Error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["inventory", activeSiteId], context.previous);
+      }
+      toast.error(err.message);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", activeSiteId] });
       toast.success("Item deleted.");
-      setDeleteTarget(null);
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const filteredItems = categoryFilter === "all"

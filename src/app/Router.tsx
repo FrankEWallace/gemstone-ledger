@@ -1,77 +1,97 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import AppLayout from "@/components/layouts/AppLayout";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import ProtectedRoute from "@/components/layouts/ProtectedRoute";
-import Dashboard from "@/pages/Dashboard";
+import RouteErrorBoundary from "@/components/shared/RouteErrorBoundary";
+import PageSkeleton from "@/components/shared/PageSkeleton";
+
+// ─── Eager-loaded (auth critical path — no lazy) ──────────────────────────────
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
-import InventoryPage from "@/pages/inventory/InventoryPage";
-import TransactionsPage from "@/pages/transactions/TransactionsPage";
-import TeamPage from "@/pages/team/TeamPage";
-import SuppliersPage from "@/pages/supply-chain/SuppliersPage";
-import ChannelsPage from "@/pages/supply-chain/ChannelsPage";
-import OrdersPage from "@/pages/supply-chain/OrdersPage";
-import RolesPermissionsPage from "@/pages/management/RolesPermissionsPage";
-import IntegrationsPage from "@/pages/management/IntegrationsPage";
-import ReportsPage from "@/pages/reports/ReportsPage";
-import MessagesPage from "@/pages/messages/MessagesPage";
-import CampaignsPage from "@/pages/campaigns/CampaignsPage";
-import SystemSettingsPage from "@/pages/settings/SystemSettingsPage";
-import HelpCenterPage from "@/pages/settings/HelpCenterPage";
-import SupportPage from "@/pages/settings/SupportPage";
-import NotFound from "@/pages/NotFound";
-import ComingSoon from "@/pages/ComingSoon";
+
+// ─── Lazy-loaded pages ────────────────────────────────────────────────────────
+
+const Dashboard         = lazy(() => import("@/pages/Dashboard"));
+const InventoryPage     = lazy(() => import("@/pages/inventory/InventoryPage"));
+const TransactionsPage  = lazy(() => import("@/pages/transactions/TransactionsPage"));
+const TeamPage          = lazy(() => import("@/pages/team/TeamPage"));
+const ReportsPage       = lazy(() => import("@/pages/reports/ReportsPage"));
+const MessagesPage      = lazy(() => import("@/pages/messages/MessagesPage"));
+const CampaignsPage     = lazy(() => import("@/pages/campaigns/CampaignsPage"));
+const SuppliersPage     = lazy(() => import("@/pages/supply-chain/SuppliersPage"));
+const ChannelsPage      = lazy(() => import("@/pages/supply-chain/ChannelsPage"));
+const OrdersPage        = lazy(() => import("@/pages/supply-chain/OrdersPage"));
+const RolesPermissionsPage = lazy(() => import("@/pages/management/RolesPermissionsPage"));
+const IntegrationsPage  = lazy(() => import("@/pages/management/IntegrationsPage"));
+const SystemSettingsPage = lazy(() => import("@/pages/settings/SystemSettingsPage"));
+const HelpCenterPage    = lazy(() => import("@/pages/settings/HelpCenterPage"));
+const SupportPage       = lazy(() => import("@/pages/settings/SupportPage"));
+const ComingSoon        = lazy(() => import("@/pages/ComingSoon"));
+const NotFound          = lazy(() => import("@/pages/NotFound"));
+
+// ─── Wrappers ─────────────────────────────────────────────────────────────────
+
+/** Each route gets its own error boundary so one broken page can't crash others. */
+function BoundedRoute({ element }: { element: React.ReactNode }) {
+  return (
+    <RouteErrorBoundary>
+      <Suspense fallback={<PageSkeleton />}>
+        {element}
+      </Suspense>
+    </RouteErrorBoundary>
+  );
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
 
 export default function Router() {
   return (
     <Routes>
-      {/* Auth routes */}
+      {/* Auth routes — eager, no skeleton needed */}
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login"          element={<Login />} />
+        <Route path="/register"       element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
 
       {/* Protected app routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
+
+          {/* Dashboard */}
+          <Route path="/" element={<BoundedRoute element={<Dashboard />} />} />
 
           {/* Phase 2 */}
-          <Route path="/inventory" element={<InventoryPage />} />
-          <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/team" element={<TeamPage />} />
+          <Route path="/inventory"    element={<BoundedRoute element={<InventoryPage />} />} />
+          <Route path="/transactions" element={<BoundedRoute element={<TransactionsPage />} />} />
+          <Route path="/team"         element={<BoundedRoute element={<TeamPage />} />} />
 
-          {/* Phase 4 (these were stubs in Phase 2) */}
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/messages" element={<MessagesPage />} />
-          <Route path="/campaigns" element={<CampaignsPage />} />
+          {/* Phase 4 */}
+          <Route path="/reports"    element={<BoundedRoute element={<ReportsPage />} />} />
+          <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
+          <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />
 
-          {/* Phase 3 */}
-          <Route path="/supply/suppliers" element={<SuppliersPage />} />
-          <Route path="/supply/channels" element={<ChannelsPage />} />
-          <Route path="/supply/orders" element={<OrdersPage />} />
-          <Route path="/management/roles" element={<RolesPermissionsPage />} />
-          <Route
-            path="/management/billing"
-            element={
-              <ComingSoon
-                title="Billing & Subscription"
-                description="Subscription management is coming soon. You'll be able to manage your plan and payment methods here."
-              />
-            }
-          />
-          <Route path="/management/integrations" element={<IntegrationsPage />} />
+          {/* Phase 3 — Supply Chain */}
+          <Route path="/supply/suppliers" element={<BoundedRoute element={<SuppliersPage />} />} />
+          <Route path="/supply/channels"  element={<BoundedRoute element={<ChannelsPage />} />} />
+          <Route path="/supply/orders"    element={<BoundedRoute element={<OrdersPage />} />} />
+
+          {/* Phase 3 — Management */}
+          <Route path="/management/roles"        element={<BoundedRoute element={<RolesPermissionsPage />} />} />
+          <Route path="/management/billing"      element={<BoundedRoute element={<ComingSoon title="Billing & Subscription" description="Subscription management is coming soon. You'll be able to manage your plan and payment methods here." />} />} />
+          <Route path="/management/integrations" element={<BoundedRoute element={<IntegrationsPage />} />} />
 
           {/* Phase 4 — Settings */}
-          <Route path="/settings/support" element={<SupportPage />} />
-          <Route path="/settings/help" element={<HelpCenterPage />} />
-          <Route path="/settings/system" element={<SystemSettingsPage />} />
+          <Route path="/settings/system"  element={<BoundedRoute element={<SystemSettingsPage />} />} />
+          <Route path="/settings/help"    element={<BoundedRoute element={<HelpCenterPage />} />} />
+          <Route path="/settings/support" element={<BoundedRoute element={<SupportPage />} />} />
+
         </Route>
       </Route>
 
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<BoundedRoute element={<NotFound />} />} />
     </Routes>
   );
 }

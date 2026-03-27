@@ -342,11 +342,29 @@ function StatusSelect({ tx }: { tx: Transaction }) {
 
   const { mutate } = useMutation({
     mutationFn: (status: TransactionStatus) => updateTransactionStatus(tx.id, status),
+    onMutate: async (newStatus: TransactionStatus) => {
+      await queryClient.cancelQueries({ queryKey: ["transactions", activeSiteId] });
+      const keys = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ["transactions", activeSiteId] });
+      const snapshots = keys.map((q) => ({ key: q.queryKey, data: q.state.data }));
+      keys.forEach((q) => {
+        queryClient.setQueryData<Transaction[]>(q.queryKey, (old) =>
+          old?.map((t) => (t.id === tx.id ? { ...t, status: newStatus } : t)) ?? []
+        );
+      });
+      return { snapshots };
+    },
+    onError: (err: Error, _status, context) => {
+      context?.snapshots.forEach(({ key, data }) => {
+        queryClient.setQueryData(key, data);
+      });
+      toast.error(err.message);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", activeSiteId] });
       toast.success("Status updated.");
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   return (
@@ -397,12 +415,30 @@ export default function TransactionsPage() {
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => deleteTransaction(id),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["transactions", activeSiteId] });
+      const keys = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ["transactions", activeSiteId] });
+      const snapshots = keys.map((q) => ({ key: q.queryKey, data: q.state.data }));
+      keys.forEach((q) => {
+        queryClient.setQueryData<Transaction[]>(q.queryKey, (old) =>
+          old?.filter((t) => t.id !== id) ?? []
+        );
+      });
+      setDeleteTarget(null);
+      return { snapshots };
+    },
+    onError: (err: Error, _id, context) => {
+      context?.snapshots.forEach(({ key, data }) => {
+        queryClient.setQueryData(key, data);
+      });
+      toast.error(err.message);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", activeSiteId] });
       toast.success("Transaction deleted.");
-      setDeleteTarget(null);
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const totalIncome = transactions

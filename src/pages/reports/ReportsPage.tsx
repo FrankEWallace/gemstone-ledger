@@ -358,7 +358,8 @@ export default function ReportsPage() {
             <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No expense data.</div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <ResponsiveContainer width={180} height={180}>
+              <div className="w-full sm:w-44 shrink-0">
+              <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie
                     data={categories}
@@ -379,6 +380,7 @@ export default function ReportsPage() {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
               <div className="flex-1 space-y-1.5 min-w-0">
                 {categories.slice(0, 6).map((c, i) => (
                   <div key={c.category} className="flex items-center justify-between gap-2 text-xs">
