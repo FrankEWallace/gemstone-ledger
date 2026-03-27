@@ -9,6 +9,11 @@ import ForgotPassword from "@/pages/auth/ForgotPassword";
 import InventoryPage from "@/pages/inventory/InventoryPage";
 import TransactionsPage from "@/pages/transactions/TransactionsPage";
 import TeamPage from "@/pages/team/TeamPage";
+import SuppliersPage from "@/pages/supply-chain/SuppliersPage";
+import ChannelsPage from "@/pages/supply-chain/ChannelsPage";
+import OrdersPage from "@/pages/supply-chain/OrdersPage";
+import RolesPermissionsPage from "@/pages/management/RolesPermissionsPage";
+import IntegrationsPage from "@/pages/management/IntegrationsPage";
 import NotFound from "@/pages/NotFound";
 import ComingSoon from "@/pages/ComingSoon";
 
@@ -36,10 +41,10 @@ export default function Router() {
           <Route path="/campaigns" element={<ComingSoon title="Campaigns" />} />
 
           {/* Phase 3 */}
-          <Route path="/supply/suppliers" element={<ComingSoon title="Supplier List" />} />
-          <Route path="/supply/channels" element={<ComingSoon title="Channels" />} />
-          <Route path="/supply/orders" element={<ComingSoon title="Order Management" />} />
-          <Route path="/management/roles" element={<ComingSoon title="Roles & Permissions" />} />
+          <Route path="/supply/suppliers" element={<SuppliersPage />} />
+          <Route path="/supply/channels" element={<ChannelsPage />} />
+          <Route path="/supply/orders" element={<OrdersPage />} />
+          <Route path="/management/roles" element={<RolesPermissionsPage />} />
           <Route
             path="/management/billing"
             element={
@@ -49,7 +54,7 @@ export default function Router() {
               />
             }
           />
-          <Route path="/management/integrations" element={<ComingSoon title="Integrations" />} />
+          <Route path="/management/integrations" element={<IntegrationsPage />} />
 
           {/* Phase 4 */}
           <Route path="/settings/support" element={<ComingSoon title="Customer Support" />} />
