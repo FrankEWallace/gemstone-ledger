@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Upload, Building2, Globe, DollarSign } from "lucide-react";
+import { Upload, Building2, Globe, DollarSign, Mail, Send } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,140 @@ const settingsSchema = z.object({
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+// ─── Weekly report section ────────────────────────────────────────────────────
+
+function WeeklyReportSection({
+  orgId,
+  org,
+  queryClient,
+}: {
+  orgId: string | null;
+  org: any;
+  queryClient: ReturnType<typeof useQueryClient>;
+}) {
+  const [reportEmail, setReportEmail] = useState<string>("");
+  const [sending, setSending] = useState(false);
+
+  // Sync email field from loaded org
+  const emailValue = org?.weekly_report_email ?? "";
+
+  const toggleMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from("organizations")
+        .update({ weekly_report_enabled: enabled })
+        .eq("id", orgId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org", orgId] });
+      toast.success("Report preference saved");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const saveEmailMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase
+        .from("organizations")
+        .update({ weekly_report_email: email || null })
+        .eq("id", orgId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org", orgId] });
+      toast.success("Report email saved");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  async function sendNow() {
+    if (!orgId) return;
+    setSending(true);
+    try {
+      await supabase.functions.invoke("send-weekly-report", {
+        body: { org_id: orgId },
+      });
+      toast.success("Weekly report sent!");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (!orgId) return null;
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+        <Mail className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold text-sm">Weekly Email Report</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Send a weekly KPI digest every Monday at 08:00 UTC to the email below.
+        Includes revenue, expenses, safety incidents, low stock and production data.
+      </p>
+      <div className="space-y-4">
+        {/* Enable/disable toggle */}
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
+          <div>
+            <p className="text-sm font-medium">Enable Weekly Report</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {org?.weekly_report_enabled ? "Reports are enabled" : "Reports are disabled"}
+            </p>
+          </div>
+          <button
+            onClick={() => toggleMutation.mutate(!org?.weekly_report_enabled)}
+            disabled={toggleMutation.isPending}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              org?.weekly_report_enabled ? "bg-primary" : "bg-muted"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow ${
+                org?.weekly_report_enabled ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Email input */}
+        <div className="flex gap-2">
+          <Input
+            type="email"
+            placeholder="reports@company.com"
+            defaultValue={emailValue}
+            onChange={(e) => setReportEmail(e.target.value)}
+            className="flex-1"
+          />
+          <Button
+            variant="outline"
+            onClick={() => saveEmailMutation.mutate(reportEmail || emailValue)}
+            disabled={saveEmailMutation.isPending}
+          >
+            {saveEmailMutation.isPending ? "Saving…" : "Save Email"}
+          </Button>
+        </div>
+
+        {/* Send now button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={sendNow}
+          disabled={sending || !org?.weekly_report_email}
+        >
+          <Send className="h-3.5 w-3.5 mr-1.5" />
+          {sending ? "Sending…" : "Send Report Now"}
+        </Button>
+        {!org?.weekly_report_email && (
+          <p className="text-xs text-muted-foreground">Save an email address to enable manual send.</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -275,6 +410,11 @@ export default function SystemSettingsPage() {
           </div>
         </form>
       </Form>
+
+      <Separator />
+
+      {/* Weekly email report */}
+      <WeeklyReportSection orgId={orgId} org={org} queryClient={queryClient} />
     </div>
   );
 }

@@ -13,6 +13,8 @@ export interface Database {
           slug: string;
           logo_url: string | null;
           created_at: string;
+          weekly_report_enabled: boolean;
+          weekly_report_email: string | null;
         };
         Insert: {
           id?: string;
@@ -20,6 +22,8 @@ export interface Database {
           slug: string;
           logo_url?: string | null;
           created_at?: string;
+          weekly_report_enabled?: boolean;
+          weekly_report_email?: string | null;
         };
         Update: {
           id?: string;
@@ -27,6 +31,8 @@ export interface Database {
           slug?: string;
           logo_url?: string | null;
           created_at?: string;
+          weekly_report_enabled?: boolean;
+          weekly_report_email?: string | null;
         };
       };
       sites: {
@@ -66,6 +72,7 @@ export interface Database {
           avatar_url: string | null;
           phone: string | null;
           created_at: string;
+          onboarding_completed: boolean;
         };
         Insert: {
           id: string;
@@ -74,6 +81,7 @@ export interface Database {
           avatar_url?: string | null;
           phone?: string | null;
           created_at?: string;
+          onboarding_completed?: boolean;
         };
         Update: {
           id?: string;
@@ -82,6 +90,7 @@ export interface Database {
           avatar_url?: string | null;
           phone?: string | null;
           created_at?: string;
+          onboarding_completed?: boolean;
         };
       };
       user_site_roles: {
@@ -716,6 +725,35 @@ export type IncidentSeverity = SafetyIncident["severity"];
 export type IncidentType = SafetyIncident["type"];
 export type PlannedShift = Database["public"]["Tables"]["planned_shifts"]["Row"];
 export type SiteDocument = Database["public"]["Tables"]["site_documents"]["Row"];
+
+// ── Phase 8 types ─────────────────────────────────────────────────────────────
+export interface KpiTarget {
+  id: string;
+  site_id: string;
+  month: string;               // YYYY-MM-DD (first of month)
+  revenue_target: number | null;
+  expense_budget: number | null;
+  shift_target: number | null;
+  equipment_uptime_pct: number | null;
+  ore_tonnes_target: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductionLog {
+  id: string;
+  site_id: string;
+  log_date: string;
+  ore_tonnes: number | null;
+  waste_tonnes: number | null;
+  grade_g_t: number | null;
+  water_m3: number | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 // ── Audit log (not in DB type generator — defined manually) ───────────────────
 export interface AuditLog {

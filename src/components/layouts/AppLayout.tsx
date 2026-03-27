@@ -5,6 +5,8 @@ import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import CommandPalette from "@/components/shared/CommandPalette";
+import OnboardingWizard from "@/components/shared/OnboardingWizard";
+import { useAuth } from "@/hooks/useAuth";
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/": { breadcrumb: "Dashboard", title: "Overview" },
@@ -24,7 +26,10 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/settings/support": { breadcrumb: "Settings", title: "Customer Support" },
   "/settings/help": { breadcrumb: "Settings", title: "Help Center" },
   "/settings/system": { breadcrumb: "Settings", title: "System Settings" },
-  "/settings/alerts": { breadcrumb: "Settings", title: "Alert Rules" },
+  "/settings/alerts":  { breadcrumb: "Settings", title: "Alert Rules" },
+  "/settings/targets": { breadcrumb: "Settings", title: "KPI Targets" },
+  "/production":       { breadcrumb: "Operations", title: "Production Log" },
+  "/team/timesheet":   { breadcrumb: "Team", title: "Timesheets" },
   "/equipment": { breadcrumb: "Operations", title: "Equipment" },
   "/safety": { breadcrumb: "Operations", title: "Safety Incidents" },
   "/team/schedule": { breadcrumb: "Team", title: "Shift Schedule" },
@@ -32,8 +37,17 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
 };
 
 export default function AppLayout() {
+  const { userProfile, refreshProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+
+  // Show wizard once userProfile is loaded and onboarding isn't done
+  useEffect(() => {
+    if (userProfile && !userProfile.onboarding_completed) {
+      setShowWizard(true);
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -85,6 +99,15 @@ export default function AppLayout() {
       </main>
 
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
+
+      {showWizard && (
+        <OnboardingWizard
+          onComplete={async () => {
+            setShowWizard(false);
+            await refreshProfile();
+          }}
+        />
+      )}
     </div>
   );
 }

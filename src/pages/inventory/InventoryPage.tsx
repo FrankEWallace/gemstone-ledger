@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSite } from "@/hooks/useSite";
@@ -51,6 +51,7 @@ import {
   createInventoryItem,
   updateInventoryItem,
   deleteInventoryItem,
+  getInventoryConsumptionRates,
 } from "@/services/inventory.service";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
 
@@ -277,6 +278,24 @@ function ItemModal({ open, onClose, siteId, editing }: ItemModalProps) {
   );
 }
 
+// ─── Stockout chip ────────────────────────────────────────────────────────────
+
+function StockoutChip({ daysLeft }: { daysLeft: number }) {
+  const label = daysLeft < 1 ? "Stockout" : daysLeft < 7 ? `${Math.round(daysLeft)}d left` : `${Math.round(daysLeft)}d`;
+  const color =
+    daysLeft < 7
+      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+      : daysLeft < 30
+      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+  return (
+    <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
+      <TrendingDown className="h-2.5 w-2.5" />
+      {label}
+    </span>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InventoryPage() {
@@ -299,6 +318,14 @@ export default function InventoryPage() {
     queryKey: ["inventory-categories", activeSiteId],
     queryFn: () => getInventoryCategories(activeSiteId!),
     enabled: !!activeSiteId,
+  });
+
+  const { data: consumptionRates = {} } = useQuery({
+    queryKey: ["inventory-consumption", activeSiteId],
+    queryFn: () => getInventoryConsumptionRates(activeSiteId!),
+    enabled: !!activeSiteId,
+    // Refresh every 5 minutes — audit log data doesn't change that fast
+    staleTime: 5 * 60 * 1000,
   });
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
@@ -338,17 +365,24 @@ export default function InventoryPage() {
       key: "name",
       header: "Item Name",
       sortable: true,
-      render: (_, row) => (
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{row.name}</span>
-          {row.reorder_level !== null && row.quantity <= row.reorder_level && (
-            <Badge variant="destructive" className="text-xs py-0 gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              Low
-            </Badge>
-          )}
-        </div>
-      ),
+      render: (_, row) => {
+        const rate = consumptionRates[row.id as string] ?? 0;
+        const daysLeft = rate > 0 ? (row.quantity as number) / rate : null;
+        return (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium">{row.name as string}</span>
+            {(row.reorder_level as number | null) !== null && (row.quantity as number) <= (row.reorder_level as number) && (
+              <Badge variant="destructive" className="text-xs py-0 gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Low
+              </Badge>
+            )}
+            {daysLeft !== null && daysLeft < 60 && (
+              <StockoutChip daysLeft={daysLeft} />
+            )}
+          </div>
+        );
+      },
     },
     { key: "category", header: "Category", sortable: true },
     { key: "sku", header: "SKU" },

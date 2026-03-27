@@ -14,8 +14,9 @@ import {
   ChevronRight,
   DollarSign,
   Users,
+  Target,
 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, isPast, parseISO } from "date-fns";
+import { format, startOfWeek, endOfWeek, isPast, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
@@ -27,6 +28,7 @@ import { getSafetyIncidents } from "@/services/safety.service";
 import { getPlannedShifts } from "@/services/schedule.service";
 import { getSiteDocuments } from "@/services/documents.service";
 import { getWorkers } from "@/services/team.service";
+import { getKpiTargets } from "@/services/kpi.service";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -370,6 +372,95 @@ function RecentTxWidget({ siteId }: { siteId: string }) {
   );
 }
 
+// ─── KPI Scorecard ────────────────────────────────────────────────────────────
+
+function KpiBar({ label, actual, target, format: fmt2 = (v: number) => String(v) }: {
+  label: string;
+  actual: number;
+  target: number | null | undefined;
+  format?: (v: number) => string;
+}) {
+  if (target == null || target === 0) return null;
+  const pct = Math.min(100, Math.round((actual / target) * 100));
+  const good = pct >= 80;
+  const warn = pct >= 50 && pct < 80;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="tabular-nums font-medium">
+          {fmt2(actual)} <span className="text-muted-foreground">/ {fmt2(target)}</span>
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${good ? "bg-emerald-500" : warn ? "bg-yellow-500" : "bg-red-500"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className={`text-[10px] ${good ? "text-emerald-600" : warn ? "text-yellow-600" : "text-red-500"}`}>{pct}% of target</p>
+    </div>
+  );
+}
+
+function KpiScorecardWidget({ siteId }: { siteId: string }) {
+  const today = new Date();
+  const monthKey = format(startOfMonth(today), "yyyy-MM-dd");
+  const from = format(startOfMonth(today), "yyyy-MM-dd");
+  const to   = format(endOfMonth(today), "yyyy-MM-dd");
+
+  const { data: targets = [] } = useQuery({
+    queryKey: ["kpi_targets", siteId, [monthKey]],
+    queryFn: () => getKpiTargets(siteId, [monthKey]),
+  });
+
+  const { data: txs = [] } = useQuery({
+    queryKey: ["transactions", siteId, "all", "all", "all"],
+    queryFn: () => getTransactions(siteId),
+  });
+
+  const { data: shifts = [] } = useQuery({
+    queryKey: ["planned-shifts", siteId, from, to],
+    queryFn: () => getPlannedShifts(siteId, from, to),
+  });
+
+  const target = targets[0];
+  const successTxs = txs.filter((t) => t.status === "success");
+  const monthRevenue  = successTxs
+    .filter((t) => t.type === "income" && t.transaction_date >= from && t.transaction_date <= to)
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const monthExpenses = successTxs
+    .filter((t) => t.type === "expense" && t.transaction_date >= from && t.transaction_date <= to)
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
+
+  const hasTargets = target && (
+    target.revenue_target != null ||
+    target.expense_budget != null ||
+    target.shift_target != null
+  );
+
+  return (
+    <Widget title="KPI Scorecard" href="/settings/targets" className="lg:col-span-1">
+      {!hasTargets ? (
+        <div className="py-4 text-center">
+          <Target className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+          <p className="text-xs text-muted-foreground">No targets set for {format(today, "MMMM yyyy")}.</p>
+          <Link to="/settings/targets" className="text-xs text-primary hover:underline mt-1 inline-block">
+            Set targets →
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{format(today, "MMMM yyyy")}</p>
+          <KpiBar label="Revenue" actual={monthRevenue} target={target.revenue_target} format={fmt} />
+          <KpiBar label="Expenses" actual={monthExpenses} target={target.expense_budget} format={fmt} />
+          <KpiBar label="Shifts" actual={shifts.length} target={target.shift_target} />
+        </div>
+      )}
+    </Widget>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -468,6 +559,7 @@ export default function Dashboard() {
         <EquipmentWidget siteId={activeSiteId} />
         <SafetyWidget siteId={activeSiteId} />
         <ShiftsWidget siteId={activeSiteId} />
+        <KpiScorecardWidget siteId={activeSiteId} />
         <LowStockWidget siteId={activeSiteId} />
         <DocumentsWidget siteId={activeSiteId} />
         <RecentTxWidget siteId={activeSiteId} />

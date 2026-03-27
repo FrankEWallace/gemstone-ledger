@@ -85,6 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("activeSiteId");
   }, []);
 
+  const refreshProfile = useCallback(async () => {
+    if (user) await loadUserData(user.id);
+  }, [user, loadUserData]);
+
   const activeRole = sites.find((s) => s.id === activeSiteId)?.role ?? null;
   const orgId = userProfile?.org_id ?? null;
 
@@ -101,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         setActiveSite,
         signOut,
+        refreshProfile,
       }}
     >
       {children}

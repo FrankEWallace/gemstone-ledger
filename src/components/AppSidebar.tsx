@@ -25,6 +25,8 @@ import {
   FolderOpen,
   FileText,
   Zap,
+  Target,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -65,10 +67,13 @@ const operations: NavItem[] = [
   { label: "Equipment",       icon: Wrench,       to: "/equipment" },
   { label: "Safety",          icon: ShieldAlert,  to: "/safety" },
   { label: "Shift Schedule",  icon: CalendarDays, to: "/team/schedule" },
+  { label: "Timesheets",      icon: Clock,        to: "/team/timesheet" },
+  { label: "Production Log",  icon: Pickaxe,      to: "/production" },
   { label: "Documents",       icon: FolderOpen,   to: "/documents" },
 ];
 
 const settingsItems: NavItem[] = [
+  { label: "KPI Targets",      icon: Target,    to: "/settings/targets" },
   { label: "Alert Rules",      icon: Zap,       to: "/settings/alerts" },
   { label: "System Settings",  icon: Settings,  to: "/settings/system" },
   { label: "Help Center",      icon: HelpCircle,to: "/settings/help" },

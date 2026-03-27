@@ -16,4 +16,5 @@ export interface AuthContextValue {
   isLoading: boolean;
   setActiveSite: (siteId: string) => void;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
