@@ -14,6 +14,12 @@ import ChannelsPage from "@/pages/supply-chain/ChannelsPage";
 import OrdersPage from "@/pages/supply-chain/OrdersPage";
 import RolesPermissionsPage from "@/pages/management/RolesPermissionsPage";
 import IntegrationsPage from "@/pages/management/IntegrationsPage";
+import ReportsPage from "@/pages/reports/ReportsPage";
+import MessagesPage from "@/pages/messages/MessagesPage";
+import CampaignsPage from "@/pages/campaigns/CampaignsPage";
+import SystemSettingsPage from "@/pages/settings/SystemSettingsPage";
+import HelpCenterPage from "@/pages/settings/HelpCenterPage";
+import SupportPage from "@/pages/settings/SupportPage";
 import NotFound from "@/pages/NotFound";
 import ComingSoon from "@/pages/ComingSoon";
 
@@ -35,10 +41,12 @@ export default function Router() {
           {/* Phase 2 */}
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/reports" element={<ComingSoon title="Reports & Analytics" />} />
-          <Route path="/messages" element={<ComingSoon title="Messages" />} />
           <Route path="/team" element={<TeamPage />} />
-          <Route path="/campaigns" element={<ComingSoon title="Campaigns" />} />
+
+          {/* Phase 4 (these were stubs in Phase 2) */}
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/campaigns" element={<CampaignsPage />} />
 
           {/* Phase 3 */}
           <Route path="/supply/suppliers" element={<SuppliersPage />} />
@@ -56,10 +64,10 @@ export default function Router() {
           />
           <Route path="/management/integrations" element={<IntegrationsPage />} />
 
-          {/* Phase 4 */}
-          <Route path="/settings/support" element={<ComingSoon title="Customer Support" />} />
-          <Route path="/settings/help" element={<ComingSoon title="Help Center" />} />
-          <Route path="/settings/system" element={<ComingSoon title="System Settings" />} />
+          {/* Phase 4 — Settings */}
+          <Route path="/settings/support" element={<SupportPage />} />
+          <Route path="/settings/help" element={<HelpCenterPage />} />
+          <Route path="/settings/system" element={<SystemSettingsPage />} />
         </Route>
       </Route>
 

@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -21,11 +22,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
+import { useSite } from "@/hooks/useSite";
+import { getChannelMessageCounts } from "@/services/messages.service";
 
 interface NavItem {
   label: string;
   icon: React.ElementType;
   to: string;
+  badge?: number;
 }
 
 const mainMenu: NavItem[] = [
@@ -81,7 +85,12 @@ function NavSection({ title, items, onNavigate }: { title?: string; items: NavIt
               }
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge != null && item.badge > 0 && (
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              )}
             </NavLink>
           </li>
         ))}
@@ -90,7 +99,44 @@ function NavSection({ title, items, onNavigate }: { title?: string; items: NavIt
   );
 }
 
+const MESSAGES_SEEN_KEY = "messagesLastSeen";
+
 export default function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { activeSiteId } = useSite();
+  const location = useLocation();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // When user visits /messages, record the timestamp
+  useEffect(() => {
+    if (location.pathname === "/messages") {
+      localStorage.setItem(MESSAGES_SEEN_KEY, new Date().toISOString());
+      setUnreadMessages(0);
+    }
+  }, [location.pathname]);
+
+  // Poll for new messages since last seen (every 60s when not on messages page)
+  useEffect(() => {
+    if (!activeSiteId || location.pathname === "/messages") return;
+    const since = localStorage.getItem(MESSAGES_SEEN_KEY) ?? new Date(0).toISOString();
+
+    getChannelMessageCounts(activeSiteId, since).then((counts) => {
+      const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+      setUnreadMessages(total);
+    });
+
+    const interval = setInterval(async () => {
+      const s = localStorage.getItem(MESSAGES_SEEN_KEY) ?? new Date(0).toISOString();
+      const counts = await getChannelMessageCounts(activeSiteId, s);
+      setUnreadMessages(Object.values(counts).reduce((sum, n) => sum + n, 0));
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [activeSiteId, location.pathname]);
+
+  const mainMenuWithBadge: NavItem[] = mainMenu.map((item) =>
+    item.to === "/messages" ? { ...item, badge: unreadMessages } : item
+  );
+
   return (
     <>
       {open && (
@@ -118,7 +164,7 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          <NavSection title="Main Menu" items={mainMenu} onNavigate={onClose} />
+          <NavSection title="Main Menu" items={mainMenuWithBadge} onNavigate={onClose} />
           <NavSection title="Supply Chain" items={supplyChain} onNavigate={onClose} />
           <NavSection title="Management" items={management} onNavigate={onClose} />
           <NavSection title="Settings" items={settingsItems} onNavigate={onClose} />

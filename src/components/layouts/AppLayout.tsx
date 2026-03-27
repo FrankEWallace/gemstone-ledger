@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Search, Bell, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
+import NotificationBell from "@/components/shared/NotificationBell";
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/": { breadcrumb: "Dashboard", title: "Overview" },
@@ -53,9 +54,7 @@ export default function AppLayout() {
                 className="bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none w-32"
               />
             </div>
-            <button className="rounded-lg p-2 hover:bg-accent">
-              <Bell className="h-4 w-4" />
-            </button>
+            <NotificationBell />
           </div>
         </header>
 
