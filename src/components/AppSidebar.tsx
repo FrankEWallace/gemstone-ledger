@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
   ArrowLeftRight,
   BarChart3,
   MessageSquare,
-  Users as UsersIcon,
   TrendingUp,
   Megaphone,
   UserCircle,
@@ -17,48 +16,47 @@ import {
   Headphones,
   HelpCircle,
   Settings,
-  ChevronDown,
-  Menu,
   X,
   Pickaxe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SitePicker from "@/components/shared/SitePicker";
 
 interface NavItem {
   label: string;
   icon: React.ElementType;
-  active?: boolean;
+  to: string;
 }
 
 const mainMenu: NavItem[] = [
-  { label: "Dashboard", icon: LayoutDashboard, active: true },
-  { label: "Inventory", icon: Package },
-  { label: "Transactions", icon: ArrowLeftRight },
-  { label: "Reports & Analytics", icon: BarChart3 },
-  { label: "Messages", icon: MessageSquare },
-  { label: "Team Performance", icon: TrendingUp },
-  { label: "Campaigns", icon: Megaphone },
+  { label: "Dashboard", icon: LayoutDashboard, to: "/" },
+  { label: "Inventory", icon: Package, to: "/inventory" },
+  { label: "Transactions", icon: ArrowLeftRight, to: "/transactions" },
+  { label: "Reports & Analytics", icon: BarChart3, to: "/reports" },
+  { label: "Messages", icon: MessageSquare, to: "/messages" },
+  { label: "Team Performance", icon: TrendingUp, to: "/team" },
+  { label: "Campaigns", icon: Megaphone, to: "/campaigns" },
 ];
 
 const supplyChain: NavItem[] = [
-  { label: "Supplier List", icon: UserCircle },
-  { label: "Channels", icon: Layers },
-  { label: "Order Management", icon: ShoppingCart },
+  { label: "Supplier List", icon: UserCircle, to: "/supply/suppliers" },
+  { label: "Channels", icon: Layers, to: "/supply/channels" },
+  { label: "Order Management", icon: ShoppingCart, to: "/supply/orders" },
 ];
 
 const management: NavItem[] = [
-  { label: "Roles & Permissions", icon: Shield },
-  { label: "Billing & Subscription", icon: CreditCard },
-  { label: "Integrations", icon: Plug },
+  { label: "Roles & Permissions", icon: Shield, to: "/management/roles" },
+  { label: "Billing & Subscription", icon: CreditCard, to: "/management/billing" },
+  { label: "Integrations", icon: Plug, to: "/management/integrations" },
 ];
 
-const settings: NavItem[] = [
-  { label: "Customer Support", icon: Headphones },
-  { label: "Help Center", icon: HelpCircle },
-  { label: "System Settings", icon: Settings },
+const settingsItems: NavItem[] = [
+  { label: "Customer Support", icon: Headphones, to: "/settings/support" },
+  { label: "Help Center", icon: HelpCircle, to: "/settings/help" },
+  { label: "System Settings", icon: Settings, to: "/settings/system" },
 ];
 
-function NavSection({ title, items }: { title?: string; items: NavItem[] }) {
+function NavSection({ title, items, onNavigate }: { title?: string; items: NavItem[]; onNavigate: () => void }) {
   return (
     <div className="mb-4">
       {title && (
@@ -68,18 +66,23 @@ function NavSection({ title, items }: { title?: string; items: NavItem[] }) {
       )}
       <ul className="space-y-0.5">
         {items.map((item) => (
-          <li key={item.label}>
-            <button
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                item.active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-              )}
+          <li key={item.to}>
+            <NavLink
+              to={item.to}
+              end={item.to === "/"}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                )
+              }
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-4 w-4 shrink-0" />
               {item.label}
-            </button>
+            </NavLink>
           </li>
         ))}
       </ul>
@@ -99,6 +102,7 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
+        {/* Logo */}
         <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Pickaxe className="h-5 w-5" />
@@ -112,24 +116,17 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
           </button>
         </div>
 
+        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          <NavSection title="Main Menu" items={mainMenu} />
-          <NavSection title="Supply Chain" items={supplyChain} />
-          <NavSection title="Management" items={management} />
-          <NavSection title="Settings" items={settings} />
+          <NavSection title="Main Menu" items={mainMenu} onNavigate={onClose} />
+          <NavSection title="Supply Chain" items={supplyChain} onNavigate={onClose} />
+          <NavSection title="Management" items={management} onNavigate={onClose} />
+          <NavSection title="Settings" items={settingsItems} onNavigate={onClose} />
         </nav>
 
+        {/* User / Site Picker */}
         <div className="border-t border-sidebar-border p-3">
-          <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent/50">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-              JD
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-medium truncate">John Doe</p>
-              <p className="text-xs text-muted-foreground">Site Manager</p>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </button>
+          <SitePicker />
         </div>
       </aside>
     </>
