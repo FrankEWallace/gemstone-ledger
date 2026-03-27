@@ -23,6 +23,8 @@ import {
   ShieldAlert,
   CalendarDays,
   FolderOpen,
+  FileText,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -53,9 +55,10 @@ const supplyChain: NavItem[] = [
 ];
 
 const management: NavItem[] = [
-  { label: "Roles & Permissions", icon: Shield, to: "/management/roles" },
+  { label: "Roles & Permissions", icon: Shield,    to: "/management/roles" },
   { label: "Billing & Subscription", icon: CreditCard, to: "/management/billing" },
-  { label: "Integrations", icon: Plug, to: "/management/integrations" },
+  { label: "Integrations",        icon: Plug,      to: "/management/integrations" },
+  { label: "Audit Log",           icon: FileText,  to: "/management/audit" },
 ];
 
 const operations: NavItem[] = [
@@ -66,9 +69,10 @@ const operations: NavItem[] = [
 ];
 
 const settingsItems: NavItem[] = [
-  { label: "Customer Support", icon: Headphones, to: "/settings/support" },
-  { label: "Help Center", icon: HelpCircle, to: "/settings/help" },
-  { label: "System Settings", icon: Settings, to: "/settings/system" },
+  { label: "Alert Rules",      icon: Zap,       to: "/settings/alerts" },
+  { label: "System Settings",  icon: Settings,  to: "/settings/system" },
+  { label: "Help Center",      icon: HelpCircle,to: "/settings/help" },
+  { label: "Customer Support", icon: Headphones,to: "/settings/support" },
 ];
 
 function NavSection({ title, items, onNavigate }: { title?: string; items: NavItem[]; onNavigate: () => void }) {

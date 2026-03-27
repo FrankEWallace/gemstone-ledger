@@ -28,6 +28,8 @@ const IntegrationsPage  = lazy(() => import("@/pages/management/IntegrationsPage
 const SystemSettingsPage = lazy(() => import("@/pages/settings/SystemSettingsPage"));
 const HelpCenterPage    = lazy(() => import("@/pages/settings/HelpCenterPage"));
 const SupportPage       = lazy(() => import("@/pages/settings/SupportPage"));
+const AuditLogPage      = lazy(() => import("@/pages/management/AuditLogPage"));
+const AlertRulesPage    = lazy(() => import("@/pages/settings/AlertRulesPage"));
 const EquipmentPage     = lazy(() => import("@/pages/equipment/EquipmentPage"));
 const SafetyPage        = lazy(() => import("@/pages/safety/SafetyPage"));
 const ShiftSchedulePage = lazy(() => import("@/pages/team/ShiftSchedulePage"));
@@ -92,11 +94,13 @@ export default function Router() {
           <Route path="/management/roles"        element={<BoundedRoute element={<RolesPermissionsPage />} />} />
           <Route path="/management/billing"      element={<BoundedRoute element={<ComingSoon title="Billing & Subscription" description="Subscription management is coming soon. You'll be able to manage your plan and payment methods here." />} />} />
           <Route path="/management/integrations" element={<BoundedRoute element={<IntegrationsPage />} />} />
+          <Route path="/management/audit"        element={<BoundedRoute element={<AuditLogPage />} />} />
 
           {/* Phase 4 — Settings */}
           <Route path="/settings/system"  element={<BoundedRoute element={<SystemSettingsPage />} />} />
           <Route path="/settings/help"    element={<BoundedRoute element={<HelpCenterPage />} />} />
           <Route path="/settings/support" element={<BoundedRoute element={<SupportPage />} />} />
+          <Route path="/settings/alerts"  element={<BoundedRoute element={<AlertRulesPage />} />} />
 
         </Route>
       </Route>

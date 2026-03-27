@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Search, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
+import ThemeToggle from "@/components/shared/ThemeToggle";
+import CommandPalette from "@/components/shared/CommandPalette";
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/": { breadcrumb: "Dashboard", title: "Overview" },
@@ -18,13 +20,31 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/management/roles": { breadcrumb: "Management", title: "Roles & Permissions" },
   "/management/billing": { breadcrumb: "Management", title: "Billing & Subscription" },
   "/management/integrations": { breadcrumb: "Management", title: "Integrations" },
+  "/management/audit": { breadcrumb: "Management", title: "Audit Log" },
   "/settings/support": { breadcrumb: "Settings", title: "Customer Support" },
   "/settings/help": { breadcrumb: "Settings", title: "Help Center" },
   "/settings/system": { breadcrumb: "Settings", title: "System Settings" },
+  "/settings/alerts": { breadcrumb: "Settings", title: "Alert Rules" },
+  "/equipment": { breadcrumb: "Operations", title: "Equipment" },
+  "/safety": { breadcrumb: "Operations", title: "Safety Incidents" },
+  "/team/schedule": { breadcrumb: "Team", title: "Shift Schedule" },
+  "/documents": { breadcrumb: "Operations", title: "Documents" },
 };
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCmdOpen((o) => !o);
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   const location = useLocation();
   const pageInfo = PAGE_TITLES[location.pathname] ?? { breadcrumb: "App", title: "" };
 
@@ -47,19 +67,24 @@ export default function AppLayout() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <input
-                placeholder="Search..."
-                className="bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none w-32"
-              />
-            </div>
+            <button
+              onClick={() => setCmdOpen(true)}
+              className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/40 transition-colors"
+            >
+              <span>Search…</span>
+              <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
+            </button>
+            <ThemeToggle />
             <NotificationBell />
           </div>
         </header>
 
         <Outlet />
       </main>
+
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }
