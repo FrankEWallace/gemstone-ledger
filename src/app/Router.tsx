@@ -6,6 +6,9 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
+import InventoryPage from "@/pages/inventory/InventoryPage";
+import TransactionsPage from "@/pages/transactions/TransactionsPage";
+import TeamPage from "@/pages/team/TeamPage";
 import NotFound from "@/pages/NotFound";
 import ComingSoon from "@/pages/ComingSoon";
 
@@ -25,11 +28,11 @@ export default function Router() {
           <Route path="/" element={<Dashboard />} />
 
           {/* Phase 2 */}
-          <Route path="/inventory" element={<ComingSoon title="Inventory" />} />
-          <Route path="/transactions" element={<ComingSoon title="Transactions" />} />
+          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/reports" element={<ComingSoon title="Reports & Analytics" />} />
           <Route path="/messages" element={<ComingSoon title="Messages" />} />
-          <Route path="/team" element={<ComingSoon title="Team Performance" />} />
+          <Route path="/team" element={<TeamPage />} />
           <Route path="/campaigns" element={<ComingSoon title="Campaigns" />} />
 
           {/* Phase 3 */}
