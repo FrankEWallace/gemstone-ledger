@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { NavProvider } from "@/context/NavContext";
 import Router from "@/app/Router";
 
 const queryClient = new QueryClient({
@@ -21,6 +22,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+      <NavProvider>
       <BrowserRouter>
         <AuthProvider>
           <TooltipProvider>
@@ -30,6 +32,7 @@ export default function App() {
           </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>
+      </NavProvider>
       </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

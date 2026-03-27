@@ -27,11 +27,15 @@ import {
   Zap,
   Target,
   Clock,
+  SlidersHorizontal,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
 import { useSite } from "@/hooks/useSite";
 import { getChannelMessageCounts } from "@/services/messages.service";
+import { useNav, type NavSectionKey } from "@/context/NavContext";
 
 interface NavItem {
   label: string;
@@ -80,6 +84,15 @@ const settingsItems: NavItem[] = [
   { label: "Customer Support", icon: Headphones,to: "/settings/support" },
 ];
 
+// Section metadata for the customizer
+const NAV_SECTIONS: { key: NavSectionKey; label: string; description: string }[] = [
+  { key: "main",       label: "Main Menu",    description: "Dashboard, Inventory, Transactions, Reports…" },
+  { key: "operations", label: "Operations",   description: "Equipment, Safety, Schedules, Production…" },
+  { key: "supply",     label: "Supply Chain", description: "Suppliers, Channels, Orders" },
+  { key: "management", label: "Management",   description: "Roles, Billing, Integrations, Audit" },
+  { key: "settings",   label: "Settings",     description: "KPI Targets, Alerts, System, Help" },
+];
+
 function NavSection({ title, items, onNavigate }: { title?: string; items: NavItem[]; onNavigate: () => void }) {
   return (
     <div className="mb-4">
@@ -119,12 +132,85 @@ function NavSection({ title, items, onNavigate }: { title?: string; items: NavIt
   );
 }
 
+// ─── Nav Customizer Panel ─────────────────────────────────────────────────────
+
+function NavCustomizer({ onClose }: { onClose: () => void }) {
+  const { isSectionHidden, toggleSection } = useNav();
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-2xl border border-sidebar-border bg-sidebar shadow-2xl">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border">
+        <div>
+          <p className="text-sm font-semibold">Customize Navigation</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Show or hide sidebar sections</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="rounded-lg p-1.5 hover:bg-sidebar-accent transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="px-4 py-3 space-y-1 max-h-72 overflow-y-auto">
+        {NAV_SECTIONS.map((section) => {
+          const hidden = isSectionHidden(section.key);
+          return (
+            <button
+              key={section.key}
+              onClick={() => toggleSection(section.key)}
+              className={cn(
+                "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                hidden
+                  ? "opacity-50 hover:opacity-70"
+                  : "hover:bg-sidebar-accent/50"
+              )}
+            >
+              <span className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-md border transition-colors shrink-0",
+                hidden
+                  ? "border-border bg-card text-muted-foreground"
+                  : "border-primary/30 bg-primary/10 text-primary"
+              )}>
+                {hidden
+                  ? <EyeOff className="h-3.5 w-3.5" />
+                  : <Eye className="h-3.5 w-3.5" />
+                }
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium leading-tight">{section.label}</p>
+                <p className="text-[11px] text-muted-foreground truncate mt-0.5">{section.description}</p>
+              </div>
+              {/* Toggle pill */}
+              <span className={cn(
+                "inline-flex h-5 w-9 shrink-0 rounded-full border-2 transition-colors",
+                hidden ? "border-muted bg-muted" : "border-primary bg-primary"
+              )}>
+                <span className={cn(
+                  "h-4 w-4 rounded-full bg-white shadow transition-transform",
+                  hidden ? "translate-x-0" : "translate-x-4"
+                )} />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="px-4 py-3 border-t border-sidebar-border">
+        <p className="text-[11px] text-muted-foreground text-center">
+          Preferences saved to this browser
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const MESSAGES_SEEN_KEY = "messagesLastSeen";
 
 export default function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { activeSiteId } = useSite();
   const location = useLocation();
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
+  const { isSectionHidden } = useNav();
 
   // When user visits /messages, record the timestamp
   useEffect(() => {
@@ -184,16 +270,42 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          <NavSection title="Main Menu" items={mainMenuWithBadge} onNavigate={onClose} />
-          <NavSection title="Operations" items={operations} onNavigate={onClose} />
-          <NavSection title="Supply Chain" items={supplyChain} onNavigate={onClose} />
-          <NavSection title="Management" items={management} onNavigate={onClose} />
-          <NavSection title="Settings" items={settingsItems} onNavigate={onClose} />
+          {!isSectionHidden("main") && (
+            <NavSection title="Main Menu" items={mainMenuWithBadge} onNavigate={onClose} />
+          )}
+          {!isSectionHidden("operations") && (
+            <NavSection title="Operations" items={operations} onNavigate={onClose} />
+          )}
+          {!isSectionHidden("supply") && (
+            <NavSection title="Supply Chain" items={supplyChain} onNavigate={onClose} />
+          )}
+          {!isSectionHidden("management") && (
+            <NavSection title="Management" items={management} onNavigate={onClose} />
+          )}
+          {!isSectionHidden("settings") && (
+            <NavSection title="Settings" items={settingsItems} onNavigate={onClose} />
+          )}
         </nav>
 
-        {/* User / Site Picker */}
-        <div className="border-t border-sidebar-border p-3">
+        {/* Footer: Site Picker + Customize button */}
+        <div className="border-t border-sidebar-border p-3 relative">
           <SitePicker />
+          <button
+            onClick={() => setCustomizerOpen((o) => !o)}
+            title="Customize navigation"
+            className={cn(
+              "absolute top-3 right-3 rounded-lg p-1.5 transition-colors",
+              customizerOpen
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            )}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+
+          {customizerOpen && (
+            <NavCustomizer onClose={() => setCustomizerOpen(false)} />
+          )}
         </div>
       </aside>
     </>

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Package,
@@ -15,6 +16,8 @@ import {
   DollarSign,
   Users,
   Target,
+  FlaskConical,
+  X,
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, isPast, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -461,12 +464,72 @@ function KpiScorecardWidget({ siteId }: { siteId: string }) {
   );
 }
 
+// ─── Demo data ────────────────────────────────────────────────────────────────
+
+const DEMO_KEY = "fw-demo-cleared";
+
+const DEMO_TRANSACTIONS = [
+  { id: "d1", description: "Gold ore sale — Batch #44", type: "income",  quantity: 1,  unit_price: 142500, transaction_date: "2026-03-20", status: "success" },
+  { id: "d2", description: "Fuel & Lubricants",         type: "expense", quantity: 1,  unit_price: 18900,  transaction_date: "2026-03-18", status: "success" },
+  { id: "d3", description: "Equipment hire — D9 Dozer", type: "expense", quantity: 5,  unit_price: 3200,   transaction_date: "2026-03-15", status: "success" },
+  { id: "d4", description: "Copper concentrate sale",   type: "income",  quantity: 1,  unit_price: 67000,  transaction_date: "2026-03-10", status: "success" },
+  { id: "d5", description: "Safety gear & PPE restock", type: "expense", quantity: 1,  unit_price: 5400,   transaction_date: "2026-03-08", status: "success" },
+];
+
+const DEMO_LOW_STOCK = [
+  { id: "s1", name: "Safety Helmets",       quantity: 4,   unit: "pcs", reorder_level: 10 },
+  { id: "s2", name: "Hydraulic Fluid 46W",  quantity: 12,  unit: "L",   reorder_level: 20 },
+  { id: "s3", name: "Drill Bits (38mm)",    quantity: 2,   unit: "pcs", reorder_level: 5  },
+];
+
+const DEMO_SAFETY = [
+  { id: "sa1", title: "Near-miss — loading bay",     severity: "high",     resolved_at: null },
+  { id: "sa2", title: "Chemical spill — reagent bay", severity: "critical", resolved_at: null },
+];
+
+const DEMO_EQUIPMENT = [
+  { id: "e1", name: "CAT 390 Excavator",   status: "operational", next_service_date: null },
+  { id: "e2", name: "D9 Dozer",            status: "maintenance",  next_service_date: "2026-03-10" },
+  { id: "e3", name: "Komatsu 730E Truck",  status: "operational",  next_service_date: null },
+  { id: "e4", name: "Atlas Drill Rig",     status: "operational",  next_service_date: null },
+];
+
+function DemoBanner({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30 px-4 py-3">
+      <FlaskConical className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">You're viewing demo data</p>
+        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+          Sample transactions, inventory alerts, equipment and safety records are shown below.
+          Clear them to start fresh with your real data.
+        </p>
+      </div>
+      <button
+        onClick={onClear}
+        className="shrink-0 flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+      >
+        <X className="h-3.5 w-3.5" />
+        Clear demo data
+      </button>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { userProfile } = useAuth();
   const { activeSiteId } = useSite();
   const firstName = userProfile?.full_name?.split(" ")[0] ?? "there";
+  const [demoCleared, setDemoCleared] = useState(() => !!localStorage.getItem(DEMO_KEY));
+
+  function clearDemo() {
+    localStorage.setItem(DEMO_KEY, "1");
+    setDemoCleared(true);
+  }
+
+  const showDemo = !demoCleared;
 
   // Top-line KPIs
   const { data: txs = [] } = useQuery({
@@ -496,9 +559,15 @@ export default function Dashboard() {
   });
 
   const successTxs = txs.filter((t) => t.status === "success");
-  const totalRevenue  = successTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.quantity * t.unit_price, 0);
-  const totalExpenses = successTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const realRevenue  = successTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const realExpenses = successTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.quantity * t.unit_price, 0);
   const activeWorkers = workers.filter((w) => w.status === "active").length;
+
+  // Blend in demo numbers when demo mode is active
+  const demoRevenue  = showDemo ? DEMO_TRANSACTIONS.filter((t) => t.type === "income").reduce((s, t) => s + t.unit_price, 0) : 0;
+  const demoExpenses = showDemo ? DEMO_TRANSACTIONS.filter((t) => t.type === "expense").reduce((s, t) => s + t.unit_price, 0) : 0;
+  const totalRevenue  = realRevenue  + demoRevenue;
+  const totalExpenses = realExpenses + demoExpenses;
 
   if (!activeSiteId) {
     return (
@@ -519,6 +588,9 @@ export default function Dashboard() {
           </p>
         </div>
       </div>
+
+      {/* Demo banner */}
+      {showDemo && <DemoBanner onClear={clearDemo} />}
 
       {/* Top KPI stat pills */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -563,6 +635,76 @@ export default function Dashboard() {
         <LowStockWidget siteId={activeSiteId} />
         <DocumentsWidget siteId={activeSiteId} />
         <RecentTxWidget siteId={activeSiteId} />
+
+        {/* ── Demo-only widgets ─────────────────────────────────────────── */}
+        {showDemo && (
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/20 flex flex-col">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <p className="text-sm font-semibold flex items-center gap-1.5">
+                <FlaskConical className="h-3.5 w-3.5 text-amber-500" />
+                Demo Transactions
+              </p>
+              <span className="text-[10px] bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide">
+                Demo
+              </span>
+            </div>
+            <div className="flex-1 px-4 pb-4 divide-y divide-border">
+              {DEMO_TRANSACTIONS.map((t) => {
+                const isIncome = t.type === "income";
+                return (
+                  <div key={t.id} className="flex items-center gap-3 py-2 text-sm">
+                    <div className={`rounded-full p-1.5 ${isIncome ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"}`}>
+                      {isIncome ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-xs font-medium">{t.description}</p>
+                      <p className="text-[10px] text-muted-foreground">{t.transaction_date}</p>
+                    </div>
+                    <span className={`tabular-nums text-xs font-semibold ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
+                      {isIncome ? "+" : "−"}{fmt(t.unit_price)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {showDemo && (
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/20 flex flex-col">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <p className="text-sm font-semibold flex items-center gap-1.5">
+                <FlaskConical className="h-3.5 w-3.5 text-amber-500" />
+                Demo Alerts
+              </p>
+              <span className="text-[10px] bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide">
+                Demo
+              </span>
+            </div>
+            <div className="flex-1 px-4 pb-4 space-y-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Low Stock</p>
+                {DEMO_LOW_STOCK.map((i) => (
+                  <div key={i.id} className="flex items-center gap-2 text-xs py-1">
+                    <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                    <span className="flex-1 truncate">{i.name}</span>
+                    <span className="tabular-nums text-muted-foreground">{i.quantity} {i.unit}</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Open Safety Incidents</p>
+                {DEMO_SAFETY.map((s) => (
+                  <div key={s.id} className="flex items-center gap-2 text-xs py-1">
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${s.severity === "critical" ? "bg-red-500" : "bg-orange-500"}`} />
+                    <span className="flex-1 truncate">{s.title}</span>
+                    <span className={`text-[10px] font-semibold uppercase ${s.severity === "critical" ? "text-red-500" : "text-orange-500"}`}>{s.severity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
