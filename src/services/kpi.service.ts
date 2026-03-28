@@ -1,9 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import type { KpiTarget } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_KPI_TARGETS } from "@/lib/demo/data";
 
 export type KpiTargetPayload = Omit<KpiTarget, "id" | "created_at" | "updated_at" | "created_by">;
 
 export async function getKpiTargets(siteId: string, months: string[]): Promise<KpiTarget[]> {
+  if (isDemoMode()) return DEMO_KPI_TARGETS as any;
   const { data, error } = await supabase
     .from("kpi_targets")
     .select("*")

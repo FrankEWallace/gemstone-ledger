@@ -1,8 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import type { Notification } from "@/lib/supabaseTypes";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_NOTIFICATIONS } from "@/lib/demo/data";
 
 export async function getNotifications(userId: string, limit = 30): Promise<Notification[]> {
+  if (isDemoMode()) return DEMO_NOTIFICATIONS as any;
   const { data, error } = await supabase
     .from("notifications")
     .select("*")

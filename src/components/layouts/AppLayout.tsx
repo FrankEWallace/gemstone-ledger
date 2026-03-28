@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Menu, FlaskConical, X } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import CommandPalette from "@/components/shared/CommandPalette";
 import OnboardingWizard from "@/components/shared/OnboardingWizard";
 import { useAuth } from "@/hooks/useAuth";
+import { isDemoMode, exitDemoMode } from "@/lib/demo";
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/": { breadcrumb: "Dashboard", title: "Overview" },
@@ -38,16 +39,23 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
 
 export default function AppLayout() {
   const { userProfile, refreshProfile } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const demoActive = isDemoMode();
 
-  // Show wizard once userProfile is loaded and onboarding isn't done
+  function handleExitDemo() {
+    exitDemoMode();
+    navigate("/login", { replace: true });
+  }
+
+  // Show wizard once userProfile is loaded and onboarding isn't done (never in demo)
   useEffect(() => {
-    if (userProfile && !userProfile.onboarding_completed) {
+    if (!demoActive && userProfile && !userProfile.onboarding_completed) {
       setShowWizard(true);
     }
-  }, [userProfile]);
+  }, [userProfile, demoActive]);
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -94,6 +102,23 @@ export default function AppLayout() {
             <NotificationBell />
           </div>
         </header>
+
+        {/* Demo mode banner */}
+        {demoActive && (
+          <div className="flex items-center gap-3 bg-amber-500 dark:bg-amber-600 px-4 py-2 text-white text-sm">
+            <FlaskConical className="h-4 w-4 shrink-0" />
+            <span className="flex-1 font-medium">
+              Demo mode — you're exploring FW Mining OS with sample data. Nothing is saved.
+            </span>
+            <button
+              onClick={handleExitDemo}
+              className="flex items-center gap-1.5 rounded-lg bg-white/20 hover:bg-white/30 px-3 py-1 text-xs font-semibold transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+              Exit demo
+            </button>
+          </div>
+        )}
 
         <Outlet />
       </main>

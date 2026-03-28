@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { PlannedShift } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_SHIFTS } from "@/lib/demo/data";
 
 export type PlannedShiftPayload = {
   worker_id: string;
@@ -15,6 +17,7 @@ export async function getPlannedShifts(
   from: string,
   to: string
 ): Promise<PlannedShift[]> {
+  if (isDemoMode()) return DEMO_SHIFTS.filter(s => s.shift_date >= from && s.shift_date <= to) as any;
   const { data, error } = await supabase
     .from("planned_shifts")
     .select("*")

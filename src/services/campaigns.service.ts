@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { Campaign, CampaignStatus } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_CAMPAIGNS } from "@/lib/demo/data";
 
 export type CampaignPayload = {
   title: string;
@@ -10,6 +12,7 @@ export type CampaignPayload = {
 };
 
 export async function getCampaigns(orgId: string): Promise<Campaign[]> {
+  if (isDemoMode()) return DEMO_CAMPAIGNS as any;
   const { data, error } = await supabase
     .from("campaigns")
     .select("*")

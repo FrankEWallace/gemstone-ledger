@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { SafetyIncident, IncidentSeverity, IncidentType } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_SAFETY } from "@/lib/demo/data";
 
 export type SafetyIncidentPayload = {
   title: string;
@@ -11,6 +13,7 @@ export type SafetyIncidentPayload = {
 };
 
 export async function getSafetyIncidents(siteId: string): Promise<SafetyIncident[]> {
+  if (isDemoMode()) return DEMO_SAFETY as any;
   const { data, error } = await supabase
     .from("safety_incidents")
     .select("*")

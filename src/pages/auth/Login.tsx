@@ -3,8 +3,9 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pickaxe, Loader2 } from "lucide-react";
+import { Pickaxe, Loader2, FlaskConical } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { enterDemoMode } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,11 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/";
   const [serverError, setServerError] = useState<string | null>(null);
+
+  function handleTryDemo() {
+    enterDemoMode();
+    navigate("/", { replace: true });
+  }
 
   const {
     register,
@@ -105,6 +111,28 @@ export default function Login() {
         <Link to="/register" className="font-medium text-foreground hover:underline">
           Create one
         </Link>
+      </p>
+
+      {/* Demo account */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">or</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleTryDemo}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 text-primary px-4 py-3 text-sm font-semibold transition-colors"
+      >
+        <FlaskConical className="h-4 w-4" />
+        Try Demo — no account needed
+      </button>
+      <p className="text-center text-xs text-muted-foreground -mt-2">
+        Explore the full app with realistic mining data. Nothing is saved.
       </p>
     </div>
   );

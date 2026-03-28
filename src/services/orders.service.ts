@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { isRestActive } from "@/lib/providers/backendConfig";
+import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
 import type { Order, OrderItem, OrderStatus } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_ORDERS } from "@/lib/demo/data";
 
 export type OrderLineItem = {
   inventory_item_id: string;
@@ -20,6 +24,10 @@ export type OrderWithItems = Order & { order_items: OrderItem[] };
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
 export async function getOrders(siteId: string): Promise<Order[]> {
+  if (isDemoMode()) return DEMO_ORDERS as any;
+  if (isRestActive())
+    return restGet<Order[]>(`/orders?site_id=${siteId}`);
+
   const { data, error } = await supabase
     .from("orders")
     .select("*")
@@ -30,6 +38,9 @@ export async function getOrders(siteId: string): Promise<Order[]> {
 }
 
 export async function getOrderWithItems(orderId: string): Promise<OrderWithItems> {
+  if (isRestActive())
+    return restGet<OrderWithItems>(`/orders/${orderId}/items`);
+
   const { data, error } = await supabase
     .from("orders")
     .select("*, order_items(*)")
@@ -44,9 +55,14 @@ export async function createOrder(
   payload: CreateOrderPayload,
   createdBy?: string
 ): Promise<Order> {
-  // Generate a simple order number
-  const orderNumber = `PO-${Date.now().toString().slice(-6)}`;
+  if (isRestActive())
+    return restPost<Order>("/orders", {
+      ...payload,
+      site_id: siteId,
+      created_by: createdBy ?? null,
+    });
 
+  const orderNumber = `PO-${Date.now().toString().slice(-6)}`;
   const totalAmount = payload.items.reduce(
     (sum, item) => sum + item.quantity * item.unit_price,
     0
@@ -67,7 +83,6 @@ export async function createOrder(
     })
     .select()
     .single();
-
   if (orderError) throw orderError;
 
   if (payload.items.length > 0) {
@@ -91,6 +106,9 @@ export async function updateOrderStatus(
   status: OrderStatus,
   extraFields?: { received_date?: string }
 ): Promise<Order> {
+  if (isRestActive())
+    return restPut<Order>(`/orders/${id}/status`, { status, ...extraFields });
+
   const { data, error } = await supabase
     .from("orders")
     .update({ status, ...extraFields })
@@ -102,18 +120,21 @@ export async function updateOrderStatus(
 }
 
 /**
- * Mark order as received and increment inventory quantities for each line item.
- * Sequential calls — no client-side transaction support in Supabase JS.
+ * Mark order as received and increment inventory quantities.
+ * REST: single atomic call — the PHP API handles inventory update server-side.
  */
 export async function receiveOrder(orderId: string): Promise<void> {
-  // 1. Get order items
+  if (isRestActive()) {
+    await restPost(`/orders/${orderId}/receive`, {});
+    return;
+  }
+
   const { data: items, error: fetchError } = await supabase
     .from("order_items")
     .select("inventory_item_id, quantity")
     .eq("order_id", orderId);
   if (fetchError) throw fetchError;
 
-  // 2. Update order status
   const today = new Date().toISOString().split("T")[0];
   const { error: statusError } = await supabase
     .from("orders")
@@ -121,17 +142,14 @@ export async function receiveOrder(orderId: string): Promise<void> {
     .eq("id", orderId);
   if (statusError) throw statusError;
 
-  // 3. Increment inventory quantities
   for (const item of items ?? []) {
     if (!item.inventory_item_id) continue;
-
     const { data: inv, error: fetchInvError } = await supabase
       .from("inventory_items")
       .select("quantity")
       .eq("id", item.inventory_item_id)
       .single();
-    if (fetchInvError) continue; // skip if item no longer exists
-
+    if (fetchInvError) continue;
     await supabase
       .from("inventory_items")
       .update({ quantity: (inv?.quantity ?? 0) + item.quantity })
@@ -140,7 +158,8 @@ export async function receiveOrder(orderId: string): Promise<void> {
 }
 
 export async function deleteOrder(id: string): Promise<void> {
-  // order_items cascade delete via FK
+  if (isRestActive()) return restDel(`/orders/${id}`);
+
   const { error } = await supabase.from("orders").delete().eq("id", id);
   if (error) throw error;
 }

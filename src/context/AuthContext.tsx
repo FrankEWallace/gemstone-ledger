@@ -3,6 +3,8 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { UserProfile } from "@/lib/supabaseTypes";
 import type { AuthContextValue, SiteWithRole } from "@/types/auth";
+import { isDemoMode, exitDemoMode, DEMO_USER_ID, DEMO_SITE_ID, DEMO_ORG_ID } from "@/lib/demo";
+import { DEMO_USER_PROFILE, DEMO_SITE } from "@/lib/demo/data";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -81,16 +83,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (isDemoMode()) {
+      exitDemoMode();
+      window.location.href = "/login";
+      return;
+    }
     await supabase.auth.signOut();
     localStorage.removeItem("activeSiteId");
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) await loadUserData(user.id);
+    if (isDemoMode() || !user) return;
+    await loadUserData(user.id);
   }, [user, loadUserData]);
 
   const activeRole = sites.find((s) => s.id === activeSiteId)?.role ?? null;
   const orgId = userProfile?.org_id ?? null;
+
+  // ── Demo mode: override everything with fake data ─────────────────────────
+  const demoSiteWithRole: SiteWithRole = { ...DEMO_SITE, role: "admin" as const };
+  const demoContextValue: AuthContextValue = {
+    session: null,
+    user: { id: DEMO_USER_ID, email: "demo@fwmining.app" } as User,
+    userProfile: DEMO_USER_PROFILE as UserProfile,
+    orgId: DEMO_ORG_ID,
+    sites: [demoSiteWithRole],
+    activeSiteId: DEMO_SITE_ID,
+    activeRole: "admin",
+    isLoading: false,
+    setActiveSite: () => {},
+    signOut,
+    refreshProfile,
+  };
+
+  if (isDemoMode()) {
+    return (
+      <AuthContext.Provider value={demoContextValue}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
 
   return (
     <AuthContext.Provider

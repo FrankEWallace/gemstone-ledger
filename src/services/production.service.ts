@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { ProductionLog } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_PRODUCTION_LOGS } from "@/lib/demo/data";
 
 export type ProductionLogPayload = {
   site_id: string;
@@ -12,6 +14,7 @@ export type ProductionLogPayload = {
 };
 
 export async function getProductionLogs(siteId: string, limit = 60): Promise<ProductionLog[]> {
+  if (isDemoMode()) return DEMO_PRODUCTION_LOGS as any;
   const { data, error } = await supabase
     .from("production_logs")
     .select("*")

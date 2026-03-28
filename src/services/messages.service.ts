@@ -1,12 +1,16 @@
 import { supabase } from "@/lib/supabase";
 import type { Message, MessageChannel } from "@/lib/supabaseTypes";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_MESSAGES } from "@/lib/demo/data";
 
 export async function getMessages(
   siteId: string,
   channel: MessageChannel,
   limit = 60
 ): Promise<Message[]> {
+  if (isDemoMode())
+    return DEMO_MESSAGES.filter((m) => m.channel === channel) as any;
   const { data, error } = await supabase
     .from("messages")
     .select("*")
@@ -64,6 +68,7 @@ export async function getChannelMessageCounts(
   siteId: string,
   since: string
 ): Promise<Record<MessageChannel, number>> {
+  if (isDemoMode()) return { general: 3, safety: 1, operations: 2 };
   const { data, error } = await supabase
     .from("messages")
     .select("channel")

@@ -1,9 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import type { SiteDocument } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_DOCUMENTS } from "@/lib/demo/data";
 
 const BUCKET = "site-documents";
 
 export async function getSiteDocuments(siteId: string): Promise<SiteDocument[]> {
+  if (isDemoMode()) return DEMO_DOCUMENTS as any;
   const { data, error } = await supabase
     .from("site_documents")
     .select("*")
@@ -45,6 +48,7 @@ export async function uploadDocument(
 }
 
 export async function getDocumentUrl(storagePath: string): Promise<string> {
+  if (isDemoMode()) return "#";
   const { data } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(storagePath, 60 * 60); // 1 hour

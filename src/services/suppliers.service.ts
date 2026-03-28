@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { isRestActive } from "@/lib/providers/backendConfig";
+import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
 import type { Supplier, Channel } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_SUPPLIERS } from "@/lib/demo/data";
 
 // ─── Suppliers (org-scoped) ───────────────────────────────────────────────────
 
@@ -14,6 +18,10 @@ export type SupplierPayload = {
 };
 
 export async function getSuppliers(orgId: string): Promise<Supplier[]> {
+  if (isDemoMode()) return DEMO_SUPPLIERS as any;
+  if (isRestActive())
+    return restGet<Supplier[]>(`/suppliers?org_id=${orgId}`);
+
   const { data, error } = await supabase
     .from("suppliers")
     .select("*")
@@ -24,6 +32,13 @@ export async function getSuppliers(orgId: string): Promise<Supplier[]> {
 }
 
 export async function createSupplier(orgId: string, payload: SupplierPayload): Promise<Supplier> {
+  if (isRestActive())
+    return restPost<Supplier>("/suppliers", {
+      ...payload,
+      org_id: orgId,
+      status: payload.status ?? "active",
+    });
+
   const { data, error } = await supabase
     .from("suppliers")
     .insert({ ...payload, org_id: orgId, status: payload.status ?? "active" })
@@ -37,6 +52,9 @@ export async function updateSupplier(
   id: string,
   payload: Partial<SupplierPayload>
 ): Promise<Supplier> {
+  if (isRestActive())
+    return restPut<Supplier>(`/suppliers/${id}`, payload);
+
   const { data, error } = await supabase
     .from("suppliers")
     .update(payload)
@@ -48,6 +66,8 @@ export async function updateSupplier(
 }
 
 export async function deleteSupplier(id: string): Promise<void> {
+  if (isRestActive()) return restDel(`/suppliers/${id}`);
+
   const { error } = await supabase.from("suppliers").delete().eq("id", id);
   if (error) throw error;
 }
@@ -61,6 +81,9 @@ export type ChannelPayload = {
 };
 
 export async function getChannels(orgId: string): Promise<Channel[]> {
+  if (isRestActive())
+    return restGet<Channel[]>(`/channels?org_id=${orgId}`);
+
   const { data, error } = await supabase
     .from("channels")
     .select("*")
@@ -71,6 +94,9 @@ export async function getChannels(orgId: string): Promise<Channel[]> {
 }
 
 export async function createChannel(orgId: string, payload: ChannelPayload): Promise<Channel> {
+  if (isRestActive())
+    return restPost<Channel>("/channels", { ...payload, org_id: orgId });
+
   const { data, error } = await supabase
     .from("channels")
     .insert({ ...payload, org_id: orgId })
@@ -84,6 +110,9 @@ export async function updateChannel(
   id: string,
   payload: Partial<ChannelPayload>
 ): Promise<Channel> {
+  if (isRestActive())
+    return restPut<Channel>(`/channels/${id}`, payload);
+
   const { data, error } = await supabase
     .from("channels")
     .update(payload)
@@ -95,6 +124,8 @@ export async function updateChannel(
 }
 
 export async function deleteChannel(id: string): Promise<void> {
+  if (isRestActive()) return restDel(`/channels/${id}`);
+
   const { error } = await supabase.from("channels").delete().eq("id", id);
   if (error) throw error;
 }

@@ -3,9 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Upload, Building2, Globe, DollarSign, Mail, Send } from "lucide-react";
+import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import {
+  getBackendConfig,
+  activateProvider,
+  type BackendConfig,
+} from "@/lib/providers/backendConfig";
+import { testRestConnection } from "@/lib/providers/rest/client";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -196,10 +202,245 @@ function WeeklyReportSection({
   );
 }
 
+// ─── Backend Provider Section ─────────────────────────────────────────────────
+
+function BackendProviderSection({ role }: { role: string | null }) {
+  const config = getBackendConfig();
+  const isRest = config.provider === "rest";
+
+  const [showDialog, setShowDialog] = useState(false);
+  const [restUrl, setRestUrl] = useState(config.restBaseUrl);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<"idle" | "ok" | "fail">("idle");
+  const [confirming, setConfirming] = useState(false);
+
+  // Only org admins see this section
+  if (role !== "admin") return null;
+
+  async function handleTest() {
+    if (!restUrl.trim()) {
+      toast.error("Enter a base URL first");
+      return;
+    }
+    setTesting(true);
+    setTestResult("idle");
+    const ok = await testRestConnection(restUrl.trim());
+    setTesting(false);
+    setTestResult(ok ? "ok" : "fail");
+    if (!ok) toast.error("Connection failed — check the URL and that /health returns { data: { status: 'ok' } }");
+  }
+
+  function handleActivateRest() {
+    if (testResult !== "ok") {
+      toast.error("Test the connection successfully before activating");
+      return;
+    }
+    const next: BackendConfig = {
+      provider: "rest",
+      restBaseUrl: restUrl.trim(),
+      restActivatedAt: new Date().toISOString(),
+    };
+    activateProvider(next); // reloads the page
+  }
+
+  function handleRevertToSupabase() {
+    activateProvider({ provider: "supabase", restBaseUrl: "" });
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <Database className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold text-sm">Backend Provider</h2>
+        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
+          Developer
+        </span>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Switch the data backend from Supabase to a custom REST API (e.g. PHP on cPanel).
+        The app's service layer is designed so each backend can be swapped without UI changes.
+      </p>
+
+      {/* Provider cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        {/* Supabase card */}
+        <div className={`rounded-lg border p-4 flex items-start gap-3 transition-colors ${
+          !isRest
+            ? "border-primary bg-primary/5"
+            : "border-border bg-card opacity-60"
+        }`}>
+          <Database className={`h-5 w-5 mt-0.5 flex-shrink-0 ${!isRest ? "text-primary" : "text-muted-foreground"}`} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Supabase</span>
+              {!isRest && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                  Active
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              PostgreSQL · Auth · Realtime · Storage · Edge Functions
+            </p>
+          </div>
+        </div>
+
+        {/* REST / cPanel card */}
+        <div className={`rounded-lg border p-4 flex items-start gap-3 transition-colors ${
+          isRest
+            ? "border-primary bg-primary/5"
+            : "border-dashed border-border bg-card"
+        }`}>
+          <Server className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isRest ? "text-primary" : "text-muted-foreground"}`} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Custom REST API</span>
+              {isRest ? (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                  Active
+                </span>
+              ) : (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  Inactive
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {isRest ? config.restBaseUrl : "cPanel · PHP · MySQL · any REST host"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2">
+        {isRest ? (
+          <>
+            <button
+              onClick={() => setConfirming(true)}
+              className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors"
+            >
+              Edit REST URL
+            </button>
+            <button
+              onClick={handleRevertToSupabase}
+              className="text-sm px-3 py-1.5 rounded-md border border-destructive/40 text-destructive hover:bg-destructive/5 transition-colors"
+            >
+              Revert to Supabase
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => { setShowDialog(true); setTestResult("idle"); }}
+            className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5"
+          >
+            <Server className="h-3.5 w-3.5" />
+            Configure REST API
+          </button>
+        )}
+        <a
+          href="https://github.com/your-org/mining-os-php-api"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5 text-muted-foreground"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          PHP API reference
+        </a>
+      </div>
+
+      {/* Migration checklist (always visible as a guide) */}
+      <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Migration checklist</p>
+        <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+          <li>Build the PHP REST API on cPanel — endpoint contract in <code>src/lib/providers/rest/client.ts</code></li>
+          <li>All endpoints must return <code>{"{ data, error }"}</code> JSON envelope</li>
+          <li>Implement <code>GET /health</code> returning <code>{"{ data: { status: 'ok' } }"}</code></li>
+          <li>Enter the base URL below and test the connection</li>
+          <li>Update <code>src/services/*.service.ts</code> to use <code>restGet/restPost/restPut/restDel</code></li>
+          <li>Flip the toggle — page reloads with new backend active</li>
+        </ol>
+      </div>
+
+      {/* Configure dialog (inline, no Radix Dialog to keep it simple) */}
+      {(showDialog || confirming) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+              <h3 className="font-semibold">Configure REST Backend</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Switching backends reloads the app. Make sure the PHP API is deployed and
+              all service files are updated before activating in production.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">REST API Base URL</label>
+              <input
+                type="url"
+                value={restUrl}
+                onChange={(e) => { setRestUrl(e.target.value); setTestResult("idle"); }}
+                placeholder="https://yoursite.com/api/v1"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <p className="text-xs text-muted-foreground">No trailing slash. Must be HTTPS in production.</p>
+            </div>
+
+            {/* Test connection */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleTest}
+                disabled={testing || !restUrl.trim()}
+                className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {testing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Server className="h-3.5 w-3.5" />
+                )}
+                {testing ? "Testing…" : "Test Connection"}
+              </button>
+              {testResult === "ok" && (
+                <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Connected
+                </span>
+              )}
+              {testResult === "fail" && (
+                <span className="flex items-center gap-1 text-xs text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Failed
+                </span>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => { setShowDialog(false); setConfirming(false); setTestResult("idle"); }}
+                className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleActivateRest}
+                disabled={testResult !== "ok"}
+                className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+              >
+                Activate REST Provider
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SystemSettingsPage() {
-  const { orgId } = useAuth();
+  const { orgId, activeRole } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -415,6 +656,14 @@ export default function SystemSettingsPage() {
 
       {/* Weekly email report */}
       <WeeklyReportSection orgId={orgId} org={org} queryClient={queryClient} />
+
+      {/* Backend provider — admin only, inactive by default */}
+      {activeRole === "admin" && (
+        <>
+          <Separator />
+          <BackendProviderSection role={activeRole} />
+        </>
+      )}
     </div>
   );
 }

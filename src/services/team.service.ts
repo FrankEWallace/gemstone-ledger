@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { isRestActive } from "@/lib/providers/backendConfig";
+import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
 import type { Worker, ShiftRecord, WorkerStatus } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_WORKERS, DEMO_SHIFT_RECORDS } from "@/lib/demo/data";
 
 export type WorkerPayload = {
   full_name: string;
@@ -21,6 +25,10 @@ export type ShiftPayload = {
 // ─── Workers ─────────────────────────────────────────────────────────────────
 
 export async function getWorkers(siteId: string): Promise<Worker[]> {
+  if (isDemoMode()) return DEMO_WORKERS as any;
+  if (isRestActive())
+    return restGet<Worker[]>(`/workers?site_id=${siteId}`);
+
   const { data, error } = await supabase
     .from("workers")
     .select("*")
@@ -31,6 +39,13 @@ export async function getWorkers(siteId: string): Promise<Worker[]> {
 }
 
 export async function createWorker(siteId: string, payload: WorkerPayload): Promise<Worker> {
+  if (isRestActive())
+    return restPost<Worker>("/workers", {
+      ...payload,
+      site_id: siteId,
+      status: payload.status ?? "active",
+    });
+
   const { data, error } = await supabase
     .from("workers")
     .insert({ ...payload, site_id: siteId, status: payload.status ?? "active" })
@@ -41,6 +56,9 @@ export async function createWorker(siteId: string, payload: WorkerPayload): Prom
 }
 
 export async function updateWorker(id: string, payload: Partial<WorkerPayload>): Promise<Worker> {
+  if (isRestActive())
+    return restPut<Worker>(`/workers/${id}`, payload);
+
   const { data, error } = await supabase
     .from("workers")
     .update(payload)
@@ -52,6 +70,8 @@ export async function updateWorker(id: string, payload: Partial<WorkerPayload>):
 }
 
 export async function deleteWorker(id: string): Promise<void> {
+  if (isRestActive()) return restDel(`/workers/${id}`);
+
   const { error } = await supabase.from("workers").delete().eq("id", id);
   if (error) throw error;
 }
@@ -59,6 +79,10 @@ export async function deleteWorker(id: string): Promise<void> {
 // ─── Shifts ───────────────────────────────────────────────────────────────────
 
 export async function getShiftRecords(siteId: string): Promise<ShiftRecord[]> {
+  if (isDemoMode()) return DEMO_SHIFT_RECORDS as any;
+  if (isRestActive())
+    return restGet<ShiftRecord[]>(`/shift-records?site_id=${siteId}`);
+
   const { data, error } = await supabase
     .from("shift_records")
     .select("*")
@@ -69,6 +93,10 @@ export async function getShiftRecords(siteId: string): Promise<ShiftRecord[]> {
 }
 
 export async function getShiftsForWorker(workerId: string): Promise<ShiftRecord[]> {
+  if (isDemoMode()) return DEMO_SHIFT_RECORDS.filter(s => s.worker_id === workerId) as any;
+  if (isRestActive())
+    return restGet<ShiftRecord[]>(`/shift-records?worker_id=${workerId}&limit=30`);
+
   const { data, error } = await supabase
     .from("shift_records")
     .select("*")
@@ -80,6 +108,9 @@ export async function getShiftsForWorker(workerId: string): Promise<ShiftRecord[
 }
 
 export async function logShift(siteId: string, payload: ShiftPayload): Promise<ShiftRecord> {
+  if (isRestActive())
+    return restPost<ShiftRecord>("/shift-records", { ...payload, site_id: siteId });
+
   const { data, error } = await supabase
     .from("shift_records")
     .insert({ ...payload, site_id: siteId })
@@ -90,6 +121,8 @@ export async function logShift(siteId: string, payload: ShiftPayload): Promise<S
 }
 
 export async function deleteShift(id: string): Promise<void> {
+  if (isRestActive()) return restDel(`/shift-records/${id}`);
+
   const { error } = await supabase.from("shift_records").delete().eq("id", id);
   if (error) throw error;
 }

@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { isRestActive } from "@/lib/providers/backendConfig";
+import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
 import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_TRANSACTIONS } from "@/lib/demo/data";
 
 export type TransactionPayload = {
   description?: string;
@@ -25,6 +29,17 @@ export async function getTransactions(
   siteId: string,
   filters?: TransactionFilters
 ): Promise<Transaction[]> {
+  if (isDemoMode()) return DEMO_TRANSACTIONS as any;
+  if (isRestActive()) {
+    const params = new URLSearchParams({ site_id: siteId });
+    if (filters?.type && filters.type !== "all") params.set("type", filters.type);
+    if (filters?.status && filters.status !== "all") params.set("status", filters.status);
+    if (filters?.category && filters.category !== "all") params.set("category", filters.category);
+    if (filters?.dateFrom) params.set("from", filters.dateFrom);
+    if (filters?.dateTo) params.set("to", filters.dateTo);
+    return restGet<Transaction[]>(`/transactions?${params}`);
+  }
+
   let query = supabase
     .from("transactions")
     .select("*")
@@ -48,6 +63,13 @@ export async function createTransaction(
   payload: TransactionPayload,
   createdBy?: string
 ): Promise<Transaction> {
+  if (isRestActive())
+    return restPost<Transaction>("/transactions", {
+      ...payload,
+      site_id: siteId,
+      created_by: createdBy ?? null,
+    });
+
   const { data, error } = await supabase
     .from("transactions")
     .insert({ ...payload, site_id: siteId, created_by: createdBy ?? null })
@@ -61,6 +83,9 @@ export async function updateTransactionStatus(
   id: string,
   status: TransactionStatus
 ): Promise<Transaction> {
+  if (isRestActive())
+    return restPut<Transaction>(`/transactions/${id}`, { status });
+
   const { data, error } = await supabase
     .from("transactions")
     .update({ status })
@@ -72,11 +97,16 @@ export async function updateTransactionStatus(
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
+  if (isRestActive()) return restDel(`/transactions/${id}`);
+
   const { error } = await supabase.from("transactions").delete().eq("id", id);
   if (error) throw error;
 }
 
 export async function getTransactionCategories(siteId: string): Promise<string[]> {
+  if (isRestActive())
+    return restGet<string[]>(`/transactions/categories?site_id=${siteId}`);
+
   const { data, error } = await supabase
     .from("transactions")
     .select("category")
