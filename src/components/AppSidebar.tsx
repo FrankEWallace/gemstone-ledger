@@ -30,6 +30,7 @@ import {
   SlidersHorizontal,
   Eye,
   EyeOff,
+  CloudOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -79,6 +80,7 @@ const operations: NavItem[] = [
 const settingsItems: NavItem[] = [
   { label: "KPI Targets",      icon: Target,    to: "/settings/targets" },
   { label: "Alert Rules",      icon: Zap,       to: "/settings/alerts" },
+  { label: "Offline Sync",     icon: CloudOff,  to: "/settings/sync" },
   { label: "System Settings",  icon: Settings,  to: "/settings/system" },
   { label: "Help Center",      icon: HelpCircle,to: "/settings/help" },
   { label: "Customer Support", icon: Headphones,to: "/settings/support" },

@@ -36,6 +36,7 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/safety": { breadcrumb: "Operations", title: "Safety Incidents" },
   "/team/schedule": { breadcrumb: "Team", title: "Shift Schedule" },
   "/documents": { breadcrumb: "Operations", title: "Documents" },
+  "/settings/sync": { breadcrumb: "Settings", title: "Offline Sync" },
 };
 
 export default function AppLayout() {

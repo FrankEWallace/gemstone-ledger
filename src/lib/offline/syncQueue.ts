@@ -2,12 +2,29 @@ import { offlineDB, type SyncQueueItem } from "./db";
 
 /**
  * Push a mutation to the offline sync queue.
- * Called by service functions when navigator.onLine is false.
+ * Also registers the Background Sync tag so the browser can trigger a sync
+ * event in the service worker even when the tab is backgrounded or closed.
  */
 export async function enqueue(
   item: Omit<SyncQueueItem, "id" | "retries">
 ): Promise<number> {
-  return offlineDB.sync_queue.add({ ...item, retries: 0 });
+  const id = await offlineDB.sync_queue.add({ ...item, retries: 0 });
+
+  // Register Background Sync tag — browser will fire SW sync event when online
+  if ("serviceWorker" in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if ("sync" in registration) {
+        await (registration as ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } })
+          .sync.register("fw-mining-sync");
+      }
+    } catch {
+      // Background Sync not supported on this browser — gracefully ignored;
+      // the window.online listener in syncEngine will handle it instead.
+    }
+  }
+
+  return id;
 }
 
 /** Remove a successfully synced item from the queue. */

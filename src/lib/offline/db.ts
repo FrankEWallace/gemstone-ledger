@@ -110,10 +110,22 @@ export interface CachedNotification {
   created_at: string;
 }
 
+// ─── Sync log (Phase 3) ───────────────────────────────────────────────────────
+export interface SyncLogEntry {
+  id?: number;           // auto-increment PK
+  entity: string;        // e.g. "safety_incidents"
+  operation: "create" | "update" | "delete";
+  status: "success" | "failed" | "conflict";
+  conflictResolution?: "server_wins" | "client_wins";
+  error?: string;
+  syncedAt: number;      // epoch ms
+}
+
 // ─── Database class ───────────────────────────────────────────────────────────
 class MiningOfflineDB extends Dexie {
   kv_store!: Table<KVEntry, string>;
   sync_queue!: Table<SyncQueueItem, number>;
+  sync_log!: Table<SyncLogEntry, number>;
   safety_incidents!: Table<CachedSafetyIncident, string>;
   inventory_items!: Table<CachedInventoryItem, string>;
   transactions!: Table<CachedTransaction, string>;
@@ -129,6 +141,21 @@ class MiningOfflineDB extends Dexie {
     this.version(1).stores({
       kv_store: "key",
       sync_queue: "++id, entity, operation, siteId, timestamp",
+      safety_incidents: "id, site_id, severity, resolved_at, created_at",
+      inventory_items: "id, site_id, category, created_at",
+      transactions: "id, site_id, type, category, transaction_date",
+      equipment: "id, site_id, status, created_at",
+      workers: "id, site_id, role, status",
+      shift_records: "id, site_id, worker_id, shift_date",
+      suppliers: "id, site_id, status",
+      notifications: "id, user_id, read, created_at",
+    });
+
+    // Version 2 — add sync_log table
+    this.version(2).stores({
+      kv_store: "key",
+      sync_queue: "++id, entity, operation, siteId, timestamp",
+      sync_log: "++id, entity, status, syncedAt",
       safety_incidents: "id, site_id, severity, resolved_at, created_at",
       inventory_items: "id, site_id, category, created_at",
       transactions: "id, site_id, type, category, transaction_date",

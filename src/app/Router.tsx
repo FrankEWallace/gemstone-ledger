@@ -31,6 +31,7 @@ const SupportPage       = lazy(() => import("@/pages/settings/SupportPage"));
 const AuditLogPage      = lazy(() => import("@/pages/management/AuditLogPage"));
 const AlertRulesPage    = lazy(() => import("@/pages/settings/AlertRulesPage"));
 const KpiTargetsPage      = lazy(() => import("@/pages/settings/KpiTargetsPage"));
+const SyncHistoryPage     = lazy(() => import("@/pages/settings/SyncHistoryPage"));
 const ProductionLogPage   = lazy(() => import("@/pages/production/ProductionLogPage"));
 const TimesheetPage       = lazy(() => import("@/pages/team/TimesheetPage"));
 const EquipmentPage     = lazy(() => import("@/pages/equipment/EquipmentPage"));
@@ -105,6 +106,7 @@ export default function Router() {
           <Route path="/settings/support" element={<BoundedRoute element={<SupportPage />} />} />
           <Route path="/settings/alerts"  element={<BoundedRoute element={<AlertRulesPage />} />} />
           <Route path="/settings/targets" element={<BoundedRoute element={<KpiTargetsPage />} />} />
+          <Route path="/settings/sync"    element={<BoundedRoute element={<SyncHistoryPage />} />} />
           <Route path="/production"       element={<BoundedRoute element={<ProductionLogPage />} />} />
           <Route path="/team/timesheet"   element={<BoundedRoute element={<TimesheetPage />} />} />
 
