@@ -1,12 +1,16 @@
 import { supabase } from "@/lib/supabase";
+import { isRestActive } from "@/lib/providers/backendConfig";
+import { restGet, restDel } from "@/lib/providers/rest/client";
+import { getBackendConfig } from "@/lib/providers/backendConfig";
 import type { SiteDocument } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_DOCUMENTS } from "@/lib/demo/data";
 
-const BUCKET = "site-documents";
-
 export async function getSiteDocuments(siteId: string): Promise<SiteDocument[]> {
   if (isDemoMode()) return DEMO_DOCUMENTS as any;
+  if (isRestActive())
+    return restGet<SiteDocument[]>(`/documents?site_id=${siteId}`);
+
   const { data, error } = await supabase
     .from("site_documents")
     .select("*")
@@ -16,51 +20,82 @@ export async function getSiteDocuments(siteId: string): Promise<SiteDocument[]> 
   return data ?? [];
 }
 
+/**
+ * Upload a document.
+ * - Supabase: uploads to Storage bucket then inserts a metadata row.
+ * - REST: sends a multipart/form-data POST to /documents/upload.
+ */
 export async function uploadDocument(
   siteId: string,
   file: File,
-  category: string | undefined,
-  uploadedBy: string | undefined
+  category?: string,
+  uploadedBy?: string
 ): Promise<SiteDocument> {
+  if (isRestActive()) {
+    const { restBaseUrl } = getBackendConfig();
+    const token = localStorage.getItem("fwmining_rest_token");
+
+    const form = new FormData();
+    form.append("file", file);
+    form.append("site_id", siteId);
+    if (category) form.append("category", category);
+    if (uploadedBy) form.append("uploaded_by", uploadedBy);
+
+    const res = await fetch(`${restBaseUrl.replace(/\/$/, "")}/documents/upload`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error ?? `Upload failed: HTTP ${res.status}`);
+    return json.data as SiteDocument;
+  }
+
   const ext = file.name.split(".").pop();
-  const path = `${siteId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path = `${siteId}/${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .from("site-documents")
+    .upload(path, file);
   if (uploadError) throw uploadError;
 
-  const { data, error } = await supabase
+  const { data, error: insertError } = await supabase
     .from("site_documents")
     .insert({
       site_id: siteId,
-      uploaded_by: uploadedBy ?? null,
       name: file.name,
-      category: category || null,
       storage_path: path,
+      file_type: file.type,
       file_size: file.size,
-      mime_type: file.type,
+      category: category ?? null,
+      uploaded_by: uploadedBy ?? null,
     })
     .select()
     .single();
-  if (error) throw error;
+  if (insertError) throw insertError;
   return data;
 }
 
 export async function getDocumentUrl(storagePath: string): Promise<string> {
-  if (isDemoMode()) return "#";
-  const { data } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(storagePath, 60 * 60); // 1 hour
-  if (!data?.signedUrl) throw new Error("Could not generate download URL.");
+  if (isRestActive()) {
+    // REST: the storage_path IS the full URL returned by the PHP upload endpoint
+    return storagePath;
+  }
+
+  const { data, error } = await supabase.storage
+    .from("site-documents")
+    .createSignedUrl(storagePath, 3600);
+  if (error) throw error;
   return data.signedUrl;
 }
 
 export async function deleteSiteDocument(doc: SiteDocument): Promise<void> {
-  const { error: storageError } = await supabase.storage
-    .from(BUCKET)
-    .remove([doc.storage_path]);
-  if (storageError) throw storageError;
+  if (isRestActive()) {
+    await restDel(`/documents/${doc.id}`);
+    return;
+  }
+
+  await supabase.storage.from("site-documents").remove([doc.storage_path]);
   const { error } = await supabase.from("site_documents").delete().eq("id", doc.id);
   if (error) throw error;
 }

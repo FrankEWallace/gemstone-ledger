@@ -1,19 +1,24 @@
 import { supabase } from "@/lib/supabase";
-import type { SafetyIncident, IncidentSeverity, IncidentType } from "@/lib/supabaseTypes";
+import { isRestActive } from "@/lib/providers/backendConfig";
+import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
+import type { SafetyIncident, SafetySeverity } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_SAFETY } from "@/lib/demo/data";
+import { DEMO_SAFETY as DEMO_SAFETY_INCIDENTS } from "@/lib/demo/data";
 
 export type SafetyIncidentPayload = {
   title: string;
-  severity?: IncidentSeverity;
-  type?: IncidentType;
+  severity?: SafetySeverity;
+  type?: string;
   description?: string;
   actions_taken?: string;
   resolved_at?: string | null;
 };
 
 export async function getSafetyIncidents(siteId: string): Promise<SafetyIncident[]> {
-  if (isDemoMode()) return DEMO_SAFETY as any;
+  if (isDemoMode()) return DEMO_SAFETY_INCIDENTS as any;
+  if (isRestActive())
+    return restGet<SafetyIncident[]>(`/safety-incidents?site_id=${siteId}`);
+
   const { data, error } = await supabase
     .from("safety_incidents")
     .select("*")
@@ -28,9 +33,22 @@ export async function createSafetyIncident(
   payload: SafetyIncidentPayload,
   reportedBy?: string
 ): Promise<SafetyIncident> {
+  if (isRestActive())
+    return restPost<SafetyIncident>("/safety-incidents", {
+      ...payload,
+      site_id: siteId,
+      reported_by: reportedBy ?? null,
+      reported_at: new Date().toISOString(),
+    });
+
   const { data, error } = await supabase
     .from("safety_incidents")
-    .insert({ ...payload, site_id: siteId, reported_by: reportedBy ?? null })
+    .insert({
+      ...payload,
+      site_id: siteId,
+      reported_by: reportedBy ?? null,
+      reported_at: new Date().toISOString(),
+    })
     .select()
     .single();
   if (error) throw error;
@@ -41,6 +59,9 @@ export async function updateSafetyIncident(
   id: string,
   payload: Partial<SafetyIncidentPayload>
 ): Promise<SafetyIncident> {
+  if (isRestActive())
+    return restPut<SafetyIncident>(`/safety-incidents/${id}`, payload);
+
   const { data, error } = await supabase
     .from("safety_incidents")
     .update(payload)
@@ -52,10 +73,23 @@ export async function updateSafetyIncident(
 }
 
 export async function deleteSafetyIncident(id: string): Promise<void> {
+  if (isRestActive()) return restDel(`/safety-incidents/${id}`);
+
   const { error } = await supabase.from("safety_incidents").delete().eq("id", id);
   if (error) throw error;
 }
 
 export async function resolveSafetyIncident(id: string): Promise<SafetyIncident> {
-  return updateSafetyIncident(id, { resolved_at: new Date().toISOString() });
+  const resolved_at = new Date().toISOString();
+  if (isRestActive())
+    return restPut<SafetyIncident>(`/safety-incidents/${id}`, { resolved_at });
+
+  const { data, error } = await supabase
+    .from("safety_incidents")
+    .update({ resolved_at })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }

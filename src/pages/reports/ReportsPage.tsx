@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -6,16 +6,13 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line,
+  CartesianGrid,
 } from "recharts";
 import { subMonths, format, startOfMonth, endOfMonth } from "date-fns";
-import { Download, TrendingUp, DollarSign, Clock, FileText } from "lucide-react";
+import { Download, FileText, Clock, Hash } from "lucide-react";
 import {
   pdf,
   Document,
@@ -26,7 +23,6 @@ import {
 } from "@react-pdf/renderer";
 
 import { useSite } from "@/hooks/useSite";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -36,43 +32,49 @@ import {
   getProductionByDay,
 } from "@/services/reports.service";
 
-// ─── Chart colours ────────────────────────────────────────────────────────────
-
-const PIE_COLORS = [
-  "#6366f1", "#22c55e", "#f59e0b", "#ef4444",
-  "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6",
-];
+// ─── Formatters ───────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+function fmtShort(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
+  return `$${n}`;
+}
+
 // ─── PDF Document ─────────────────────────────────────────────────────────────
 
 const pdfStyles = StyleSheet.create({
-  page: { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#1a1a1a" },
+  page: { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
   title: { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-  subtitle: { fontSize: 11, color: "#666", marginBottom: 24 },
-  section: { marginBottom: 20 },
-  sectionTitle: { fontSize: 13, fontWeight: "bold", marginBottom: 10, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 4 },
-  row: { flexDirection: "row", marginBottom: 4 },
+  subtitle: { fontSize: 10, color: "#666", marginBottom: 28 },
+  section: { marginBottom: 22 },
+  sectionTitle: {
+    fontSize: 8, fontWeight: "bold", textTransform: "uppercase",
+    letterSpacing: 1.5, color: "#888", borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10,
+  },
+  row: { flexDirection: "row", marginBottom: 6 },
   statBox: { flex: 1, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4, marginRight: 8 },
-  statLabel: { fontSize: 8, color: "#6b7280", marginBottom: 2 },
-  statValue: { fontSize: 14, fontWeight: "bold" },
-  tableHeader: { flexDirection: "row", backgroundColor: "#f3f4f6", padding: "6 8", borderRadius: 4, marginBottom: 2 },
-  tableRow: { flexDirection: "row", padding: "5 8", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-  tableCell: { flex: 1, fontSize: 9 },
-  tableCellRight: { flex: 1, fontSize: 9, textAlign: "right" },
-  positive: { color: "#16a34a" },
-  negative: { color: "#dc2626" },
+  statLabel: { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+  statValue: { fontSize: 15, fontWeight: "bold" },
+  tableHeader: {
+    flexDirection: "row", backgroundColor: "#f3f4f6",
+    padding: "6 8", borderRadius: 3, marginBottom: 2,
+  },
+  tableRow: {
+    flexDirection: "row", padding: "5 8",
+    borderBottomWidth: 1, borderBottomColor: "#f3f4f6",
+  },
+  tableCell: { flex: 1, fontSize: 9, color: "#555" },
+  tableCellBold: { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111" },
+  tableCellRight: { flex: 1, fontSize: 9, textAlign: "right", color: "#555" },
+  tableCellRightBold: { flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: "#111" },
 });
 
 function ReportPDF({
-  siteName,
-  dateFrom,
-  dateTo,
-  summary,
-  trend,
-  categories,
+  siteName, dateFrom, dateTo, summary, trend, categories,
 }: {
   siteName: string;
   dateFrom: string;
@@ -86,73 +88,62 @@ function ReportPDF({
       <Page size="A4" style={pdfStyles.page}>
         <Text style={pdfStyles.title}>Financial Report</Text>
         <Text style={pdfStyles.subtitle}>
-          {siteName} · {dateFrom} to {dateTo} · Generated {format(new Date(), "MMM d, yyyy")}
+          {siteName} · {dateFrom} → {dateTo} · Generated {format(new Date(), "d MMM yyyy")}
         </Text>
 
-        {/* Summary */}
         <View style={pdfStyles.section}>
           <Text style={pdfStyles.sectionTitle}>Summary</Text>
           <View style={pdfStyles.row}>
-            <View style={pdfStyles.statBox}>
-              <Text style={pdfStyles.statLabel}>Total Income</Text>
-              <Text style={[pdfStyles.statValue, pdfStyles.positive]}>{fmt(summary.totalIncome)}</Text>
-            </View>
-            <View style={pdfStyles.statBox}>
-              <Text style={pdfStyles.statLabel}>Total Expenses</Text>
-              <Text style={[pdfStyles.statValue, pdfStyles.negative]}>{fmt(summary.totalExpenses)}</Text>
-            </View>
-            <View style={{ ...pdfStyles.statBox, marginRight: 0 }}>
-              <Text style={pdfStyles.statLabel}>Net Revenue</Text>
-              <Text style={[pdfStyles.statValue, summary.netRevenue >= 0 ? pdfStyles.positive : pdfStyles.negative]}>
-                {fmt(summary.netRevenue)}
-              </Text>
-            </View>
+            {[
+              { label: "Total Income",   val: fmt(summary.totalIncome) },
+              { label: "Total Expenses", val: fmt(summary.totalExpenses) },
+              { label: "Net Revenue",    val: fmt(summary.netRevenue) },
+            ].map((s) => (
+              <View key={s.label} style={pdfStyles.statBox}>
+                <Text style={pdfStyles.statLabel}>{s.label}</Text>
+                <Text style={pdfStyles.statValue}>{s.val}</Text>
+              </View>
+            ))}
           </View>
-          <View style={{ ...pdfStyles.row, marginTop: 8 }}>
-            <View style={pdfStyles.statBox}>
-              <Text style={pdfStyles.statLabel}>Transactions</Text>
-              <Text style={pdfStyles.statValue}>{summary.transactionCount}</Text>
-            </View>
-            <View style={pdfStyles.statBox}>
-              <Text style={pdfStyles.statLabel}>Shifts Logged</Text>
-              <Text style={pdfStyles.statValue}>{summary.totalShiftsLogged}</Text>
-            </View>
-            <View style={{ ...pdfStyles.statBox, marginRight: 0 }}>
-              <Text style={pdfStyles.statLabel}>Hours Worked</Text>
-              <Text style={pdfStyles.statValue}>{summary.totalHoursWorked.toFixed(1)}h</Text>
-            </View>
+          <View style={{ ...pdfStyles.row, marginTop: 4 }}>
+            {[
+              { label: "Transactions",  val: String(summary.transactionCount) },
+              { label: "Shifts Logged", val: String(summary.totalShiftsLogged) },
+              { label: "Hours Worked",  val: `${summary.totalHoursWorked.toFixed(1)}h` },
+            ].map((s) => (
+              <View key={s.label} style={pdfStyles.statBox}>
+                <Text style={pdfStyles.statLabel}>{s.label}</Text>
+                <Text style={pdfStyles.statValue}>{s.val}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {/* Monthly Trend */}
         {trend.length > 0 && (
           <View style={pdfStyles.section}>
             <Text style={pdfStyles.sectionTitle}>Monthly Revenue vs Expenses</Text>
             <View style={pdfStyles.tableHeader}>
-              <Text style={pdfStyles.tableCell}>Month</Text>
+              <Text style={pdfStyles.tableCellBold}>Month</Text>
               <Text style={pdfStyles.tableCellRight}>Income</Text>
               <Text style={pdfStyles.tableCellRight}>Expenses</Text>
-              <Text style={pdfStyles.tableCellRight}>Net</Text>
+              <Text style={pdfStyles.tableCellRightBold}>Net</Text>
             </View>
             {trend.map((row) => (
               <View key={row.month} style={pdfStyles.tableRow}>
                 <Text style={pdfStyles.tableCell}>{row.month}</Text>
-                <Text style={[pdfStyles.tableCellRight, pdfStyles.positive]}>{fmt(row.income)}</Text>
-                <Text style={[pdfStyles.tableCellRight, pdfStyles.negative]}>{fmt(row.expenses)}</Text>
-                <Text style={[pdfStyles.tableCellRight, (row.income - row.expenses) >= 0 ? pdfStyles.positive : pdfStyles.negative]}>
-                  {fmt(row.income - row.expenses)}
-                </Text>
+                <Text style={pdfStyles.tableCellRight}>{fmt(row.income)}</Text>
+                <Text style={pdfStyles.tableCellRight}>{fmt(row.expenses)}</Text>
+                <Text style={pdfStyles.tableCellRightBold}>{fmt(row.income - row.expenses)}</Text>
               </View>
             ))}
           </View>
         )}
 
-        {/* Expenses by Category */}
         {categories.length > 0 && (
           <View style={pdfStyles.section}>
             <Text style={pdfStyles.sectionTitle}>Expenses by Category</Text>
             <View style={pdfStyles.tableHeader}>
-              <Text style={pdfStyles.tableCell}>Category</Text>
+              <Text style={pdfStyles.tableCellBold}>Category</Text>
               <Text style={pdfStyles.tableCellRight}>Total</Text>
               <Text style={pdfStyles.tableCellRight}>% of Expenses</Text>
             </View>
@@ -175,65 +166,93 @@ function ReportPDF({
   );
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// ─── Shared primitives ────────────────────────────────────────────────────────
 
-function StatCard({
-  label,
-  value,
-  icon,
-  color = "text-foreground",
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  color?: string;
-}) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border p-4 flex items-start gap-3">
-      <div className="rounded-md bg-primary/10 p-2 text-primary">{icon}</div>
-      <div>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className={`text-xl font-bold ${color}`}>{value}</p>
-      </div>
+    <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground mb-4">
+      {children}
+    </p>
+  );
+}
+
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
+      <p className="font-semibold mb-1.5">{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} className="flex items-center gap-2 text-muted-foreground">
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: p.fill ?? p.stroke }} />
+          {p.name}:&nbsp;
+          <span className="font-semibold text-foreground">
+            {typeof p.value === "number" && p.name?.toLowerCase().includes("hour")
+              ? `${p.value}h`
+              : fmt(p.value)}
+          </span>
+        </p>
+      ))}
     </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── KPI stat cards ───────────────────────────────────────────────────────────
+
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-2">
+      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">{label}</p>
+      <p className="text-[26px] font-bold tracking-tight leading-none font-display">{value}</p>
+      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+// ─── Date range presets ───────────────────────────────────────────────────────
+
+const PRESETS = [
+  { label: "This month",    months: 0 },
+  { label: "Last 3 months", months: 2 },
+  { label: "Last 6 months", months: 5 },
+];
+
+// ─── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_FROM = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
-const DEFAULT_TO = format(endOfMonth(new Date()), "yyyy-MM-dd");
+const DEFAULT_TO   = format(endOfMonth(new Date()), "yyyy-MM-dd");
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
   const { activeSiteId, activeSite } = useSite();
   const [dateFrom, setDateFrom] = useState(DEFAULT_FROM);
-  const [dateTo, setDateTo] = useState(DEFAULT_TO);
+  const [dateTo,   setDateTo]   = useState(DEFAULT_TO);
   const [isExporting, setIsExporting] = useState(false);
 
-  const queryOpts = { enabled: !!activeSiteId && !!dateFrom && !!dateTo };
+  const opts = { enabled: !!activeSiteId && !!dateFrom && !!dateTo };
 
   const { data: summary } = useQuery({
     queryKey: ["report-summary", activeSiteId, dateFrom, dateTo],
     queryFn: () => getReportSummary(activeSiteId!, dateFrom, dateTo),
-    ...queryOpts,
+    ...opts,
   });
 
   const { data: trend = [], isLoading: loadingTrend } = useQuery({
     queryKey: ["report-trend", activeSiteId, dateFrom, dateTo],
     queryFn: () => getMonthlyTrend(activeSiteId!, dateFrom, dateTo),
-    ...queryOpts,
+    ...opts,
   });
 
   const { data: categories = [], isLoading: loadingCats } = useQuery({
     queryKey: ["report-categories", activeSiteId, dateFrom, dateTo],
     queryFn: () => getExpensesByCategory(activeSiteId!, dateFrom, dateTo),
-    ...queryOpts,
+    ...opts,
   });
 
   const { data: production = [], isLoading: loadingProd } = useQuery({
     queryKey: ["report-production", activeSiteId, dateFrom, dateTo],
     queryFn: () => getProductionByDay(activeSiteId!, dateFrom, dateTo),
-    ...queryOpts,
+    ...opts,
   });
 
   async function handleExportPDF() {
@@ -251,8 +270,8 @@ export default function ReportsPage() {
         />
       ).toBlob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
+      const a   = document.createElement("a");
+      a.href     = url;
       a.download = `report-${dateFrom}-${dateTo}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
@@ -261,188 +280,328 @@ export default function ReportsPage() {
     }
   }
 
-  const productionChartData = production.map((p) => ({
-    date: format(new Date(p.date), "MMM d"),
-    hours: p.totalHours,
-    output: p.totalOutput,
+  const trendChartData = trend.map((t) => ({
+    month:    t.month.slice(5),
+    Income:   t.income,
+    Expenses: t.expenses,
   }));
 
+  const prodChartData = production.map((p) => ({
+    date:  format(new Date(p.date), "d MMM"),
+    Hours: p.totalHours,
+  }));
+
+  const maxCat = Math.max(...categories.map((c) => c.total), 1);
+
   return (
-    <div className="p-4 lg:p-6 space-y-6">
-      {/* Header */}
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1400px]">
+
+      {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold">Reports & Analytics</h1>
-        <Button size="sm" onClick={handleExportPDF} disabled={isExporting || !summary}>
-          <FileText className="h-4 w-4 mr-1.5" />
+        <h1 className="font-display text-2xl font-bold tracking-tight">Reports & Analytics</h1>
+        <button
+          onClick={handleExportPDF}
+          disabled={isExporting || !summary}
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Download className="h-3.5 w-3.5" />
           {isExporting ? "Generating PDF…" : "Export PDF"}
-        </Button>
+        </button>
       </div>
 
-      {/* Date range */}
-      <div className="flex flex-wrap items-end gap-4 rounded-lg border border-border p-4">
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">From</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40 h-8" />
+      {/* ── Date range ────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-38 h-8 text-xs"
+          />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">To</Label>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40 h-8" />
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-38 h-8 text-xs"
+          />
         </div>
-        <div className="flex gap-2">
-          {[
-            { label: "This month", from: format(startOfMonth(new Date()), "yyyy-MM-dd"), to: format(endOfMonth(new Date()), "yyyy-MM-dd") },
-            { label: "Last 3 months", from: format(startOfMonth(subMonths(new Date(), 2)), "yyyy-MM-dd"), to: format(endOfMonth(new Date()), "yyyy-MM-dd") },
-            { label: "Last 6 months", from: format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd"), to: format(endOfMonth(new Date()), "yyyy-MM-dd") },
-          ].map((preset) => (
-            <Button
-              key={preset.label}
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => { setDateFrom(preset.from); setDateTo(preset.to); }}
-            >
-              {preset.label}
-            </Button>
-          ))}
+        <div className="flex flex-wrap gap-2 pb-0.5">
+          {PRESETS.map((p) => {
+            const from = format(startOfMonth(subMonths(new Date(), p.months)), "yyyy-MM-dd");
+            const to   = format(endOfMonth(new Date()), "yyyy-MM-dd");
+            const active = dateFrom === from && dateTo === to;
+            return (
+              <button
+                key={p.label}
+                onClick={() => { setDateFrom(from); setDateTo(to); }}
+                className={`h-8 rounded-lg border px-3 text-xs font-medium transition-colors ${
+                  active
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-transparent text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Summary KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard label="Total Income" value={fmt(summary?.totalIncome ?? 0)} icon={<DollarSign className="h-4 w-4" />} color="text-emerald-600" />
-        <StatCard label="Total Expenses" value={fmt(summary?.totalExpenses ?? 0)} icon={<DollarSign className="h-4 w-4" />} color="text-red-600" />
+      {/* ── KPI cards ─────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard
+          label="Total Income"
+          value={fmtShort(summary?.totalIncome ?? 0)}
+          sub={fmt(summary?.totalIncome ?? 0)}
+        />
+        <StatCard
+          label="Total Expenses"
+          value={fmtShort(summary?.totalExpenses ?? 0)}
+          sub={fmt(summary?.totalExpenses ?? 0)}
+        />
         <StatCard
           label="Net Revenue"
-          value={fmt(summary?.netRevenue ?? 0)}
-          icon={<TrendingUp className="h-4 w-4" />}
-          color={(summary?.netRevenue ?? 0) >= 0 ? "text-emerald-600" : "text-red-600"}
+          value={fmtShort(summary?.netRevenue ?? 0)}
+          sub={(summary?.netRevenue ?? 0) >= 0 ? "Positive cashflow" : "Net loss"}
         />
-        <StatCard label="Transactions" value={String(summary?.transactionCount ?? 0)} icon={<FileText className="h-4 w-4" />} />
-        <StatCard label="Shifts Logged" value={String(summary?.totalShiftsLogged ?? 0)} icon={<Clock className="h-4 w-4" />} />
-        <StatCard label="Hours Worked" value={`${(summary?.totalHoursWorked ?? 0).toFixed(0)}h`} icon={<Clock className="h-4 w-4" />} />
+        <StatCard
+          label="Transactions"
+          value={String(summary?.transactionCount ?? 0)}
+        />
+        <StatCard
+          label="Shifts Logged"
+          value={String(summary?.totalShiftsLogged ?? 0)}
+        />
+        <StatCard
+          label="Hours Worked"
+          value={`${(summary?.totalHoursWorked ?? 0).toFixed(0)}h`}
+        />
       </div>
 
-      {/* Revenue vs Expenses trend */}
-      <div className="rounded-lg border border-border p-4">
-        <p className="text-sm font-medium mb-4">Revenue vs Expenses by Month</p>
+      {/* ── Revenue vs Expenses ───────────────────────────────────────────── */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <SectionLabel>Revenue vs Expenses — Monthly</SectionLabel>
         {loadingTrend ? (
-          <div className="h-56 animate-pulse bg-muted rounded" />
-        ) : trend.length === 0 ? (
-          <div className="h-56 flex items-center justify-center text-muted-foreground text-sm">No data for this period.</div>
+          <div className="h-56 animate-pulse bg-muted rounded-lg" />
+        ) : trendChartData.length === 0 ? (
+          <div className="h-56 flex items-center justify-center text-sm text-muted-foreground">
+            No data for this period.
+          </div>
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={trend} margin={{ left: -10, right: 10 }}>
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                cursor={{ fill: "hsl(var(--muted))" }}
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                formatter={(v: number, name: string) => [fmt(v), name === "income" ? "Income" : "Expenses"]}
-              />
-              <Legend formatter={(v) => v === "income" ? "Income" : "Expenses"} />
-              <Bar dataKey="income" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height={230}>
+              <BarChart data={trendChartData} barGap={3} barCategoryGap="32%">
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tickFormatter={(v) => `$${v / 1000}k`}
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={44}
+                />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
+                <Bar dataKey="Income"   name="Income"   fill="hsl(var(--foreground))"                  radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Expenses" name="Expenses" fill="hsl(var(--muted-foreground))" opacity={0.35} radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-5 mt-3 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-foreground" /> Income
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground opacity-60" /> Expenses
+              </span>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Expenses by category + Production */}
+      {/* ── Category breakdown + Production hours ─────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Expenses by category */}
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-medium mb-4">Expenses by Category</p>
+
+        {/* Expense breakdown */}
+        <div className="rounded-xl border border-border bg-card p-5">
+          <SectionLabel>Expenses by Category</SectionLabel>
           {loadingCats ? (
-            <div className="h-48 animate-pulse bg-muted rounded" />
+            <div className="h-48 animate-pulse bg-muted rounded-lg" />
           ) : categories.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No expense data.</div>
+            <div className="h-48 flex items-center justify-center text-sm text-muted-foreground">
+              No expense data.
+            </div>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-full sm:w-44 shrink-0">
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie
-                    data={categories}
-                    dataKey="total"
-                    nameKey="category"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                  >
-                    {categories.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: number) => [fmt(v), "Total"]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              </div>
-              <div className="flex-1 space-y-1.5 min-w-0">
-                {categories.slice(0, 6).map((c, i) => (
-                  <div key={c.category} className="flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full shrink-0"
-                        style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
-                      />
-                      <span className="truncate">{c.category}</span>
+            <div className="space-y-3">
+              {categories.slice(0, 7).map((c) => {
+                const pct = Math.round((c.total / maxCat) * 100);
+                const sharePct = summary && summary.totalExpenses > 0
+                  ? ((c.total / summary.totalExpenses) * 100).toFixed(0)
+                  : "0";
+                return (
+                  <div key={c.category} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground truncate mr-2">{c.category}</span>
+                      <span className="tabular-nums font-semibold text-foreground shrink-0">
+                        {fmtShort(c.total)}
+                        <span className="text-muted-foreground font-normal ml-1.5">{sharePct}%</span>
+                      </span>
                     </div>
-                    <span className="font-medium tabular-nums shrink-0">{fmt(c.total)}</span>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-foreground/70 transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Production hours trend */}
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-sm font-medium mb-4">Daily Hours Worked</p>
+        {/* Daily hours worked */}
+        <div className="rounded-xl border border-border bg-card p-5">
+          <SectionLabel>Daily Hours Worked</SectionLabel>
           {loadingProd ? (
-            <div className="h-48 animate-pulse bg-muted rounded" />
-          ) : productionChartData.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No shift records for this period.</div>
+            <div className="h-48 animate-pulse bg-muted rounded-lg" />
+          ) : prodChartData.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-sm text-muted-foreground">
+              No shift records for this period.
+            </div>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={productionChartData} margin={{ left: -20, right: 10 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                  formatter={(v: number) => [`${v}h`, "Hours"]}
+            <ResponsiveContainer width="100%" height={190}>
+              <LineChart data={prodChartData} margin={{ left: -20, right: 8 }}>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
                 />
-                <Line type="monotone" dataKey="hours" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}h`}
+                />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: "hsl(var(--border))" }} />
+                <Line
+                  type="monotone"
+                  dataKey="Hours"
+                  name="Hours"
+                  stroke="hsl(var(--foreground))"
+                  strokeWidth={1.5}
+                  dot={{ r: 2.5, fill: "hsl(var(--foreground))", strokeWidth: 0 }}
+                  activeDot={{ r: 4, fill: "hsl(var(--foreground))", strokeWidth: 0 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* Expense category table */}
+      {/* ── Expense category table ─────────────────────────────────────────── */}
       {categories.length > 0 && (
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Category</th>
-                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Total Spent</th>
-                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">% of Expenses</th>
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+              Expense Category Breakdown
+            </p>
+          </div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  Category
+                </th>
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  Total Spent
+                </th>
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">
+                  % of Expenses
+                </th>
+                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">
+                  Share
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border">
               {categories.map((c) => {
                 const pct = summary && summary.totalExpenses > 0
-                  ? ((c.total / summary.totalExpenses) * 100).toFixed(1)
-                  : "0.0";
+                  ? (c.total / summary.totalExpenses) * 100
+                  : 0;
                 return (
-                  <tr key={c.category} className="border-t border-border">
-                    <td className="px-4 py-2.5">{c.category}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-red-600">{fmt(c.total)}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{pct}%</td>
+                  <tr key={c.category} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-3 font-medium text-foreground">{c.category}</td>
+                    <td className="px-3 py-3 text-right tabular-nums font-semibold">{fmt(c.total)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground hidden sm:table-cell">
+                      {pct.toFixed(1)}%
+                    </td>
+                    <td className="px-5 py-3 hidden md:table-cell">
+                      <div className="flex items-center justify-end">
+                        <div className="w-24 h-1 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-foreground/60"
+                            style={{ width: `${Math.round(pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            {summary && (
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/20">
+                  <td className="px-5 py-3 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Total</td>
+                  <td className="px-3 py-3 text-right tabular-nums font-bold">{fmt(summary.totalExpenses)}</td>
+                  <td className="px-3 py-3 text-right text-muted-foreground hidden sm:table-cell">100%</td>
+                  <td className="px-5 py-3 hidden md:table-cell" />
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      )}
+
+      {/* ── Net revenue table ─────────────────────────────────────────────── */}
+      {trend.length > 0 && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+              Monthly Financials
+            </p>
+          </div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Month</th>
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Income</th>
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Expenses</th>
+                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Net</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {trend.map((row) => {
+                const net = row.income - row.expenses;
+                return (
+                  <tr key={row.month} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-3 font-medium text-foreground">{row.month}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{fmt(row.income)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{fmt(row.expenses)}</td>
+                    <td className={`px-5 py-3 text-right tabular-nums font-semibold ${net >= 0 ? "text-foreground" : "text-muted-foreground"}`}>
+                      {net >= 0 ? "+" : "−"}{fmt(Math.abs(net))}
+                    </td>
                   </tr>
                 );
               })}

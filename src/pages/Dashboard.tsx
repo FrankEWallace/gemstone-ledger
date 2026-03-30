@@ -1,171 +1,397 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
-  Package,
-  ArrowLeftRight,
-  Wrench,
-  ShieldAlert,
-  FolderOpen,
-  CalendarDays,
-  TrendingUp,
-  TrendingDown,
+  ChevronRight,
   AlertTriangle,
   CheckCircle2,
-  ChevronRight,
-  DollarSign,
-  Users,
-  Target,
+  Download,
+  CalendarDays,
+  TrendingUp,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { format, startOfWeek, endOfWeek, isPast, parseISO, startOfMonth, endOfMonth } from "date-fns";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
-import { supabase } from "@/lib/supabase";
+import { isDemoMode } from "@/lib/demo";
 import { getInventoryItems } from "@/services/inventory.service";
 import { getTransactions } from "@/services/transactions.service";
 import { getEquipment } from "@/services/equipment.service";
 import { getSafetyIncidents } from "@/services/safety.service";
 import { getPlannedShifts } from "@/services/schedule.service";
-import { getSiteDocuments } from "@/services/documents.service";
 import { getWorkers } from "@/services/team.service";
 import { getKpiTargets } from "@/services/kpi.service";
+import { getMonthlyTrend, getExpensesByCategory } from "@/services/reports.service";
+import { supabase } from "@/lib/supabase";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Formatters ──────────────────────────────────────────────────────────────
 
-function fmt(n: number) {
+function fmtCurrency(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
+  return `$${n.toLocaleString()}`;
+}
+function fmtFull(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-// ─── Widget shells ────────────────────────────────────────────────────────────
+// ─── Mini sparkbar ────────────────────────────────────────────────────────────
 
-function Widget({
-  title,
-  href,
-  children,
-  className = "",
-}: {
-  title: string;
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+function SparkBars({ values }: { values: number[] }) {
+  const max = Math.max(...values, 1);
   return (
-    <div className={`rounded-xl border border-border bg-card flex flex-col ${className}`}>
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <p className="text-sm font-semibold">{title}</p>
-        <Link to={href} className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-primary transition-colors">
-          View all <ChevronRight className="h-3 w-3" />
-        </Link>
-      </div>
-      <div className="flex-1 px-4 pb-4">{children}</div>
+    <div className="flex items-end gap-[2px] h-8 opacity-60">
+      {values.map((v, i) => (
+        <div
+          key={i}
+          className="w-[5px] rounded-[2px] bg-foreground"
+          style={{ height: `${Math.max(12, (v / max) * 100)}%` }}
+        />
+      ))}
     </div>
   );
 }
 
-function StatPill({
+// ─── KPI card ─────────────────────────────────────────────────────────────────
+
+function KpiCard({
   label,
   value,
-  icon,
-  trend,
-  trendLabel,
+  sub,
+  sparkValues,
   href,
 }: {
   label: string;
   value: string;
-  icon: React.ReactNode;
-  trend?: "up" | "down" | "neutral";
-  trendLabel?: string;
+  sub?: string;
+  sparkValues?: number[];
   href: string;
 }) {
   return (
-    <Link to={href} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3 hover:border-primary/40 transition-colors">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <span className="rounded-lg bg-muted p-2">{icon}</span>
+    <Link
+      to={href}
+      className="group rounded-xl border border-border bg-card p-5 flex flex-col gap-3 hover:border-foreground/30 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+          {label}
+        </p>
+        {sparkValues && <SparkBars values={sparkValues} />}
       </div>
-      <p className="text-2xl font-bold font-display">{value}</p>
-      {trendLabel && (
-        <p className={`text-xs flex items-center gap-1 ${trend === "up" ? "text-emerald-600" : trend === "down" ? "text-red-500" : "text-muted-foreground"}`}>
-          {trend === "up" && <TrendingUp className="h-3 w-3" />}
-          {trend === "down" && <TrendingDown className="h-3 w-3" />}
-          {trendLabel}
+      <p className="text-[28px] font-bold tracking-tight leading-none font-display">{value}</p>
+      {sub && (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <TrendingUp className="h-3 w-3" />
+          {sub}
         </p>
       )}
     </Link>
   );
 }
 
-// ─── Equipment donut ──────────────────────────────────────────────────────────
+// ─── Section header ───────────────────────────────────────────────────────────
 
-const EQUIP_COLORS = { operational: "#22c55e", maintenance: "#eab308", retired: "#94a3b8" };
+function SectionHeader({ title, href }: { title: string; href?: string }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+        {title}
+      </p>
+      {href && (
+        <Link
+          to={href}
+          className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          View all <ChevronRight className="h-3 w-3" />
+        </Link>
+      )}
+    </div>
+  );
+}
 
-function EquipmentWidget({ siteId }: { siteId: string }) {
+// ─── Custom Tooltip ───────────────────────────────────────────────────────────
+
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
+      <p className="font-semibold mb-1">{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} className="flex items-center gap-2 text-muted-foreground">
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ background: p.fill }}
+          />
+          {p.name}: <span className="font-semibold text-foreground">{fmtFull(p.value)}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// ─── Revenue Trend Chart ──────────────────────────────────────────────────────
+
+function RevenueTrendChart({ siteId }: { siteId: string }) {
+  const today = new Date();
+  const dateFrom = format(new Date(today.getFullYear(), today.getMonth() - 5, 1), "yyyy-MM-dd");
+  const dateTo   = format(today, "yyyy-MM-dd");
+
+  const { data: trend = [], isLoading } = useQuery({
+    queryKey: ["monthly-trend", siteId, dateFrom, dateTo],
+    queryFn: () => getMonthlyTrend(siteId, dateFrom, dateTo),
+  });
+
+  const chartData = trend.map((t) => ({
+    month: t.month.slice(5),
+    Income: t.income,
+    Expenses: t.expenses,
+  }));
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <SectionHeader title="Revenue Trend" href="/reports" />
+      {isLoading ? (
+        <div className="h-52 animate-pulse bg-muted rounded-lg" />
+      ) : (
+        <ResponsiveContainer width="100%" height={210}>
+          <BarChart data={chartData} barGap={3} barCategoryGap="30%">
+            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tickFormatter={(v) => `$${v / 1000}k`}
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              axisLine={false}
+              tickLine={false}
+              width={42}
+            />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
+            <Bar dataKey="Income" fill="hsl(var(--foreground))" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="Expenses" fill="hsl(var(--muted-foreground))" opacity={0.35} radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+      <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-foreground" /> Income
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-muted-foreground opacity-60" /> Expenses
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Expense Breakdown ────────────────────────────────────────────────────────
+
+function ExpenseBreakdown({ siteId }: { siteId: string }) {
+  const today = new Date();
+  const dateFrom = format(new Date(today.getFullYear(), today.getMonth() - 5, 1), "yyyy-MM-dd");
+  const dateTo   = format(today, "yyyy-MM-dd");
+
+  const { data: cats = [], isLoading } = useQuery({
+    queryKey: ["expenses-by-category", siteId, dateFrom, dateTo],
+    queryFn: () => getExpensesByCategory(siteId, dateFrom, dateTo),
+  });
+
+  const top = cats.slice(0, 5);
+  const maxVal = Math.max(...top.map((c) => c.total), 1);
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <SectionHeader title="Expense Breakdown" href="/reports" />
+      {isLoading ? (
+        <div className="h-52 animate-pulse bg-muted rounded-lg" />
+      ) : top.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-4">No expense data.</p>
+      ) : (
+        <div className="space-y-3 mt-1">
+          {top.map((cat) => {
+            const pct = Math.round((cat.total / maxVal) * 100);
+            return (
+              <div key={cat.category} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground truncate">{cat.category}</span>
+                  <span className="tabular-nums font-medium text-foreground ml-2">
+                    {fmtCurrency(cat.total)}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-foreground/70 transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Recent Transactions ──────────────────────────────────────────────────────
+
+function RecentTransactions({ siteId }: { siteId: string }) {
+  const { data: txs = [], isLoading } = useQuery({
+    queryKey: ["transactions", siteId, "all", "all", "all"],
+    queryFn: () => getTransactions(siteId),
+  });
+
+  const recent = txs.slice(0, 6);
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+          Recent Transactions
+        </p>
+        <Link
+          to="/transactions"
+          className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          View all <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+      {isLoading ? (
+        <div className="p-5 space-y-3">
+          {[1, 2, 3].map((i) => <div key={i} className="h-8 animate-pulse bg-muted rounded" />)}
+        </div>
+      ) : (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Description</th>
+              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Category</th>
+              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Status</th>
+              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Date</th>
+              <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {recent.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                  No transactions yet.
+                </td>
+              </tr>
+            ) : (
+              recent.map((t) => {
+                const total = t.quantity * t.unit_price;
+                const isIncome = t.type === "income";
+                return (
+                  <tr key={t.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-3">
+                      <span className="font-medium text-foreground truncate block max-w-[200px]">
+                        {t.description || "—"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground hidden md:table-cell">
+                      {t.category || "—"}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          t.status === "success"
+                            ? "bg-foreground/8 text-foreground"
+                            : t.status === "pending"
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-muted text-muted-foreground line-through"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            t.status === "success"
+                              ? "bg-emerald-500"
+                              : t.status === "pending"
+                              ? "bg-yellow-500"
+                              : "bg-muted-foreground"
+                          }`}
+                        />
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
+                      {format(new Date(t.transaction_date), "d MMM")}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums font-semibold">
+                      <span className={isIncome ? "text-foreground" : "text-muted-foreground"}>
+                        {isIncome ? "+" : "−"}{fmtFull(total)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+// ─── Operations summary row ───────────────────────────────────────────────────
+
+function EquipmentCard({ siteId }: { siteId: string }) {
   const { data: equipment = [], isLoading } = useQuery({
     queryKey: ["equipment", siteId],
     queryFn: () => getEquipment(siteId),
   });
 
-  const counts = {
-    operational: equipment.filter((e) => e.status === "operational").length,
-    maintenance: equipment.filter((e) => e.status === "maintenance").length,
-    retired:     equipment.filter((e) => e.status === "retired").length,
-  };
-
-  const overdueService = equipment.filter(
+  const operational = equipment.filter((e) => e.status === "operational").length;
+  const maintenance = equipment.filter((e) => e.status === "maintenance").length;
+  const overdue = equipment.filter(
     (e) => e.next_service_date && isPast(parseISO(e.next_service_date)) && e.status !== "retired"
   ).length;
 
-  const pieData = Object.entries(counts)
-    .filter(([, v]) => v > 0)
-    .map(([name, value]) => ({ name, value }));
-
   return (
-    <Widget title="Equipment" href="/equipment">
+    <div className="rounded-xl border border-border bg-card p-5">
+      <SectionHeader title="Equipment" href="/equipment" />
       {isLoading ? (
-        <div className="h-32 animate-pulse bg-muted rounded" />
-      ) : equipment.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4">No equipment added yet.</p>
+        <div className="h-20 animate-pulse bg-muted rounded-lg" />
       ) : (
-        <div className="flex items-center gap-4">
-          <ResponsiveContainer width={100} height={100}>
-            <PieChart>
-              <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={28} outerRadius={46}>
-                {pieData.map((entry) => (
-                  <Cell key={entry.name} fill={EQUIP_COLORS[entry.name as keyof typeof EQUIP_COLORS]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }}
-                formatter={(v: number, name: string) => [v, name]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-1.5 flex-1">
-            {Object.entries(counts).map(([status, count]) => (
-              <div key={status} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 capitalize text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full" style={{ background: EQUIP_COLORS[status as keyof typeof EQUIP_COLORS] }} />
-                  {status}
-                </span>
-                <span className="font-medium">{count}</span>
-              </div>
-            ))}
-            {overdueService > 0 && (
-              <p className="text-xs text-destructive flex items-center gap-1 pt-1">
-                <AlertTriangle className="h-3 w-3" />
-                {overdueService} overdue for service
-              </p>
-            )}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xl font-bold font-display">{operational}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Operational</p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xl font-bold font-display">{maintenance}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">In Service</p>
+            </div>
           </div>
+          {overdue > 0 ? (
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
+              {overdue} unit{overdue > 1 ? "s" : ""} overdue for service
+            </p>
+          ) : (
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <CheckCircle2 className="h-3 w-3 shrink-0" />
+              All service schedules current
+            </p>
+          )}
         </div>
       )}
-    </Widget>
+    </div>
   );
 }
 
-// ─── Safety widget ────────────────────────────────────────────────────────────
-
-function SafetyWidget({ siteId }: { siteId: string }) {
+function SafetyCard({ siteId }: { siteId: string }) {
   const { data: incidents = [], isLoading } = useQuery({
     queryKey: ["safety-incidents", siteId],
     queryFn: () => getSafetyIncidents(siteId),
@@ -175,46 +401,48 @@ function SafetyWidget({ siteId }: { siteId: string }) {
   const critical = open.filter((i) => i.severity === "critical");
 
   return (
-    <Widget title="Safety Incidents" href="/safety">
+    <div className="rounded-xl border border-border bg-card p-5">
+      <SectionHeader title="Safety" href="/safety" />
       {isLoading ? (
-        <div className="h-24 animate-pulse bg-muted rounded" />
+        <div className="h-20 animate-pulse bg-muted rounded-lg" />
       ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-muted/40 p-3 text-center">
-              <p className={`text-2xl font-bold font-display ${open.length > 0 ? "text-orange-500" : "text-emerald-500"}`}>{open.length}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Open</p>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className={`text-xl font-bold font-display ${open.length > 0 ? "text-foreground" : ""}`}>
+                {open.length}
+              </p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Open</p>
             </div>
-            <div className="rounded-lg bg-muted/40 p-3 text-center">
-              <p className={`text-2xl font-bold font-display ${critical.length > 0 ? "text-red-600" : ""}`}>{critical.length}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Critical</p>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xl font-bold font-display">{critical.length}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Critical</p>
             </div>
           </div>
           {open.length === 0 ? (
-            <p className="text-xs text-emerald-600 flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> All incidents resolved
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <CheckCircle2 className="h-3 w-3 shrink-0" />
+              All incidents resolved
             </p>
           ) : (
             <div className="space-y-1">
               {open.slice(0, 2).map((i) => (
-                <div key={i.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <p key={i.id} className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
                   <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    i.severity === "critical" ? "bg-red-500" : i.severity === "high" ? "bg-orange-500" : "bg-yellow-500"
+                    i.severity === "critical" ? "bg-red-500" : "bg-yellow-500"
                   }`} />
-                  <span className="truncate">{i.title}</span>
-                </div>
+                  {i.title}
+                </p>
               ))}
             </div>
           )}
         </div>
       )}
-    </Widget>
+    </div>
   );
 }
 
-// ─── Shifts this week ─────────────────────────────────────────────────────────
-
-function ShiftsWidget({ siteId }: { siteId: string }) {
+function ShiftsCard({ siteId }: { siteId: string }) {
   const today = new Date();
   const from = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
   const to   = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -230,40 +458,44 @@ function ShiftsWidget({ siteId }: { siteId: string }) {
   });
 
   const workerMap = Object.fromEntries(workers.map((w) => [w.id, w.full_name]));
-  const todayStr = format(today, "yyyy-MM-dd");
+  const todayStr   = format(today, "yyyy-MM-dd");
   const todayShifts = shifts.filter((s) => s.shift_date === todayStr);
 
   return (
-    <Widget title="Shifts This Week" href="/team/schedule">
+    <div className="rounded-xl border border-border bg-card p-5">
+      <SectionHeader title="Shifts This Week" href="/team/schedule" />
       {isLoading ? (
-        <div className="h-24 animate-pulse bg-muted rounded" />
+        <div className="h-20 animate-pulse bg-muted rounded-lg" />
       ) : (
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-1">
-            <span><span className="font-semibold text-foreground text-sm">{shifts.length}</span> planned</span>
-            <span>·</span>
-            <span><span className="font-semibold text-foreground text-sm">{todayShifts.length}</span> today</span>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xl font-bold font-display">{shifts.length}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Planned</p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-xl font-bold font-display">{todayShifts.length}</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Today</p>
+            </div>
           </div>
           {todayShifts.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No shifts scheduled for today.</p>
+            <p className="text-[11px] text-muted-foreground">No shifts scheduled for today.</p>
           ) : (
-            todayShifts.slice(0, 3).map((s) => (
-              <div key={s.id} className="flex items-center gap-2 text-xs">
-                <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="flex-1 truncate font-medium">{workerMap[s.worker_id] ?? "?"}</span>
-                <span className="text-muted-foreground tabular-nums">{s.start_time.slice(0,5)}–{s.end_time.slice(0,5)}</span>
-              </div>
+            todayShifts.slice(0, 2).map((s) => (
+              <p key={s.id} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <CalendarDays className="h-3 w-3 shrink-0" />
+                <span className="truncate">{workerMap[s.worker_id] ?? "?"}</span>
+                <span className="ml-auto tabular-nums">{s.start_time.slice(0, 5)}</span>
+              </p>
             ))
           )}
         </div>
       )}
-    </Widget>
+    </div>
   );
 }
 
-// ─── Low stock ────────────────────────────────────────────────────────────────
-
-function LowStockWidget({ siteId }: { siteId: string }) {
+function LowStockCard({ siteId }: { siteId: string }) {
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory", siteId],
     queryFn: () => getInventoryItems(siteId),
@@ -274,136 +506,36 @@ function LowStockWidget({ siteId }: { siteId: string }) {
   );
 
   return (
-    <Widget title="Low Stock Alerts" href="/inventory">
+    <div className="rounded-xl border border-border bg-card p-5">
+      <SectionHeader title="Low Stock" href="/inventory" />
       {isLoading ? (
-        <div className="h-24 animate-pulse bg-muted rounded" />
+        <div className="h-20 animate-pulse bg-muted rounded-lg" />
       ) : lowStock.length === 0 ? (
-        <p className="text-xs text-emerald-600 flex items-center gap-1 py-2">
-          <CheckCircle2 className="h-3.5 w-3.5" /> All items above reorder level
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          <CheckCircle2 className="h-3 w-3 shrink-0" />
+          All items above reorder level
         </p>
       ) : (
-        <div className="space-y-1.5">
-          {lowStock.slice(0, 5).map((i) => (
-            <div key={i.id} className="flex items-center gap-2 text-xs">
-              <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
-              <span className="flex-1 truncate">{i.name}</span>
-              <span className="tabular-nums text-muted-foreground">{i.quantity} {i.unit ?? ""}</span>
+        <div className="space-y-2">
+          {lowStock.slice(0, 4).map((i) => (
+            <div key={i.id} className="flex items-center gap-2 text-[11px]">
+              <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
+              <span className="flex-1 truncate text-muted-foreground">{i.name}</span>
+              <span className="tabular-nums font-medium">
+                {i.quantity} <span className="text-muted-foreground">{i.unit ?? ""}</span>
+              </span>
             </div>
           ))}
-          {lowStock.length > 5 && (
-            <p className="text-xs text-muted-foreground">+{lowStock.length - 5} more items</p>
+          {lowStock.length > 4 && (
+            <p className="text-[11px] text-muted-foreground">+{lowStock.length - 4} more items</p>
           )}
         </div>
       )}
-    </Widget>
-  );
-}
-
-// ─── Recent Documents ─────────────────────────────────────────────────────────
-
-function DocumentsWidget({ siteId }: { siteId: string }) {
-  const { data: docs = [], isLoading } = useQuery({
-    queryKey: ["site-documents", siteId],
-    queryFn: () => getSiteDocuments(siteId),
-  });
-
-  return (
-    <Widget title="Recent Documents" href="/documents">
-      {isLoading ? (
-        <div className="h-24 animate-pulse bg-muted rounded" />
-      ) : docs.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-2">No documents uploaded yet.</p>
-      ) : (
-        <div className="space-y-1.5">
-          {docs.slice(0, 4).map((d) => (
-            <div key={d.id} className="flex items-center gap-2 text-xs">
-              <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="flex-1 truncate">{d.name}</span>
-              {d.category && <span className="text-muted-foreground">{d.category}</span>}
-            </div>
-          ))}
-        </div>
-      )}
-    </Widget>
-  );
-}
-
-// ─── Recent Transactions ──────────────────────────────────────────────────────
-
-function RecentTxWidget({ siteId }: { siteId: string }) {
-  const { data: txs = [], isLoading } = useQuery({
-    queryKey: ["transactions", siteId, "all", "all", "all"],
-    queryFn: () => getTransactions(siteId),
-  });
-
-  const recent = txs.slice(0, 5);
-
-  return (
-    <Widget title="Recent Transactions" href="/transactions" className="lg:col-span-2">
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1,2,3].map((i) => <div key={i} className="h-8 animate-pulse bg-muted rounded" />)}
-        </div>
-      ) : recent.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-2">No transactions yet.</p>
-      ) : (
-        <div className="divide-y divide-border">
-          {recent.map((t) => {
-            const total = t.quantity * t.unit_price;
-            const isIncome = t.type === "income";
-            return (
-              <div key={t.id} className="flex items-center gap-3 py-2 text-sm">
-                <div className={`rounded-full p-1.5 ${isIncome ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"}`}>
-                  {isIncome ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium text-xs">{t.description || "—"}</p>
-                  <p className="text-[10px] text-muted-foreground">{format(new Date(t.transaction_date), "MMM d, yyyy")}</p>
-                </div>
-                <span className={`tabular-nums text-xs font-semibold ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
-                  {isIncome ? "+" : "−"}{fmt(total)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </Widget>
-  );
-}
-
-// ─── KPI Scorecard ────────────────────────────────────────────────────────────
-
-function KpiBar({ label, actual, target, format: fmt2 = (v: number) => String(v) }: {
-  label: string;
-  actual: number;
-  target: number | null | undefined;
-  format?: (v: number) => string;
-}) {
-  if (target == null || target === 0) return null;
-  const pct = Math.min(100, Math.round((actual / target) * 100));
-  const good = pct >= 80;
-  const warn = pct >= 50 && pct < 80;
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="tabular-nums font-medium">
-          {fmt2(actual)} <span className="text-muted-foreground">/ {fmt2(target)}</span>
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${good ? "bg-emerald-500" : warn ? "bg-yellow-500" : "bg-red-500"}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <p className={`text-[10px] ${good ? "text-emerald-600" : warn ? "text-yellow-600" : "text-red-500"}`}>{pct}% of target</p>
     </div>
   );
 }
 
-function KpiScorecardWidget({ siteId }: { siteId: string }) {
+function KpiCard2({ siteId }: { siteId: string }) {
   const today = new Date();
   const monthKey = format(startOfMonth(today), "yyyy-MM-dd");
   const from = format(startOfMonth(today), "yyyy-MM-dd");
@@ -419,45 +551,45 @@ function KpiScorecardWidget({ siteId }: { siteId: string }) {
     queryFn: () => getTransactions(siteId),
   });
 
-  const { data: shifts = [] } = useQuery({
-    queryKey: ["planned-shifts", siteId, from, to],
-    queryFn: () => getPlannedShifts(siteId, from, to),
-  });
-
   const target = targets[0];
   const successTxs = txs.filter((t) => t.status === "success");
-  const monthRevenue  = successTxs
+  const monthRevenue = successTxs
     .filter((t) => t.type === "income" && t.transaction_date >= from && t.transaction_date <= to)
     .reduce((s, t) => s + t.quantity * t.unit_price, 0);
-  const monthExpenses = successTxs
-    .filter((t) => t.type === "expense" && t.transaction_date >= from && t.transaction_date <= to)
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
 
-  const hasTargets = target && (
-    target.revenue_target != null ||
-    target.expense_budget != null ||
-    target.shift_target != null
-  );
+  const hasTarget = target?.revenue_target != null && target.revenue_target > 0;
+  const pct = hasTarget ? Math.min(100, Math.round((monthRevenue / (target.revenue_target ?? 1)) * 100)) : null;
 
   return (
-    <Widget title="KPI Scorecard" href="/settings/targets" className="lg:col-span-1">
-      {!hasTargets ? (
-        <div className="py-4 text-center">
-          <Target className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-xs text-muted-foreground">No targets set for {format(today, "MMMM yyyy")}.</p>
-          <Link to="/settings/targets" className="text-xs text-primary hover:underline mt-1 inline-block">
+    <div className="rounded-xl border border-border bg-card p-5">
+      <SectionHeader title="KPI — This Month" href="/settings/targets" />
+      {!hasTarget ? (
+        <div className="space-y-2">
+          <p className="text-[11px] text-muted-foreground">No targets set for {format(today, "MMMM")}.</p>
+          <Link to="/settings/targets" className="text-[11px] underline underline-offset-2 text-foreground">
             Set targets →
           </Link>
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{format(today, "MMMM yyyy")}</p>
-          <KpiBar label="Revenue" actual={monthRevenue} target={target.revenue_target} format={fmt} />
-          <KpiBar label="Expenses" actual={monthExpenses} target={target.expense_budget} format={fmt} />
-          <KpiBar label="Shifts" actual={shifts.length} target={target.shift_target} />
+          <div>
+            <div className="flex items-center justify-between text-[11px] mb-1.5">
+              <span className="text-muted-foreground">Revenue target</span>
+              <span className="font-semibold tabular-nums">{pct}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-foreground transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {fmtFull(monthRevenue)} / {fmtFull(target.revenue_target!)}
+            </p>
+          </div>
         </div>
       )}
-    </Widget>
+    </div>
   );
 }
 
@@ -481,9 +613,11 @@ export default function Dashboard() {
     enabled: !!activeSiteId,
   });
 
-  const { data: unreadCount } = useQuery({
+  // Unread messages
+  const { data: unreadCount = 0 } = useQuery({
     queryKey: ["messages-unread", activeSiteId],
     queryFn: async () => {
+      if (isDemoMode()) return 4;
       const since = localStorage.getItem("messagesLastSeen") ?? new Date(0).toISOString();
       const { count } = await supabase
         .from("messages")
@@ -495,76 +629,104 @@ export default function Dashboard() {
     enabled: !!activeSiteId,
   });
 
-  const successTxs = txs.filter((t) => t.status === "success");
+  // Monthly trend for sparkbars
+  const today = new Date();
+  const trendFrom = format(new Date(today.getFullYear(), today.getMonth() - 5, 1), "yyyy-MM-dd");
+  const trendTo   = format(today, "yyyy-MM-dd");
+  const { data: trend = [] } = useQuery({
+    queryKey: ["monthly-trend", activeSiteId, trendFrom, trendTo],
+    queryFn: () => getMonthlyTrend(activeSiteId!, trendFrom, trendTo),
+    enabled: !!activeSiteId,
+  });
+
+  const successTxs    = txs.filter((t) => t.status === "success");
   const totalRevenue  = successTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.quantity * t.unit_price, 0);
   const totalExpenses = successTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const netRevenue    = totalRevenue - totalExpenses;
   const activeWorkers = workers.filter((w) => w.status === "active").length;
+
+  const incomeSpark   = trend.map((t) => t.income);
+  const expenseSpark  = trend.map((t) => t.expenses);
+  const netSpark      = trend.map((t) => Math.max(0, t.income - t.expenses));
 
   if (!activeSiteId) {
     return (
-      <div className="p-4 lg:p-6 flex items-center justify-center h-64 text-muted-foreground text-sm">
+      <div className="p-6 flex items-center justify-center h-64 text-muted-foreground text-sm">
         Select a site to view the dashboard.
       </div>
     );
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1400px]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Welcome back, {firstName}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">
+            Welcome back, {firstName}
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+            {today.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>
+        <Link
+          to="/reports"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-muted transition-colors"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Export Report
+        </Link>
       </div>
 
-
-      {/* Top KPI stat pills */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatPill
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
           label="Total Revenue"
-          value={fmt(totalRevenue)}
-          icon={<DollarSign className="h-4 w-4 text-emerald-500" />}
-          trend="up"
-          trendLabel="from confirmed transactions"
+          value={fmtCurrency(totalRevenue)}
+          sub="All confirmed income"
+          sparkValues={incomeSpark.length ? incomeSpark : [1, 2, 3, 4, 5, 6]}
           href="/transactions"
         />
-        <StatPill
+        <KpiCard
           label="Total Expenses"
-          value={fmt(totalExpenses)}
-          icon={<ArrowLeftRight className="h-4 w-4 text-red-500" />}
-          trend="neutral"
-          trendLabel="from confirmed transactions"
+          value={fmtCurrency(totalExpenses)}
+          sub="All confirmed expenses"
+          sparkValues={expenseSpark.length ? expenseSpark : [1, 2, 3, 4, 5, 6]}
           href="/transactions"
         />
-        <StatPill
+        <KpiCard
+          label="Net Revenue"
+          value={fmtCurrency(Math.abs(netRevenue))}
+          sub={netRevenue >= 0 ? "Positive cashflow" : "Net loss"}
+          sparkValues={netSpark.length ? netSpark : [1, 2, 3, 4, 5, 6]}
+          href="/reports"
+        />
+        <KpiCard
           label="Active Workers"
           value={String(activeWorkers)}
-          icon={<Users className="h-4 w-4 text-primary" />}
-          trendLabel={`${workers.length} total on roster`}
+          sub={`${workers.length} total on roster · ${unreadCount} unread msgs`}
           href="/team"
-        />
-        <StatPill
-          label="Unread Messages"
-          value={String(unreadCount ?? 0)}
-          icon={<Package className="h-4 w-4 text-muted-foreground" />}
-          trendLabel="across all channels"
-          href="/messages"
         />
       </div>
 
-      {/* Main widgets grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <EquipmentWidget siteId={activeSiteId} />
-        <SafetyWidget siteId={activeSiteId} />
-        <ShiftsWidget siteId={activeSiteId} />
-        <KpiScorecardWidget siteId={activeSiteId} />
-        <LowStockWidget siteId={activeSiteId} />
-        <DocumentsWidget siteId={activeSiteId} />
-        <RecentTxWidget siteId={activeSiteId} />
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <RevenueTrendChart siteId={activeSiteId} />
+        </div>
+        <ExpenseBreakdown siteId={activeSiteId} />
+      </div>
 
+      {/* Transactions table */}
+      <RecentTransactions siteId={activeSiteId} />
+
+      {/* Operations row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <EquipmentCard siteId={activeSiteId} />
+        <SafetyCard siteId={activeSiteId} />
+        <ShiftsCard siteId={activeSiteId} />
+        <LowStockCard siteId={activeSiteId} />
+        <KpiCard2 siteId={activeSiteId} />
       </div>
     </div>
   );

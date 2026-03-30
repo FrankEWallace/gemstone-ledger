@@ -123,7 +123,7 @@ export default function NotificationBell() {
             </div>
           ) : (
             notifications.map((notif, i) => {
-              const meta = TYPE_META[notif.type];
+              const meta = TYPE_META[notif.type] ?? TYPE_META["info"];
               const Icon = meta.icon;
               return (
                 <button

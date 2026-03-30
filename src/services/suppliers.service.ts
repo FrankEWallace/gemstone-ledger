@@ -3,7 +3,7 @@ import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
 import type { Supplier, Channel } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_SUPPLIERS } from "@/lib/demo/data";
+import { DEMO_SUPPLIERS, DEMO_CHANNELS } from "@/lib/demo/data";
 
 // ─── Suppliers (org-scoped) ───────────────────────────────────────────────────
 
@@ -81,6 +81,7 @@ export type ChannelPayload = {
 };
 
 export async function getChannels(orgId: string): Promise<Channel[]> {
+  if (isDemoMode()) return DEMO_CHANNELS as any;
   if (isRestActive())
     return restGet<Channel[]>(`/channels?org_id=${orgId}`);
 
