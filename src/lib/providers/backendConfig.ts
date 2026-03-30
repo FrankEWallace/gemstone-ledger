@@ -26,7 +26,12 @@ export type BackendProvider = "supabase" | "rest";
 
 export interface BackendConfig {
   provider: BackendProvider;
-  /** Base URL of the cPanel/REST API, e.g. https://yoursite.com/api/v1 */
+  /**
+   * Base URL of the Laravel REST API.
+   * e.g. https://yoursite.com/api/v1
+   * The Laravel backend lives at /Applications/MAMP/htdocs/mining-os-api
+   * and exposes all routes under /api/v1.
+   */
   restBaseUrl: string;
   /** ISO timestamp of when the REST provider was last activated */
   restActivatedAt?: string;

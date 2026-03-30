@@ -257,7 +257,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
         </span>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Switch the data backend from Supabase to a custom REST API (e.g. PHP on cPanel).
+        Switch the data backend from Supabase to the self-hosted Laravel API (cPanel, VPS, or any PHP 8+ host).
         The app's service layer is designed so each backend can be swapped without UI changes.
       </p>
 
@@ -306,7 +306,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {isRest ? config.restBaseUrl : "cPanel · PHP · MySQL · any REST host"}
+              {isRest ? config.restBaseUrl : "Laravel 11 · Sanctum · MySQL · cPanel / VPS"}
             </p>
           </div>
         </div>
@@ -339,13 +339,13 @@ function BackendProviderSection({ role }: { role: string | null }) {
           </button>
         )}
         <a
-          href="https://github.com/your-org/mining-os-php-api"
+          href="https://github.com/FrankEWallace/gemstone-ledger"
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5 text-muted-foreground"
         >
           <ExternalLink className="h-3.5 w-3.5" />
-          PHP API reference
+          Laravel API (DEPLOY.md)
         </a>
       </div>
 
@@ -353,12 +353,12 @@ function BackendProviderSection({ role }: { role: string | null }) {
       <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Migration checklist</p>
         <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-          <li>Build the PHP REST API on cPanel — endpoint contract in <code>src/lib/providers/rest/client.ts</code></li>
-          <li>All endpoints must return <code>{"{ data, error }"}</code> JSON envelope</li>
-          <li>Implement <code>GET /health</code> returning <code>{"{ data: { status: 'ok' } }"}</code></li>
-          <li>Enter the base URL below and test the connection</li>
-          <li>Update <code>src/services/*.service.ts</code> to use <code>restGet/restPost/restPut/restDel</code></li>
-          <li>Flip the toggle — page reloads with new backend active</li>
+          <li>Deploy <code>mining-os-api</code> (Laravel 11) to cPanel or VPS — see <code>DEPLOY.md</code></li>
+          <li>Create MySQL DB, run <code>php artisan migrate</code>, set <code>APP_KEY</code></li>
+          <li>Set the base URL to <code>https://your-domain.com/api/v1</code></li>
+          <li>Click "Configure REST API", paste the URL, and test the connection</li>
+          <li>Flip the toggle — page reloads with Laravel as the active backend</li>
+          <li>Both Supabase and Laravel backends are always available — switch anytime</li>
         </ol>
       </div>
 
