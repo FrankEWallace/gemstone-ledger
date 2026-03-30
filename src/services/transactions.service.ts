@@ -4,6 +4,8 @@ import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client
 import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_TRANSACTIONS } from "@/lib/demo/data";
+import { enqueue } from "@/lib/offline/syncQueue";
+import { registerHandler } from "@/lib/offline/syncEngine";
 
 export type TransactionPayload = {
   description?: string;
@@ -63,16 +65,19 @@ export async function createTransaction(
   payload: TransactionPayload,
   createdBy?: string
 ): Promise<Transaction> {
-  if (isRestActive())
-    return restPost<Transaction>("/transactions", {
-      ...payload,
-      site_id: siteId,
-      created_by: createdBy ?? null,
-    });
+  const fullPayload = { ...payload, site_id: siteId, created_by: createdBy ?? null };
+
+  if (!navigator.onLine) {
+    const tempId = `offline-${crypto.randomUUID()}`;
+    await enqueue({ entity: "transactions", operation: "create", payload: fullPayload, siteId, timestamp: Date.now() });
+    return { id: tempId, created_at: new Date().toISOString(), ...fullPayload } as unknown as Transaction;
+  }
+
+  if (isRestActive()) return restPost<Transaction>("/transactions", fullPayload);
 
   const { data, error } = await supabase
     .from("transactions")
-    .insert({ ...payload, site_id: siteId, created_by: createdBy ?? null })
+    .insert(fullPayload)
     .select()
     .single();
   if (error) throw error;
@@ -83,8 +88,11 @@ export async function updateTransactionStatus(
   id: string,
   status: TransactionStatus
 ): Promise<Transaction> {
-  if (isRestActive())
-    return restPut<Transaction>(`/transactions/${id}`, { status });
+  if (!navigator.onLine) {
+    await enqueue({ entity: "transactions", operation: "update", payload: { id, status }, siteId: "", timestamp: Date.now() });
+    return { id, status } as unknown as Transaction;
+  }
+  if (isRestActive()) return restPut<Transaction>(`/transactions/${id}`, { status });
 
   const { data, error } = await supabase
     .from("transactions")
@@ -97,11 +105,29 @@ export async function updateTransactionStatus(
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
+  if (!navigator.onLine) {
+    await enqueue({ entity: "transactions", operation: "delete", payload: { id }, siteId: "", timestamp: Date.now() });
+    return;
+  }
   if (isRestActive()) return restDel(`/transactions/${id}`);
 
   const { error } = await supabase.from("transactions").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ─── Sync handlers ────────────────────────────────────────────────────────────
+
+registerHandler("transactions", "create", async (item) => {
+  await supabase.from("transactions").insert(item.payload as object);
+});
+registerHandler("transactions", "update", async (item) => {
+  const { id, ...rest } = item.payload as { id: string; status: TransactionStatus };
+  await supabase.from("transactions").update(rest).eq("id", id);
+});
+registerHandler("transactions", "delete", async (item) => {
+  const { id } = item.payload as { id: string };
+  await supabase.from("transactions").delete().eq("id", id);
+});
 
 export async function getTransactionCategories(siteId: string): Promise<string[]> {
   if (isRestActive())

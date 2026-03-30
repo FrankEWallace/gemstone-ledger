@@ -4,6 +4,8 @@ import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client
 import type { SafetyIncident, SafetySeverity } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_SAFETY as DEMO_SAFETY_INCIDENTS } from "@/lib/demo/data";
+import { enqueue } from "@/lib/offline/syncQueue";
+import { registerHandler } from "@/lib/offline/syncEngine";
 
 export type SafetyIncidentPayload = {
   title: string;
@@ -33,22 +35,24 @@ export async function createSafetyIncident(
   payload: SafetyIncidentPayload,
   reportedBy?: string
 ): Promise<SafetyIncident> {
-  if (isRestActive())
-    return restPost<SafetyIncident>("/safety-incidents", {
-      ...payload,
-      site_id: siteId,
-      reported_by: reportedBy ?? null,
-      reported_at: new Date().toISOString(),
-    });
+  const fullPayload = {
+    ...payload,
+    site_id: siteId,
+    reported_by: reportedBy ?? null,
+    reported_at: new Date().toISOString(),
+  };
+
+  if (!navigator.onLine) {
+    const tempId = `offline-${crypto.randomUUID()}`;
+    await enqueue({ entity: "safety_incidents", operation: "create", payload: fullPayload, siteId, timestamp: Date.now() });
+    return { id: tempId, created_at: new Date().toISOString(), resolved_at: null, ...fullPayload } as unknown as SafetyIncident;
+  }
+
+  if (isRestActive()) return restPost<SafetyIncident>("/safety-incidents", fullPayload);
 
   const { data, error } = await supabase
     .from("safety_incidents")
-    .insert({
-      ...payload,
-      site_id: siteId,
-      reported_by: reportedBy ?? null,
-      reported_at: new Date().toISOString(),
-    })
+    .insert(fullPayload)
     .select()
     .single();
   if (error) throw error;
@@ -59,8 +63,11 @@ export async function updateSafetyIncident(
   id: string,
   payload: Partial<SafetyIncidentPayload>
 ): Promise<SafetyIncident> {
-  if (isRestActive())
-    return restPut<SafetyIncident>(`/safety-incidents/${id}`, payload);
+  if (!navigator.onLine) {
+    await enqueue({ entity: "safety_incidents", operation: "update", payload: { id, ...payload }, siteId: "", timestamp: Date.now() });
+    return { id, ...payload } as unknown as SafetyIncident;
+  }
+  if (isRestActive()) return restPut<SafetyIncident>(`/safety-incidents/${id}`, payload);
 
   const { data, error } = await supabase
     .from("safety_incidents")
@@ -73,6 +80,10 @@ export async function updateSafetyIncident(
 }
 
 export async function deleteSafetyIncident(id: string): Promise<void> {
+  if (!navigator.onLine) {
+    await enqueue({ entity: "safety_incidents", operation: "delete", payload: { id }, siteId: "", timestamp: Date.now() });
+    return;
+  }
   if (isRestActive()) return restDel(`/safety-incidents/${id}`);
 
   const { error } = await supabase.from("safety_incidents").delete().eq("id", id);
@@ -81,8 +92,11 @@ export async function deleteSafetyIncident(id: string): Promise<void> {
 
 export async function resolveSafetyIncident(id: string): Promise<SafetyIncident> {
   const resolved_at = new Date().toISOString();
-  if (isRestActive())
-    return restPut<SafetyIncident>(`/safety-incidents/${id}`, { resolved_at });
+  if (!navigator.onLine) {
+    await enqueue({ entity: "safety_incidents", operation: "update", payload: { id, resolved_at }, siteId: "", timestamp: Date.now() });
+    return { id, resolved_at } as unknown as SafetyIncident;
+  }
+  if (isRestActive()) return restPut<SafetyIncident>(`/safety-incidents/${id}`, { resolved_at });
 
   const { data, error } = await supabase
     .from("safety_incidents")
@@ -93,3 +107,18 @@ export async function resolveSafetyIncident(id: string): Promise<SafetyIncident>
   if (error) throw error;
   return data;
 }
+
+// ─── Sync handlers (registered once at module load) ──────────────────────────
+
+registerHandler("safety_incidents", "create", async (item) => {
+  const p = item.payload as SafetyIncidentPayload & { site_id: string; reported_by: string | null; reported_at: string };
+  await supabase.from("safety_incidents").insert(p);
+});
+registerHandler("safety_incidents", "update", async (item) => {
+  const { id, ...rest } = item.payload as { id: string } & Partial<SafetyIncidentPayload>;
+  await supabase.from("safety_incidents").update(rest).eq("id", id);
+});
+registerHandler("safety_incidents", "delete", async (item) => {
+  const { id } = item.payload as { id: string };
+  await supabase.from("safety_incidents").delete().eq("id", id);
+});

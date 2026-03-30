@@ -4,6 +4,8 @@ import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client
 import type { InventoryItem } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_INVENTORY } from "@/lib/demo/data";
+import { enqueue } from "@/lib/offline/syncQueue";
+import { registerHandler } from "@/lib/offline/syncEngine";
 
 export type InventoryItemPayload = {
   name: string;
@@ -34,12 +36,19 @@ export async function createInventoryItem(
   siteId: string,
   payload: InventoryItemPayload
 ): Promise<InventoryItem> {
-  if (isRestActive())
-    return restPost<InventoryItem>("/inventory", { ...payload, site_id: siteId });
+  const fullPayload = { ...payload, site_id: siteId };
+
+  if (!navigator.onLine) {
+    const tempId = `offline-${crypto.randomUUID()}`;
+    await enqueue({ entity: "inventory_items", operation: "create", payload: fullPayload, siteId, timestamp: Date.now() });
+    return { id: tempId, created_at: new Date().toISOString(), ...fullPayload } as unknown as InventoryItem;
+  }
+
+  if (isRestActive()) return restPost<InventoryItem>("/inventory", fullPayload);
 
   const { data, error } = await supabase
     .from("inventory_items")
-    .insert({ ...payload, site_id: siteId })
+    .insert(fullPayload)
     .select()
     .single();
   if (error) throw error;
@@ -50,8 +59,11 @@ export async function updateInventoryItem(
   id: string,
   payload: Partial<InventoryItemPayload>
 ): Promise<InventoryItem> {
-  if (isRestActive())
-    return restPut<InventoryItem>(`/inventory/${id}`, payload);
+  if (!navigator.onLine) {
+    await enqueue({ entity: "inventory_items", operation: "update", payload: { id, ...payload }, siteId: "", timestamp: Date.now() });
+    return { id, ...payload } as unknown as InventoryItem;
+  }
+  if (isRestActive()) return restPut<InventoryItem>(`/inventory/${id}`, payload);
 
   const { data, error } = await supabase
     .from("inventory_items")
@@ -64,11 +76,29 @@ export async function updateInventoryItem(
 }
 
 export async function deleteInventoryItem(id: string): Promise<void> {
+  if (!navigator.onLine) {
+    await enqueue({ entity: "inventory_items", operation: "delete", payload: { id }, siteId: "", timestamp: Date.now() });
+    return;
+  }
   if (isRestActive()) return restDel(`/inventory/${id}`);
 
   const { error } = await supabase.from("inventory_items").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ─── Sync handlers ────────────────────────────────────────────────────────────
+
+registerHandler("inventory_items", "create", async (item) => {
+  await supabase.from("inventory_items").insert(item.payload as object);
+});
+registerHandler("inventory_items", "update", async (item) => {
+  const { id, ...rest } = item.payload as { id: string } & Partial<InventoryItemPayload>;
+  await supabase.from("inventory_items").update(rest).eq("id", id);
+});
+registerHandler("inventory_items", "delete", async (item) => {
+  const { id } = item.payload as { id: string };
+  await supabase.from("inventory_items").delete().eq("id", id);
+});
 
 export async function getInventoryConsumptionRates(
   siteId: string

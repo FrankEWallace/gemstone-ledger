@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -10,6 +11,13 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { NavProvider } from "@/context/NavContext";
 import Router from "@/app/Router";
 import { queryPersister } from "@/lib/offline/persister";
+import { initSyncEngine } from "@/lib/offline/syncEngine";
+
+// Import services so their registerHandler() calls run at module load
+import "@/services/safety.service";
+import "@/services/transactions.service";
+import "@/services/inventory.service";
+import "@/services/production.service";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +32,11 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  useEffect(() => {
+    const cleanup = initSyncEngine();
+    return cleanup;
+  }, []);
+
   return (
     <PersistQueryClientProvider
       client={queryClient}
