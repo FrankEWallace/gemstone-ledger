@@ -8,6 +8,7 @@ import CommandPalette from "@/components/shared/CommandPalette";
 import OnboardingWizard from "@/components/shared/OnboardingWizard";
 import { useAuth } from "@/hooks/useAuth";
 import { isDemoMode, exitDemoMode } from "@/lib/demo";
+import { OfflineBanner } from "@/components/shared/OfflineBanner";
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/": { breadcrumb: "Dashboard", title: "Overview" },
@@ -102,6 +103,8 @@ export default function AppLayout() {
             <NotificationBell />
           </div>
         </header>
+
+        <OfflineBanner />
 
         {/* Demo mode banner */}
         {demoActive && (

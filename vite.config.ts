@@ -44,15 +44,42 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Cache app shell + assets
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        // Network-first for API calls (Supabase), cache-first for assets
         runtimeCaching: [
+          // Supabase auth endpoints — NetworkFirst, short timeout
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
             handler: "NetworkFirst",
             options: {
+              cacheName: "supabase-auth",
+              networkTimeoutSeconds: 8,
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 },
+            },
+          },
+          // Supabase storage (images, documents) — CacheFirst, long TTL
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "supabase-storage",
+              expiration: { maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 },
+            },
+          },
+          // Supabase data API — StaleWhileRevalidate so cached data shows instantly
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
               cacheName: "supabase-api",
-              networkTimeoutSeconds: 10,
-              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
+              expiration: { maxEntries: 200, maxAgeSeconds: 15 * 60 },
+            },
+          },
+          // Google Fonts / external assets — CacheFirst
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts",
+              expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
             },
           },
         ],
