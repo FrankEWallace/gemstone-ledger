@@ -2,13 +2,16 @@ import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet } from "@/lib/providers/rest/client";
 import { isDemoMode } from "@/lib/demo";
+import type { CustomerSummary } from "@/lib/supabaseTypes";
 import {
   DEMO_MONTHLY_TREND,
   DEMO_EXPENSES_BY_CATEGORY,
   DEMO_REPORT_SUMMARY,
   DEMO_PRODUCTION_BY_DAY,
+  DEMO_CUSTOMER_SUMMARIES,
 } from "@/lib/demo/data";
 
+export type { CustomerSummary };
 export type MonthlyTrend = { month: string; income: number; expenses: number };
 export type CategoryBreakdown = { category: string; total: number };
 export type ReportSummary = {
@@ -169,4 +172,107 @@ export async function getProductionByDay(
   }
 
   return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// ─── Customer summary mapping helper ─────────────────────────────────────────
+
+function mapCustomerSummary(raw: Record<string, unknown>): CustomerSummary {
+  return {
+    customerId:          String(raw.customer_id ?? raw.customerId ?? ""),
+    customerName:        String(raw.customer_name ?? raw.customerName ?? "Unknown"),
+    customerType:        (raw.customer_type ?? raw.customerType ?? "external") as "external" | "internal",
+    totalIncome:         Number(raw.total_income ?? raw.totalIncome ?? 0),
+    totalExpenses:       Number(raw.total_expenses ?? raw.totalExpenses ?? 0),
+    netProfit:           Number(raw.net_profit ?? raw.netProfit ?? 0),
+    transactionCount:    Number(raw.transaction_count ?? raw.transactionCount ?? 0),
+    expensesByCategory:  Array.isArray(raw.expenses_by_category ?? raw.expensesByCategory)
+      ? (raw.expenses_by_category ?? raw.expensesByCategory) as { category: string; total: number }[]
+      : [],
+  };
+}
+
+// ─── Customer summaries ───────────────────────────────────────────────────────
+
+export async function getCustomerSummaries(
+  siteId: string,
+  dateFrom: string,
+  dateTo: string
+): Promise<CustomerSummary[]> {
+  if (isDemoMode()) return DEMO_CUSTOMER_SUMMARIES;
+  if (isRestActive()) {
+    const raw = await restGet<Record<string, unknown>[]>(
+      `/reports/customer-summary?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
+    );
+    return raw.map(mapCustomerSummary);
+  }
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("type, unit_price, quantity, category, customer_id, expense_category_id, customers(name, type), expense_categories(name)")
+    .eq("site_id", siteId)
+    .neq("status", "cancelled")
+    .not("customer_id", "is", null)
+    .gte("transaction_date", dateFrom)
+    .lte("transaction_date", dateTo);
+  if (error) throw error;
+
+  const map: Record<string, CustomerSummary> = {};
+  for (const row of data ?? []) {
+    const cid = row.customer_id as string;
+    if (!map[cid]) {
+      map[cid] = {
+        customerId:         cid,
+        customerName:       (row.customers as { name: string } | null)?.name ?? "Unknown",
+        customerType:       ((row.customers as { type: string } | null)?.type ?? "external") as "external" | "internal",
+        totalIncome:        0,
+        totalExpenses:      0,
+        netProfit:          0,
+        transactionCount:   0,
+        expensesByCategory: [],
+      };
+    }
+    const amount = (row.unit_price as number) * (row.quantity as number);
+    const entry = map[cid];
+    entry.transactionCount += 1;
+    if (row.type === "income") {
+      entry.totalIncome += amount;
+    } else {
+      entry.totalExpenses += amount;
+      const catName = (row.expense_categories as { name: string } | null)?.name
+        ?? (row.category as string | null)
+        ?? "Uncategorized";
+      const catEntry = entry.expensesByCategory.find((c) => c.category === catName);
+      if (catEntry) catEntry.total += amount;
+      else entry.expensesByCategory.push({ category: catName, total: amount });
+    }
+  }
+
+  return Object.values(map).map((s) => ({
+    ...s,
+    totalIncome:    Math.round(s.totalIncome * 100) / 100,
+    totalExpenses:  Math.round(s.totalExpenses * 100) / 100,
+    netProfit:      Math.round((s.totalIncome - s.totalExpenses) * 100) / 100,
+    expensesByCategory: s.expensesByCategory.map((c) => ({
+      ...c,
+      total: Math.round(c.total * 100) / 100,
+    })).sort((a, b) => b.total - a.total),
+  }));
+}
+
+export async function getCustomerDetail(
+  siteId: string,
+  customerId: string,
+  dateFrom: string,
+  dateTo: string
+): Promise<CustomerSummary | null> {
+  if (isDemoMode()) return DEMO_CUSTOMER_SUMMARIES.find((s) => s.customerId === customerId) ?? null;
+  if (isRestActive()) {
+    const raw = await restGet<Record<string, unknown>[]>(
+      `/reports/customer-summary?site_id=${siteId}&from=${dateFrom}&to=${dateTo}&customer_id=${customerId}`
+    );
+    return raw.length > 0 ? mapCustomerSummary(raw[0]) : null;
+  }
+
+  const results = await getCustomerSummaries(siteId, dateFrom, dateTo);
+  return results.find((s) => s.customerId === customerId) ?? null;
 }

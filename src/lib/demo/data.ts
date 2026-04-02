@@ -20,6 +20,18 @@ function monthStart(monthsAgo: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// ─── Customer IDs ─────────────────────────────────────────────────────────────
+export const DEMO_CUSTOMER_ID_INTERNAL = "dc-int";
+export const DEMO_CUSTOMER_ID_EXT1     = "dc-ext1";
+export const DEMO_CUSTOMER_ID_EXT2     = "dc-ext2";
+
+// ─── Expense Category IDs ─────────────────────────────────────────────────────
+const DEC_CHEMICALS  = "dec1";
+const DEC_FUEL       = "dec2";
+const DEC_LABOR      = "dec3";
+const DEC_MAINT      = "dec4";
+const DEC_TRANSPORT  = "dec5";
+
 // ─── Org & Site ───────────────────────────────────────────────────────────────
 
 export const DEMO_ORG = {
@@ -77,33 +89,72 @@ export const DEMO_INVENTORY = [
   { id: "di18", site_id: DEMO_SITE_ID, supplier_id: "dsu3", name: "Ear Protection (Class 5)",    category: "PPE",         sku: "PPE-006", quantity: 35,   unit: "pcs",  unit_cost: 22,   reorder_level: 20,   created_at: tsAgo(960),  updated_at: tsAgo(144) },
 ];
 
+// ─── Customers ────────────────────────────────────────────────────────────────
+
+export const DEMO_CUSTOMERS = [
+  {
+    id: DEMO_CUSTOMER_ID_INTERNAL, site_id: DEMO_SITE_ID, org_id: DEMO_ORG_ID,
+    name: "Internal Operations", type: "internal" as const,
+    contact_name: null, contact_email: null, contact_phone: null,
+    contract_start: null, contract_end: null, daily_rate: null,
+    notes: "Default internal cost centre for company-owned mining operations.",
+    status: "active" as const, created_at: tsAgo(8760), updated_at: tsAgo(8760),
+  },
+  {
+    id: DEMO_CUSTOMER_ID_EXT1, site_id: DEMO_SITE_ID, org_id: DEMO_ORG_ID,
+    name: "Goldfield Contractors Pty Ltd", type: "external" as const,
+    contact_name: "Mark Lawson", contact_email: "m.lawson@gfc.demo", contact_phone: "+61 418 000 001",
+    contract_start: daysAgo(180), contract_end: daysAgo(-180), daily_rate: 4500,
+    notes: "Gold processing contract — 12-month site lease.",
+    status: "active" as const, created_at: tsAgo(4320), updated_at: tsAgo(720),
+  },
+  {
+    id: DEMO_CUSTOMER_ID_EXT2, site_id: DEMO_SITE_ID, org_id: DEMO_ORG_ID,
+    name: "Apex Drilling Services", type: "external" as const,
+    contact_name: "Sarah Kim", contact_email: "s.kim@apexdrill.demo", contact_phone: "+61 427 000 002",
+    contract_start: daysAgo(90), contract_end: daysAgo(-90), daily_rate: 3200,
+    notes: "Blast hole drilling — east bench extension.",
+    status: "active" as const, created_at: tsAgo(2160), updated_at: tsAgo(360),
+  },
+];
+
+// ─── Expense Categories ────────────────────────────────────────────────────────
+
+export const DEMO_EXPENSE_CATEGORIES = [
+  { id: DEC_CHEMICALS, org_id: DEMO_ORG_ID, name: "Chemicals/Reagents", description: "Cyanide, lime, activated carbon and other process chemicals", color: "#7c3aed", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_FUEL,      org_id: DEMO_ORG_ID, name: "Fuel",               description: "Diesel, petrol and other fuel costs",                          color: "#dc2626", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_LABOR,     org_id: DEMO_ORG_ID, name: "Labor",              description: "Payroll, contractor labour and workforce costs",                color: "#2563eb", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_MAINT,     org_id: DEMO_ORG_ID, name: "Maintenance",        description: "Equipment parts, repairs and servicing",                       color: "#d97706", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_TRANSPORT, org_id: DEMO_ORG_ID, name: "Transport",          description: "Ore haulage, logistics and freight",                           color: "#059669", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+];
+
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
 export const DEMO_TRANSACTIONS = [
-  { id: "dt1",  site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #47",            quantity: 1, unit_price: 156800, status: "success" as const, transaction_date: daysAgo(2),  created_at: tsAgo(48) },
-  { id: "dt2",  site_id: DEMO_SITE_ID, type: "expense" as const, category: "Fuel",        description: "Diesel bulk delivery — 9,800 L",        quantity: 1, unit_price: 18130,  status: "success" as const, transaction_date: daysAgo(4),  created_at: tsAgo(96) },
-  { id: "dt3",  site_id: DEMO_SITE_ID, type: "expense" as const, category: "Labour",      description: "Payroll — Week 13",                     quantity: 1, unit_price: 44200,  status: "success" as const, transaction_date: daysAgo(7),  created_at: tsAgo(168) },
-  { id: "dt4",  site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Copper concentrate — 38t shipment",     quantity: 1, unit_price: 71500,  status: "success" as const, transaction_date: daysAgo(10), created_at: tsAgo(240) },
-  { id: "dt5",  site_id: DEMO_SITE_ID, type: "expense" as const, category: "Safety",      description: "PPE restock — helmets, boots, gloves",  quantity: 1, unit_price: 5400,   status: "success" as const, transaction_date: daysAgo(12), created_at: tsAgo(288) },
-  { id: "dt6",  site_id: DEMO_SITE_ID, type: "expense" as const, category: "Maintenance", description: "Hydraulic pump rebuild — CAT 390",      quantity: 1, unit_price: 9800,   status: "success" as const, transaction_date: daysAgo(14), created_at: tsAgo(336) },
-  { id: "dt7",  site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Silver by-product — 840 troy oz",       quantity: 1, unit_price: 9240,   status: "success" as const, transaction_date: daysAgo(16), created_at: tsAgo(384) },
-  { id: "dt8",  site_id: DEMO_SITE_ID, type: "expense" as const, category: "Explosives",  description: "ANFO 3.2t + blast caps x200",           quantity: 1, unit_price: 4860,   status: "success" as const, transaction_date: daysAgo(18), created_at: tsAgo(432) },
-  { id: "dt9",  site_id: DEMO_SITE_ID, type: "expense" as const, category: "Reagents",    description: "Cyanide solution top-up — 320 L",       quantity: 1, unit_price: 7040,   status: "success" as const, transaction_date: daysAgo(21), created_at: tsAgo(504) },
-  { id: "dt10", site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Copper concentrate — 42t (invoiced)",   quantity: 1, unit_price: 79800,  status: "pending" as const, transaction_date: daysAgo(1),  created_at: tsAgo(24) },
-  { id: "dt11", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Labour",      description: "Payroll — Week 14",                     quantity: 1, unit_price: 44200,  status: "pending" as const, transaction_date: daysAgo(0),  created_at: tsAgo(2) },
-  { id: "dt12", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Fuel",        description: "Diesel bulk order — scheduled",         quantity: 1, unit_price: 19200,  status: "pending" as const, transaction_date: daysAgo(0),  created_at: tsAgo(1) },
-  { id: "dt13", site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #46",            quantity: 1, unit_price: 148200, status: "success" as const, transaction_date: daysAgo(32), created_at: tsAgo(768) },
-  { id: "dt14", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Labour",      description: "Payroll — Week 11",                     quantity: 1, unit_price: 43600,  status: "success" as const, transaction_date: daysAgo(35), created_at: tsAgo(840) },
-  { id: "dt15", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Equipment",   description: "D9 Dozer track replacement parts",      quantity: 1, unit_price: 22400,  status: "success" as const, transaction_date: daysAgo(38), created_at: tsAgo(912) },
-  { id: "dt16", site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #45",            quantity: 1, unit_price: 143700, status: "success" as const, transaction_date: daysAgo(50), created_at: tsAgo(1200) },
-  { id: "dt17", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Fuel",        description: "Diesel bulk delivery — 10,400 L",       quantity: 1, unit_price: 19240,  status: "success" as const, transaction_date: daysAgo(52), created_at: tsAgo(1248) },
-  { id: "dt18", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Labour",      description: "Payroll — Week 9",                      quantity: 1, unit_price: 43600,  status: "success" as const, transaction_date: daysAgo(55), created_at: tsAgo(1320) },
-  { id: "dt19", site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #44",            quantity: 1, unit_price: 138500, status: "success" as const, transaction_date: daysAgo(70), created_at: tsAgo(1680) },
-  { id: "dt20", site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Copper concentrate — 35t",              quantity: 1, unit_price: 66500,  status: "success" as const, transaction_date: daysAgo(75), created_at: tsAgo(1800) },
-  { id: "dt21", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Labour",      description: "Payroll — Week 7",                      quantity: 1, unit_price: 43600,  status: "success" as const, transaction_date: daysAgo(77), created_at: tsAgo(1848) },
-  { id: "dt22", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Maintenance", description: "Mill liner replacement",                quantity: 1, unit_price: 31500,  status: "success" as const, transaction_date: daysAgo(80), created_at: tsAgo(1920) },
-  { id: "dt23", site_id: DEMO_SITE_ID, type: "expense" as const, category: "Fuel",        description: "Diesel bulk delivery — 9,600 L",        quantity: 1, unit_price: 17760,  status: "success" as const, transaction_date: daysAgo(82), created_at: tsAgo(1968) },
-  { id: "dt24", site_id: DEMO_SITE_ID, type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #43",            quantity: 1, unit_price: 135900, status: "success" as const, transaction_date: daysAgo(90), created_at: tsAgo(2160) },
+  { id: "dt1",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT1, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #47",            quantity: 1, unit_price: 156800, status: "success" as const, transaction_date: daysAgo(2),  created_at: tsAgo(48) },
+  { id: "dt2",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_FUEL,      type: "expense" as const, category: "Fuel",        description: "Diesel bulk delivery — 9,800 L",        quantity: 1, unit_price: 18130,  status: "success" as const, transaction_date: daysAgo(4),  created_at: tsAgo(96) },
+  { id: "dt3",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_LABOR,     type: "expense" as const, category: "Labour",      description: "Payroll — Week 13",                     quantity: 1, unit_price: 44200,  status: "success" as const, transaction_date: daysAgo(7),  created_at: tsAgo(168) },
+  { id: "dt4",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT2, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Copper concentrate — 38t shipment",     quantity: 1, unit_price: 71500,  status: "success" as const, transaction_date: daysAgo(10), created_at: tsAgo(240) },
+  { id: "dt5",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: null,          type: "expense" as const, category: "Safety",      description: "PPE restock — helmets, boots, gloves",  quantity: 1, unit_price: 5400,   status: "success" as const, transaction_date: daysAgo(12), created_at: tsAgo(288) },
+  { id: "dt6",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_MAINT,     type: "expense" as const, category: "Maintenance", description: "Hydraulic pump rebuild — CAT 390",      quantity: 1, unit_price: 9800,   status: "success" as const, transaction_date: daysAgo(14), created_at: tsAgo(336) },
+  { id: "dt7",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT1, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Silver by-product — 840 troy oz",       quantity: 1, unit_price: 9240,   status: "success" as const, transaction_date: daysAgo(16), created_at: tsAgo(384) },
+  { id: "dt8",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: null,          type: "expense" as const, category: "Explosives",  description: "ANFO 3.2t + blast caps x200",           quantity: 1, unit_price: 4860,   status: "success" as const, transaction_date: daysAgo(18), created_at: tsAgo(432) },
+  { id: "dt9",  site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_CHEMICALS, type: "expense" as const, category: "Reagents",    description: "Cyanide solution top-up — 320 L",       quantity: 1, unit_price: 7040,   status: "success" as const, transaction_date: daysAgo(21), created_at: tsAgo(504) },
+  { id: "dt10", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT2, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Copper concentrate — 42t (invoiced)",   quantity: 1, unit_price: 79800,  status: "pending" as const, transaction_date: daysAgo(1),  created_at: tsAgo(24) },
+  { id: "dt11", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_LABOR,     type: "expense" as const, category: "Labour",      description: "Payroll — Week 14",                     quantity: 1, unit_price: 44200,  status: "pending" as const, transaction_date: daysAgo(0),  created_at: tsAgo(2) },
+  { id: "dt12", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_FUEL,      type: "expense" as const, category: "Fuel",        description: "Diesel bulk order — scheduled",         quantity: 1, unit_price: 19200,  status: "pending" as const, transaction_date: daysAgo(0),  created_at: tsAgo(1) },
+  { id: "dt13", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT1, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #46",            quantity: 1, unit_price: 148200, status: "success" as const, transaction_date: daysAgo(32), created_at: tsAgo(768) },
+  { id: "dt14", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_LABOR,     type: "expense" as const, category: "Labour",      description: "Payroll — Week 11",                     quantity: 1, unit_price: 43600,  status: "success" as const, transaction_date: daysAgo(35), created_at: tsAgo(840) },
+  { id: "dt15", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_MAINT,     type: "expense" as const, category: "Equipment",   description: "D9 Dozer track replacement parts",      quantity: 1, unit_price: 22400,  status: "success" as const, transaction_date: daysAgo(38), created_at: tsAgo(912) },
+  { id: "dt16", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT2, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #45",            quantity: 1, unit_price: 143700, status: "success" as const, transaction_date: daysAgo(50), created_at: tsAgo(1200) },
+  { id: "dt17", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_FUEL,      type: "expense" as const, category: "Fuel",        description: "Diesel bulk delivery — 10,400 L",       quantity: 1, unit_price: 19240,  status: "success" as const, transaction_date: daysAgo(52), created_at: tsAgo(1248) },
+  { id: "dt18", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_LABOR,     type: "expense" as const, category: "Labour",      description: "Payroll — Week 9",                      quantity: 1, unit_price: 43600,  status: "success" as const, transaction_date: daysAgo(55), created_at: tsAgo(1320) },
+  { id: "dt19", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT1, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #44",            quantity: 1, unit_price: 138500, status: "success" as const, transaction_date: daysAgo(70), created_at: tsAgo(1680) },
+  { id: "dt20", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT2, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Copper concentrate — 35t",              quantity: 1, unit_price: 66500,  status: "success" as const, transaction_date: daysAgo(75), created_at: tsAgo(1800) },
+  { id: "dt21", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_LABOR,     type: "expense" as const, category: "Labour",      description: "Payroll — Week 7",                      quantity: 1, unit_price: 43600,  status: "success" as const, transaction_date: daysAgo(77), created_at: tsAgo(1848) },
+  { id: "dt22", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_MAINT,     type: "expense" as const, category: "Maintenance", description: "Mill liner replacement",                quantity: 1, unit_price: 31500,  status: "success" as const, transaction_date: daysAgo(80), created_at: tsAgo(1920) },
+  { id: "dt23", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_INTERNAL, expense_category_id: DEC_FUEL,      type: "expense" as const, category: "Fuel",        description: "Diesel bulk delivery — 9,600 L",        quantity: 1, unit_price: 17760,  status: "success" as const, transaction_date: daysAgo(82), created_at: tsAgo(1968) },
+  { id: "dt24", site_id: DEMO_SITE_ID, customer_id: DEMO_CUSTOMER_ID_EXT1, expense_category_id: null,        type: "income"  as const, category: "Sales",       description: "Gold dore sale — Batch #43",            quantity: 1, unit_price: 135900, status: "success" as const, transaction_date: daysAgo(90), created_at: tsAgo(2160) },
 ];
 
 // ─── Equipment ────────────────────────────────────────────────────────────────
@@ -359,4 +410,48 @@ export const DEMO_PRODUCTION_BY_DAY = [
   { date: daysAgo(3),  totalHours: 34, totalOutput: 3720, shiftsLogged: 3 },
   { date: daysAgo(2),  totalHours: 32, totalOutput: 3510, shiftsLogged: 3 },
   { date: daysAgo(1),  totalHours: 36, totalOutput: 3840, shiftsLogged: 4 },
+];
+
+// ─── Customer Summaries (pre-computed for demo mode) ──────────────────────────
+// Income: ext1 = dt1+dt7+dt13+dt19+dt24 = 156800+9240+148200+138500+135900 = 588640
+//         ext2 = dt4+dt10+dt16+dt20 = 71500+79800+143700+66500 = 361500
+// Expenses (internal): fuel=74330, labor=219200, maint=63700, chemicals=7040, other=10260 → total=374530
+
+export const DEMO_CUSTOMER_SUMMARIES = [
+  {
+    customerId:       DEMO_CUSTOMER_ID_EXT1,
+    customerName:     "Goldfield Contractors Pty Ltd",
+    customerType:     "external" as const,
+    totalIncome:      588640,
+    totalExpenses:    0,
+    netProfit:        588640,
+    transactionCount: 5,
+    expensesByCategory: [],
+  },
+  {
+    customerId:       DEMO_CUSTOMER_ID_EXT2,
+    customerName:     "Apex Drilling Services",
+    customerType:     "external" as const,
+    totalIncome:      361500,
+    totalExpenses:    0,
+    netProfit:        361500,
+    transactionCount: 4,
+    expensesByCategory: [],
+  },
+  {
+    customerId:       DEMO_CUSTOMER_ID_INTERNAL,
+    customerName:     "Internal Operations",
+    customerType:     "internal" as const,
+    totalIncome:      0,
+    totalExpenses:    374530,
+    netProfit:        -374530,
+    transactionCount: 15,
+    expensesByCategory: [
+      { category: "Labor",              total: 219200 },
+      { category: "Fuel",               total: 74330  },
+      { category: "Maintenance",        total: 63700  },
+      { category: "Chemicals/Reagents", total: 7040   },
+      { category: "Uncategorized",      total: 10260  },
+    ],
+  },
 ];

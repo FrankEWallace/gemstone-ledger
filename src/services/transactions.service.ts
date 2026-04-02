@@ -11,6 +11,8 @@ export type TransactionPayload = {
   description?: string;
   reference_no?: string;
   category?: string;
+  customer_id?: string | null;
+  expense_category_id?: string | null;
   type: TransactionType;
   status: TransactionStatus;
   quantity: number;
@@ -23,6 +25,8 @@ export type TransactionFilters = {
   type?: TransactionType | "all";
   status?: TransactionStatus | "all";
   category?: string | "all";
+  customerId?: string | "all";
+  expenseCategoryId?: string | "all";
   dateFrom?: string;
   dateTo?: string;
 };
@@ -37,6 +41,8 @@ export async function getTransactions(
     if (filters?.type && filters.type !== "all") params.set("type", filters.type);
     if (filters?.status && filters.status !== "all") params.set("status", filters.status);
     if (filters?.category && filters.category !== "all") params.set("category", filters.category);
+    if (filters?.customerId && filters.customerId !== "all") params.set("customer_id", filters.customerId);
+    if (filters?.expenseCategoryId && filters.expenseCategoryId !== "all") params.set("expense_category_id", filters.expenseCategoryId);
     if (filters?.dateFrom) params.set("from", filters.dateFrom);
     if (filters?.dateTo) params.set("to", filters.dateTo);
     return restGet<Transaction[]>(`/transactions?${params}`);
@@ -50,8 +56,9 @@ export async function getTransactions(
 
   if (filters?.type && filters.type !== "all") query = query.eq("type", filters.type);
   if (filters?.status && filters.status !== "all") query = query.eq("status", filters.status);
-  if (filters?.category && filters.category !== "all")
-    query = query.eq("category", filters.category);
+  if (filters?.category && filters.category !== "all") query = query.eq("category", filters.category);
+  if (filters?.customerId && filters.customerId !== "all") query = query.eq("customer_id", filters.customerId);
+  if (filters?.expenseCategoryId && filters.expenseCategoryId !== "all") query = query.eq("expense_category_id", filters.expenseCategoryId);
   if (filters?.dateFrom) query = query.gte("transaction_date", filters.dateFrom);
   if (filters?.dateTo) query = query.lte("transaction_date", filters.dateTo);
 

@@ -1,0 +1,1 @@
+[text](../../../../blueprint/PROJECT_CLAUDE_TEMPLATE.md)

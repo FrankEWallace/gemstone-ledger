@@ -113,6 +113,88 @@ export interface Database {
           role?: "admin" | "site_manager" | "worker" | "viewer";
         };
       };
+      customers: {
+        Row: {
+          id: string;
+          site_id: string;
+          org_id: string;
+          name: string;
+          type: "external" | "internal";
+          contact_name: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
+          contract_start: string | null;
+          contract_end: string | null;
+          daily_rate: number | null;
+          notes: string | null;
+          status: "active" | "inactive" | "completed";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          site_id: string;
+          org_id: string;
+          name: string;
+          type?: "external" | "internal";
+          contact_name?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          contract_start?: string | null;
+          contract_end?: string | null;
+          daily_rate?: number | null;
+          notes?: string | null;
+          status?: "active" | "inactive" | "completed";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          site_id?: string;
+          org_id?: string;
+          name?: string;
+          type?: "external" | "internal";
+          contact_name?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          contract_start?: string | null;
+          contract_end?: string | null;
+          daily_rate?: number | null;
+          notes?: string | null;
+          status?: "active" | "inactive" | "completed";
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      expense_categories: {
+        Row: {
+          id: string;
+          org_id: string;
+          name: string;
+          description: string | null;
+          color: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          name: string;
+          description?: string | null;
+          color?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          name?: string;
+          description?: string | null;
+          color?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       suppliers: {
         Row: {
           id: string;
@@ -199,6 +281,8 @@ export interface Database {
         Row: {
           id: string;
           site_id: string;
+          customer_id: string | null;
+          expense_category_id: string | null;
           reference_no: string | null;
           description: string | null;
           category: string | null;
@@ -214,6 +298,8 @@ export interface Database {
         Insert: {
           id?: string;
           site_id: string;
+          customer_id?: string | null;
+          expense_category_id?: string | null;
           reference_no?: string | null;
           description?: string | null;
           category?: string | null;
@@ -229,6 +315,8 @@ export interface Database {
         Update: {
           id?: string;
           site_id?: string;
+          customer_id?: string | null;
+          expense_category_id?: string | null;
           reference_no?: string | null;
           description?: string | null;
           category?: string | null;
@@ -696,6 +784,10 @@ export type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 export type Site = Database["public"]["Tables"]["sites"]["Row"];
 export type UserProfile = Database["public"]["Tables"]["user_profiles"]["Row"];
 export type UserSiteRole = Database["public"]["Tables"]["user_site_roles"]["Row"];
+export type Customer = Database["public"]["Tables"]["customers"]["Row"];
+export type CustomerType = Customer["type"];
+export type CustomerStatus = Customer["status"];
+export type ExpenseCategory = Database["public"]["Tables"]["expense_categories"]["Row"];
 export type Supplier = Database["public"]["Tables"]["suppliers"]["Row"];
 export type InventoryItem = Database["public"]["Tables"]["inventory_items"]["Row"];
 export type Transaction = Database["public"]["Tables"]["transactions"]["Row"];
@@ -766,4 +858,16 @@ export interface AuditLog {
   old_data: Record<string, unknown> | null;
   new_data: Record<string, unknown> | null;
   created_at: string;
+}
+
+// ── Customer summary report type ───────────────────────────────────────────────
+export interface CustomerSummary {
+  customerId: string;
+  customerName: string;
+  customerType: "external" | "internal";
+  totalIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+  transactionCount: number;
+  expensesByCategory: { category: string; total: number }[];
 }
