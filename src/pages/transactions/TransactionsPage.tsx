@@ -55,6 +55,7 @@ import {
   deleteTransaction,
   type TransactionPayload,
 } from "@/services/transactions.service";
+import { getCustomers } from "@/services/customers.service";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ const txSchema = z.object({
   description: z.string().min(1, "Description is required"),
   reference_no: z.string().optional(),
   category: z.string().optional(),
+  customer_id: z.string().optional(),
   type: z.enum(["income", "expense", "refund"]),
   status: z.enum(["success", "pending", "refunded", "cancelled"]),
   quantity: z.coerce.number().min(1, "Must be ≥ 1"),
@@ -99,14 +101,15 @@ function statusBadge(status: TransactionStatus) {
   );
 }
 
-function exportCSV(txs: Transaction[]) {
-  const header = "Date,Reference,Description,Category,Type,Status,Qty,Unit Price,Total";
+function exportCSV(txs: Transaction[], customerMap: Map<string, string>) {
+  const header = "Date,Reference,Description,Category,Customer,Type,Status,Qty,Unit Price,Total";
   const rows = txs.map((t) =>
     [
       t.transaction_date,
       t.reference_no ?? "",
-      `"${t.description ?? ""}"`,
+      `"${(t.description ?? "").replace(/"/g, '""')}"`,
       t.category ?? "",
+      `"${customerMap.get(t.customer_id ?? "") ?? ""}"`,
       t.type,
       t.status,
       t.quantity,
@@ -131,9 +134,10 @@ interface AddTxModalProps {
   onClose: () => void;
   siteId: string;
   userId?: string;
+  customers: { id: string; name: string }[];
 }
 
-function AddTransactionModal({ open, onClose, siteId, userId }: AddTxModalProps) {
+function AddTransactionModal({ open, onClose, siteId, userId, customers }: AddTxModalProps) {
   const queryClient = useQueryClient();
 
   const form = useForm<TxFormValues>({
@@ -142,6 +146,7 @@ function AddTransactionModal({ open, onClose, siteId, userId }: AddTxModalProps)
       description: "",
       reference_no: "",
       category: "",
+      customer_id: "",
       type: "income",
       status: "pending",
       quantity: 1,
@@ -158,6 +163,7 @@ function AddTransactionModal({ open, onClose, siteId, userId }: AddTxModalProps)
           description: values.description,
           reference_no: values.reference_no || undefined,
           category: values.category || undefined,
+          customer_id: values.customer_id || null,
           type: values.type,
           status: values.status,
           quantity: values.quantity,
@@ -227,6 +233,32 @@ function AddTransactionModal({ open, onClose, siteId, userId }: AddTxModalProps)
                   </FormItem>
                 )}
               />
+
+              {customers.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="customer_id"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Customer</FormLabel>
+                      <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Unassigned" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Unassigned</SelectItem>
+                          {customers.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -395,6 +427,7 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<TransactionType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [customerFilter, setCustomerFilter] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
@@ -419,12 +452,13 @@ export default function TransactionsPage() {
   }
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions", activeSiteId, typeFilter, statusFilter, categoryFilter],
+    queryKey: ["transactions", activeSiteId, typeFilter, statusFilter, categoryFilter, customerFilter],
     queryFn: () =>
       getTransactions(activeSiteId!, {
         type: typeFilter,
         status: statusFilter,
         category: categoryFilter,
+        customerId: customerFilter,
       }),
     enabled: !!activeSiteId,
   });
@@ -434,6 +468,14 @@ export default function TransactionsPage() {
     queryFn: () => getTransactionCategories(activeSiteId!),
     enabled: !!activeSiteId,
   });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers", activeSiteId],
+    queryFn: () => getCustomers(activeSiteId!),
+    enabled: !!activeSiteId,
+  });
+
+  const customerMap = new Map(customers.map((c) => [c.id, c.name]));
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => deleteTransaction(id),
@@ -471,7 +513,21 @@ export default function TransactionsPage() {
     .filter((t) => t.type === "expense" && t.status === "success")
     .reduce((sum, t) => sum + t.quantity * t.unit_price, 0);
 
-  const columns: DataTableColumn<Transaction>[] = [
+  // Running balance: sort oldest-first, accumulate, then reverse for display
+  const sortedAsc = [...transactions].sort(
+    (a, b) => a.transaction_date.localeCompare(b.transaction_date)
+  );
+  let runningBalance = 0;
+  const txWithBalance = sortedAsc
+    .map((t) => {
+      const amount = t.quantity * t.unit_price;
+      if (t.type === "income" && t.status !== "cancelled") runningBalance += amount;
+      else if (t.type === "expense" && t.status !== "cancelled") runningBalance -= amount;
+      return { ...t, _balance: runningBalance };
+    })
+    .reverse();
+
+  const columns: DataTableColumn<(typeof txWithBalance)[number]>[] = [
     {
       key: "transaction_date",
       header: "Date",
@@ -495,6 +551,14 @@ export default function TransactionsPage() {
           )}
         </div>
       ),
+    },
+    {
+      key: "customer_id",
+      header: "Customer",
+      render: (val) => {
+        const name = val ? customerMap.get(String(val)) : null;
+        return <span className="text-xs text-muted-foreground">{name ?? "—"}</span>;
+      },
     },
     {
       key: "type",
@@ -528,6 +592,19 @@ export default function TransactionsPage() {
       },
     },
     {
+      key: "_balance" as keyof (typeof txWithBalance)[number],
+      header: "Balance",
+      className: "text-right",
+      render: (val) => {
+        const n = Number(val);
+        return (
+          <span className={`tabular-nums text-xs font-medium ${n >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+            {n >= 0 ? "+" : ""}${Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 0 })}
+          </span>
+        );
+      },
+    },
+    {
       key: "id",
       header: "",
       className: "w-10 text-right",
@@ -550,7 +627,7 @@ export default function TransactionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold">Transactions</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportCSV(transactions)}>
+          <Button variant="outline" size="sm" onClick={() => exportCSV(transactions, customerMap)}>
             <Download className="h-4 w-4 mr-1.5" />
             Export CSV
           </Button>
@@ -566,30 +643,40 @@ export default function TransactionsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="rounded-lg border border-border p-4">
-          <p className="text-sm text-muted-foreground">Total Income</p>
-          <p className="text-xl font-bold text-emerald-600">
-            ${totalIncome.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Collected Income</p>
+          <p className="text-xl font-bold text-emerald-600 mt-1">
+            ${totalIncome.toLocaleString("en-US", { minimumFractionDigits: 0 })}
           </p>
+          <p className="text-[11px] text-muted-foreground">success status only</p>
         </div>
         <div className="rounded-lg border border-border p-4">
-          <p className="text-sm text-muted-foreground">Total Expenses</p>
-          <p className="text-xl font-bold text-red-600">
-            ${totalExpenses.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Total Expenses</p>
+          <p className="text-xl font-bold text-red-600 mt-1">
+            ${totalExpenses.toLocaleString("en-US", { minimumFractionDigits: 0 })}
           </p>
+          <p className="text-[11px] text-muted-foreground">success status only</p>
         </div>
-        <div className="rounded-lg border border-border p-4 col-span-2 sm:col-span-1">
-          <p className="text-sm text-muted-foreground">Net</p>
-          <p className={`text-xl font-bold ${totalIncome - totalExpenses >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-            ${(totalIncome - totalExpenses).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Net Profit</p>
+          <p className={`text-xl font-bold mt-1 ${totalIncome - totalExpenses >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            ${(totalIncome - totalExpenses).toLocaleString("en-US", { minimumFractionDigits: 0 })}
           </p>
+          <p className="text-[11px] text-muted-foreground">income − expenses</p>
+        </div>
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Running Balance</p>
+          <p className={`text-xl font-bold mt-1 tabular-nums ${(txWithBalance[0]?._balance ?? 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            ${Math.abs(txWithBalance[0]?._balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}
+          </p>
+          <p className="text-[11px] text-muted-foreground">all transactions incl. pending</p>
         </div>
       </div>
 
       {/* Table */}
       <DataTable
-        data={transactions as unknown as Record<string, unknown>[]}
+        data={txWithBalance as unknown as Record<string, unknown>[]}
         columns={columns as DataTableColumn<Record<string, unknown>>[]}
         keyField="id"
         searchable
@@ -637,6 +724,20 @@ export default function TransactionsPage() {
                 </SelectContent>
               </Select>
             )}
+
+            {customers.length > 0 && (
+              <Select value={customerFilter} onValueChange={setCustomerFilter}>
+                <SelectTrigger className="w-40 h-9">
+                  <SelectValue placeholder="All customers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All customers</SelectItem>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </>
         }
       />
@@ -659,6 +760,7 @@ export default function TransactionsPage() {
           onClose={() => setModalOpen(false)}
           siteId={activeSiteId!}
           userId={user?.id}
+          customers={customers}
         />
       )}
 

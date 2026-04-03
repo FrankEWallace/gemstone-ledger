@@ -127,7 +127,7 @@ export interface Database {
           contract_end: string | null;
           daily_rate: number | null;
           notes: string | null;
-          status: "active" | "inactive" | "completed";
+          status: "prospect" | "active" | "inactive" | "completed";
           created_at: string;
           updated_at: string;
         };
@@ -144,7 +144,7 @@ export interface Database {
           contract_end?: string | null;
           daily_rate?: number | null;
           notes?: string | null;
-          status?: "active" | "inactive" | "completed";
+          status?: "prospect" | "active" | "inactive" | "completed";
           created_at?: string;
           updated_at?: string;
         };
@@ -161,7 +161,7 @@ export interface Database {
           contract_end?: string | null;
           daily_rate?: number | null;
           notes?: string | null;
-          status?: "active" | "inactive" | "completed";
+          status?: "prospect" | "active" | "inactive" | "completed";
           created_at?: string;
           updated_at?: string;
         };
@@ -836,6 +836,7 @@ export interface KpiTarget {
 export interface ProductionLog {
   id: string;
   site_id: string;
+  customer_id: string | null;
   log_date: string;
   ore_tonnes: number | null;
   waste_tonnes: number | null;
@@ -870,4 +871,20 @@ export interface CustomerSummary {
   netProfit: number;
   transactionCount: number;
   expensesByCategory: { category: string; total: number }[];
+  monthlyTrend?: { month: string; income: number; expenses: number }[];
+}
+
+// ── Contract summary ───────────────────────────────────────────────────────────
+export interface ContractSummary {
+  totalContractDays: number;
+  billedDays: number;
+  unbilledDays: number;
+  contractValue: number;        // daily_rate × totalContractDays
+  billedAmount: number;         // sum of all income transactions
+  collectedAmount: number;      // sum of "success" income transactions
+  pendingAmount: number;        // sum of "pending" income transactions
+  progressPct: number;          // billedDays / totalContractDays * 100
+  daysRemaining: number;
+  isExpired: boolean;
+  isExpiringSoon: boolean;      // within 14 days
 }

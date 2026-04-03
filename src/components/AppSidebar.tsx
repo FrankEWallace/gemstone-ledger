@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Package,
   ArrowLeftRight,
+  Users,
   BarChart3,
   MessageSquare,
   TrendingUp,
@@ -26,6 +27,7 @@ import {
   FileText,
   Zap,
   Target,
+  Tag,
   Clock,
   SlidersHorizontal,
   Eye,
@@ -49,6 +51,7 @@ const mainMenu: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/" },
   { label: "Inventory", icon: Package, to: "/inventory" },
   { label: "Transactions", icon: ArrowLeftRight, to: "/transactions" },
+  { label: "Customers", icon: Users, to: "/customers" },
   { label: "Reports & Analytics", icon: BarChart3, to: "/reports" },
   { label: "Messages", icon: MessageSquare, to: "/messages" },
   { label: "Team Performance", icon: TrendingUp, to: "/team" },
@@ -78,8 +81,9 @@ const operations: NavItem[] = [
 ];
 
 const settingsItems: NavItem[] = [
-  { label: "KPI Targets",      icon: Target,    to: "/settings/targets" },
-  { label: "Alert Rules",      icon: Zap,       to: "/settings/alerts" },
+  { label: "Expense Categories", icon: Tag,      to: "/settings/expense-categories" },
+  { label: "KPI Targets",        icon: Target,   to: "/settings/targets" },
+  { label: "Alert Rules",        icon: Zap,      to: "/settings/alerts" },
   { label: "Offline Sync",     icon: CloudOff,  to: "/settings/sync" },
   { label: "System Settings",  icon: Settings,  to: "/settings/system" },
   { label: "Help Center",      icon: HelpCircle,to: "/settings/help" },

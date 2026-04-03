@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -12,7 +13,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { subMonths, format, startOfMonth, endOfMonth } from "date-fns";
-import { Download, FileText, Clock, Hash } from "lucide-react";
+import { Download } from "lucide-react";
 import {
   pdf,
   Document,
@@ -25,11 +26,14 @@ import {
 import { useSite } from "@/hooks/useSite";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getMonthlyTrend,
   getExpensesByCategory,
   getReportSummary,
   getProductionByDay,
+  getCustomerSummaries,
 } from "@/services/reports.service";
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -74,7 +78,7 @@ const pdfStyles = StyleSheet.create({
 });
 
 function ReportPDF({
-  siteName, dateFrom, dateTo, summary, trend, categories,
+  siteName, dateFrom, dateTo, summary, trend, categories, customerSummaries,
 }: {
   siteName: string;
   dateFrom: string;
@@ -82,6 +86,7 @@ function ReportPDF({
   summary: Awaited<ReturnType<typeof getReportSummary>>;
   trend: Awaited<ReturnType<typeof getMonthlyTrend>>;
   categories: Awaited<ReturnType<typeof getExpensesByCategory>>;
+  customerSummaries: Awaited<ReturnType<typeof getCustomerSummaries>>;
 }) {
   return (
     <Document>
@@ -159,6 +164,33 @@ function ReportPDF({
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {customerSummaries.length > 0 && (
+          <View style={pdfStyles.section}>
+            <Text style={pdfStyles.sectionTitle}>Customer Profitability</Text>
+            <View style={pdfStyles.tableHeader}>
+              <Text style={pdfStyles.tableCellBold}>Customer</Text>
+              <Text style={{ ...pdfStyles.tableCellRight, flex: 0.6 }}>Type</Text>
+              <Text style={pdfStyles.tableCellRight}>Income</Text>
+              <Text style={pdfStyles.tableCellRight}>Expenses</Text>
+              <Text style={pdfStyles.tableCellRightBold}>Net Profit</Text>
+            </View>
+            {customerSummaries
+              .slice()
+              .sort((a, b) => b.netProfit - a.netProfit)
+              .map((cs) => (
+                <View key={cs.customerId} style={pdfStyles.tableRow}>
+                  <Text style={pdfStyles.tableCell}>{cs.customerName}</Text>
+                  <Text style={{ ...pdfStyles.tableCell, flex: 0.6, textTransform: "capitalize" }}>
+                    {cs.customerType}
+                  </Text>
+                  <Text style={pdfStyles.tableCellRight}>{fmt(cs.totalIncome)}</Text>
+                  <Text style={pdfStyles.tableCellRight}>{fmt(cs.totalExpenses)}</Text>
+                  <Text style={pdfStyles.tableCellRightBold}>{fmt(cs.netProfit)}</Text>
+                </View>
+              ))}
           </View>
         )}
       </Page>
@@ -255,6 +287,12 @@ export default function ReportsPage() {
     ...opts,
   });
 
+  const { data: customerSummaries = [], isLoading: loadingCustomers } = useQuery({
+    queryKey: ["customer-summaries", activeSiteId, dateFrom, dateTo],
+    queryFn: () => getCustomerSummaries(activeSiteId!, dateFrom, dateTo),
+    ...opts,
+  });
+
   async function handleExportPDF() {
     if (!summary) return;
     setIsExporting(true);
@@ -267,6 +305,7 @@ export default function ReportsPage() {
           summary={summary}
           trend={trend}
           categories={categories}
+          customerSummaries={customerSummaries}
         />
       ).toBlob();
       const url = URL.createObjectURL(blob);
@@ -350,6 +389,15 @@ export default function ReportsPage() {
           })}
         </div>
       </div>
+
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="by-customer">By Customer</TabsTrigger>
+        </TabsList>
+
+        {/* ── Overview tab ──────────────────────────────────────────────── */}
+        <TabsContent value="overview" className="space-y-6 mt-4">
 
       {/* ── KPI cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -609,6 +657,143 @@ export default function ReportsPage() {
           </table>
         </div>
       )}
+
+        </TabsContent>
+
+        {/* ── By Customer tab ───────────────────────────────────────────── */}
+        <TabsContent value="by-customer" className="mt-4 space-y-4">
+          {/* CSV export */}
+          {customerSummaries.length > 0 && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  const header = "Customer,Type,Income,Expenses,Net Profit,Margin %,Transactions,Top Expense Category,Top Category Amount";
+                  const rows = customerSummaries
+                    .slice()
+                    .sort((a, b) => b.netProfit - a.netProfit)
+                    .map((cs) => {
+                      const margin = cs.totalIncome > 0
+                        ? ((cs.netProfit / cs.totalIncome) * 100).toFixed(1)
+                        : "0.0";
+                      const topCat = cs.expensesByCategory[0];
+                      return [
+                        `"${cs.customerName}"`,
+                        cs.customerType,
+                        cs.totalIncome.toFixed(2),
+                        cs.totalExpenses.toFixed(2),
+                        cs.netProfit.toFixed(2),
+                        margin,
+                        cs.transactionCount,
+                        topCat ? `"${topCat.category}"` : "",
+                        topCat ? topCat.total.toFixed(2) : "",
+                      ].join(",");
+                    });
+                  const csv = [header, ...rows].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url  = URL.createObjectURL(blob);
+                  const a    = document.createElement("a");
+                  a.href     = url;
+                  a.download = `customer-report-${dateFrom}-${dateTo}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-muted transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export Customer CSV
+              </button>
+            </div>
+          )}
+
+          {loadingCustomers ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 animate-pulse bg-muted rounded-xl" />
+              ))}
+            </div>
+          ) : customerSummaries.length === 0 ? (
+            <div className="flex items-center justify-center h-48 text-sm text-muted-foreground rounded-xl border border-border bg-card">
+              No customer data for this period.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {customerSummaries.map((cs) => {
+                const maxCatVal = Math.max(...cs.expensesByCategory.map((c) => c.total), 1);
+                return (
+                  <div key={cs.customerId} className="rounded-xl border border-border bg-card p-5 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link
+                          to={`/customers/${cs.customerId}`}
+                          className="font-semibold truncate hover:underline underline-offset-2 block"
+                        >
+                          {cs.customerName}
+                        </Link>
+                        <Badge
+                          variant="outline"
+                          className={cs.customerType === "external" ? "text-blue-600 border-blue-200 mt-1" : "text-muted-foreground mt-1"}
+                        >
+                          {cs.customerType}
+                        </Badge>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Net Profit</p>
+                        <p className={`text-lg font-bold tabular-nums ${cs.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                          {cs.netProfit >= 0 ? "+" : "−"}{fmt(Math.abs(cs.netProfit))}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Income / Expenses */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Income</p>
+                        <p className="text-sm font-semibold tabular-nums text-emerald-600">{fmt(cs.totalIncome)}</p>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Expenses</p>
+                        <p className="text-sm font-semibold tabular-nums text-red-500">{fmt(cs.totalExpenses)}</p>
+                      </div>
+                    </div>
+
+                    {/* Expense category breakdown */}
+                    {cs.expensesByCategory.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Expenses by Category
+                        </p>
+                        {cs.expensesByCategory.slice(0, 4).map((c) => {
+                          const pct = Math.round((c.total / maxCatVal) * 100);
+                          return (
+                            <div key={c.category} className="space-y-0.5">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground truncate mr-2">{c.category}</span>
+                                <span className="tabular-nums font-medium shrink-0">{fmtShort(c.total)}</span>
+                              </div>
+                              <div className="h-1 rounded-full bg-muted overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-foreground/60 transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-muted-foreground">
+                      {cs.transactionCount} transaction{cs.transactionCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+      </Tabs>
     </div>
   );
 }

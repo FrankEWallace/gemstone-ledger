@@ -21,7 +21,16 @@ import {
   upsertProductionLog,
   deleteProductionLog,
 } from "@/services/production.service";
+import { getCustomers } from "@/services/customers.service";
+import { getTransactions } from "@/services/transactions.service";
 import type { ProductionLog } from "@/lib/supabaseTypes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +63,7 @@ import {
 
 const logSchema = z.object({
   log_date:     z.string().min(1, "Date is required"),
+  customer_id:  z.string().optional(),
   ore_tonnes:   z.coerce.number().min(0).optional(),
   waste_tonnes: z.coerce.number().min(0).optional(),
   grade_g_t:    z.coerce.number().min(0).optional(),
@@ -70,11 +80,13 @@ function LogModal({
   onClose,
   siteId,
   existing,
+  customers,
 }: {
   open: boolean;
   onClose: () => void;
   siteId: string;
   existing?: ProductionLog | null;
+  customers: { id: string; name: string }[];
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -83,6 +95,7 @@ function LogModal({
     resolver: zodResolver(logSchema),
     values: {
       log_date:     existing?.log_date ?? format(new Date(), "yyyy-MM-dd"),
+      customer_id:  existing?.customer_id ?? "",
       ore_tonnes:   existing?.ore_tonnes ?? undefined,
       waste_tonnes: existing?.waste_tonnes ?? undefined,
       grade_g_t:    existing?.grade_g_t ?? undefined,
@@ -96,6 +109,7 @@ function LogModal({
       upsertProductionLog(
         {
           site_id:      siteId,
+          customer_id:  vals.customer_id || null,
           log_date:     vals.log_date,
           ore_tonnes:   vals.ore_tonnes ?? null,
           waste_tonnes: vals.waste_tonnes ?? null,
@@ -137,6 +151,32 @@ function LogModal({
                 </FormItem>
               )}
             />
+
+            {customers.length > 0 && (
+              <FormField
+                control={form.control}
+                name="customer_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer (optional)</FormLabel>
+                    <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="No customer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">No customer</SelectItem>
+                        {customers.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <FormField
@@ -267,12 +307,32 @@ export default function ProductionLogPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProductionLog | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductionLog | null>(null);
+  const [customerFilter, setCustomerFilter] = useState("all");
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["production_logs", activeSiteId],
     queryFn: () => getProductionLogs(activeSiteId!),
     enabled: !!activeSiteId,
   });
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers", activeSiteId],
+    queryFn: () => getCustomers(activeSiteId!),
+    enabled: !!activeSiteId,
+  });
+
+  // Site-wide expenses for cost-per-tonne calculation
+  const { data: allTransactions = [] } = useQuery({
+    queryKey: ["transactions", activeSiteId],
+    queryFn: () => getTransactions(activeSiteId!),
+    enabled: !!activeSiteId,
+  });
+
+  const customerMap = new Map(customers.map((c) => [c.id, c.name]));
+
+  const filteredLogs = customerFilter === "all"
+    ? logs
+    : logs.filter((l) => l.customer_id === customerFilter);
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteProductionLog(id),
@@ -291,13 +351,22 @@ export default function ProductionLogPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ["production_logs", activeSiteId] }),
   });
 
-  // Totals for the displayed logs
-  const totalOre   = logs.reduce((s, l) => s + (l.ore_tonnes ?? 0), 0);
-  const totalWaste = logs.reduce((s, l) => s + (l.waste_tonnes ?? 0), 0);
-  const avgGrade   = logs.filter((l) => l.grade_g_t != null).length > 0
-    ? logs.filter((l) => l.grade_g_t != null).reduce((s, l) => s + (l.grade_g_t ?? 0), 0) /
-      logs.filter((l) => l.grade_g_t != null).length
+  // Totals for the displayed (filtered) logs
+  const totalOre   = filteredLogs.reduce((s, l) => s + (l.ore_tonnes ?? 0), 0);
+  const totalWaste = filteredLogs.reduce((s, l) => s + (l.waste_tonnes ?? 0), 0);
+  const avgGrade   = filteredLogs.filter((l) => l.grade_g_t != null).length > 0
+    ? filteredLogs.filter((l) => l.grade_g_t != null).reduce((s, l) => s + (l.grade_g_t ?? 0), 0) /
+      filteredLogs.filter((l) => l.grade_g_t != null).length
     : null;
+
+  // Cost-per-tonne: total expenses (success) ÷ total ore extracted
+  const relevantTx = customerFilter === "all"
+    ? allTransactions
+    : allTransactions.filter((t) => t.customer_id === customerFilter);
+  const totalExpenses = relevantTx
+    .filter((t) => t.type === "expense" && t.status === "success")
+    .reduce((s, t) => s + t.unit_price * t.quantity, 0);
+  const costPerTonne = totalOre > 0 ? totalExpenses / totalOre : null;
 
   if (!activeSiteId) {
     return (
@@ -320,20 +389,38 @@ export default function ProductionLogPage() {
         </Button>
       </div>
 
+      {/* Customer filter */}
+      {customers.length > 0 && (
+        <div className="flex items-center gap-3">
+          <Select value={customerFilter} onValueChange={setCustomerFilter}>
+            <SelectTrigger className="w-48 h-9">
+              <SelectValue placeholder="All customers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All customers</SelectItem>
+              {customers.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: "Total Ore (t)", value: totalOre.toLocaleString(undefined, { maximumFractionDigits: 1 }), icon: <Pickaxe className="h-4 w-4 text-yellow-500" /> },
-          { label: "Total Waste (t)", value: totalWaste.toLocaleString(undefined, { maximumFractionDigits: 1 }), icon: <Mountain className="h-4 w-4 text-muted-foreground" /> },
-          { label: "Avg Grade (g/t)", value: avgGrade != null ? avgGrade.toFixed(3) : "—", icon: <FlaskConical className="h-4 w-4 text-primary" /> },
-          { label: "Days Logged", value: String(logs.length), icon: <Droplets className="h-4 w-4 text-blue-500" /> },
+          { label: "Total Ore (t)",    value: totalOre.toLocaleString(undefined, { maximumFractionDigits: 1 }),    icon: <Pickaxe className="h-4 w-4 text-yellow-500" /> },
+          { label: "Total Waste (t)",  value: totalWaste.toLocaleString(undefined, { maximumFractionDigits: 1 }),  icon: <Mountain className="h-4 w-4 text-muted-foreground" /> },
+          { label: "Avg Grade (g/t)",  value: avgGrade != null ? avgGrade.toFixed(3) : "—",                        icon: <FlaskConical className="h-4 w-4 text-primary" /> },
+          { label: "Days Logged",      value: String(filteredLogs.length),                                          icon: <Droplets className="h-4 w-4 text-blue-500" /> },
+          { label: "Cost / Tonne",     value: costPerTonne != null ? `$${costPerTonne.toFixed(2)}` : "—",          icon: <Mountain className="h-4 w-4 text-red-400" /> },
         ].map(({ label, value, icon }) => (
           <div key={label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{label}</span>
               <span className="rounded-lg bg-muted p-1.5">{icon}</span>
             </div>
-            <p className="text-2xl font-bold font-display">{value}</p>
+            <p className="text-2xl font-bold font-display tabular-nums">{value}</p>
           </div>
         ))}
       </div>
@@ -344,6 +431,7 @@ export default function ProductionLogPage() {
           <thead>
             <tr className="border-b border-border text-muted-foreground">
               <th className="px-4 py-3 text-left font-medium">Date</th>
+              <th className="px-4 py-3 text-left font-medium hidden lg:table-cell">Customer</th>
               <th className="px-4 py-3 text-right font-medium">Ore (t)</th>
               <th className="px-4 py-3 text-right font-medium">Waste (t)</th>
               <th className="px-4 py-3 text-right font-medium">Grade (g/t)</th>
@@ -356,21 +444,21 @@ export default function ProductionLogPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="border-b border-border">
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 8 }).map((_, j) => (
                     <td key={j} className="px-4 py-3">
                       <div className="h-4 bg-muted rounded animate-pulse" />
                     </td>
                   ))}
                 </tr>
               ))
-            ) : logs.length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   No production logs yet. Click "Log Day" to add the first entry.
                 </td>
               </tr>
             ) : (
-              logs.map((log) => (
+              filteredLogs.map((log) => (
                 <tr
                   key={log.id}
                   className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
@@ -378,6 +466,9 @@ export default function ProductionLogPage() {
                 >
                   <td className="px-4 py-3 font-medium">
                     {format(new Date(log.log_date + "T00:00:00"), "EEE d MMM yyyy")}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">
+                    {log.customer_id ? (customerMap.get(log.customer_id) ?? "—") : "—"}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
                     {log.ore_tonnes != null ? log.ore_tonnes.toLocaleString() : "—"}
@@ -415,6 +506,7 @@ export default function ProductionLogPage() {
         onClose={() => { setModalOpen(false); setEditTarget(null); }}
         siteId={activeSiteId}
         existing={editTarget}
+        customers={customers}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>

@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import { useAuth } from "@/hooks/useAuth";
 import type { InventoryItem } from "@/lib/supabaseTypes";
 import {
   getInventoryItems,
@@ -53,6 +54,12 @@ import {
   deleteInventoryItem,
   getInventoryConsumptionRates,
 } from "@/services/inventory.service";
+import { getCustomers } from "@/services/customers.service";
+import { getExpenseCategories } from "@/services/expense-categories.service";
+import { createTransaction } from "@/services/transactions.service";
+import { isDemoMode } from "@/lib/demo";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -296,10 +303,178 @@ function StockoutChip({ daysLeft }: { daysLeft: number }) {
   );
 }
 
+// ─── Log Usage Modal ──────────────────────────────────────────────────────────
+
+interface LogUsageModalProps {
+  open: boolean;
+  onClose: () => void;
+  item: InventoryItem;
+  siteId: string;
+  orgId: string;
+  userId?: string;
+}
+
+function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageModalProps) {
+  const queryClient = useQueryClient();
+  const [qty, setQty] = useState(1);
+  const [customerId, setCustomerId] = useState("");
+  const [expenseCategoryId, setExpenseCategoryId] = useState("");
+  const [notes, setNotes] = useState("");
+  const [createExpense, setCreateExpense] = useState(true);
+
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers", siteId],
+    queryFn: () => getCustomers(siteId),
+  });
+  const { data: expenseCategories = [] } = useQuery({
+    queryKey: ["expense-categories", orgId],
+    queryFn: () => getExpenseCategories(orgId),
+    enabled: !!orgId,
+  });
+
+  const unitCost = Number(item.unit_cost ?? 0);
+  const total = qty * unitCost;
+  const maxQty = item.quantity;
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () => {
+      if (isDemoMode()) {
+        toast.info("Demo mode — changes are not persisted.");
+        return;
+      }
+      // 1. Deduct stock
+      await updateInventoryItem(item.id, { quantity: item.quantity - qty });
+
+      // 2. Optionally create expense transaction
+      if (createExpense && unitCost > 0) {
+        await createTransaction(siteId, {
+          description: `${item.name} usage — ${qty} ${item.unit ?? "units"}${notes ? ` (${notes})` : ""}`,
+          type: "expense",
+          status: "success",
+          quantity: qty,
+          unit_price: unitCost,
+          transaction_date: new Date().toISOString().slice(0, 10),
+          customer_id: customerId || null,
+          expense_category_id: expenseCategoryId || null,
+          category: item.category ?? undefined,
+        }, userId);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory", siteId] });
+      queryClient.invalidateQueries({ queryKey: ["transactions", siteId] });
+      toast.success(`Logged ${qty} ${item.unit ?? "unit(s)"} of ${item.name}${createExpense && unitCost > 0 ? ` · $${total.toFixed(2)} expense created` : ""}`);
+      onClose();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Log Inventory Usage</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="rounded-lg bg-muted/40 p-3 space-y-0.5">
+            <p className="text-sm font-semibold">{item.name}</p>
+            <p className="text-xs text-muted-foreground">
+              In stock: <span className="font-medium">{item.quantity} {item.unit ?? "units"}</span>
+              {unitCost > 0 && <> · Unit cost: <span className="font-medium">${unitCost.toFixed(2)}</span></>}
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Quantity Used *</Label>
+            <Input
+              type="number"
+              min={1}
+              max={maxQty}
+              value={qty}
+              onChange={(e) => setQty(Math.min(maxQty, Math.max(1, Number(e.target.value))))}
+              className="h-8 text-xs"
+            />
+          </div>
+
+          {customers.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Customer (optional)</Label>
+              <Select value={customerId} onValueChange={setCustomerId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="No customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No customer</SelectItem>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {expenseCategories.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Expense Category (optional)</Label>
+              <Select value={expenseCategoryId} onValueChange={setExpenseCategoryId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Uncategorised" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Uncategorised</SelectItem>
+                  {expenseCategories.map((ec) => (
+                    <SelectItem key={ec.id} value={ec.id}>{ec.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Notes (optional)</Label>
+            <Textarea
+              placeholder="e.g. Used for leaching circuit"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+
+          {unitCost > 0 && (
+            <div className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                id="create-expense"
+                checked={createExpense}
+                onChange={(e) => setCreateExpense(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="create-expense" className="cursor-pointer">
+                Auto-create expense transaction{" "}
+                <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
+              </label>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button onClick={() => mutate()} disabled={isPending || qty < 1 || qty > maxQty}>
+            {isPending ? "Logging…" : "Log Usage"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InventoryPage() {
   const { activeSiteId } = useSite();
+  const { orgId, user } = useAuth();
   const queryClient = useQueryClient();
 
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -307,6 +482,7 @@ export default function InventoryPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
+  const [logUsageTarget, setLogUsageTarget] = useState<InventoryItem | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory", activeSiteId],
@@ -414,9 +590,19 @@ export default function InventoryPage() {
     {
       key: "id",
       header: "",
-      className: "w-20 text-right",
+      className: "w-32 text-right",
       render: (_, row) => (
         <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-amber-600 hover:text-amber-700 px-2"
+            title="Log usage → auto-expense"
+            onClick={() => setLogUsageTarget(row as unknown as InventoryItem)}
+          >
+            <TrendingDown className="h-3 w-3 mr-1" />
+            Use
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -564,6 +750,17 @@ export default function InventoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {logUsageTarget && (
+        <LogUsageModal
+          open={!!logUsageTarget}
+          onClose={() => setLogUsageTarget(null)}
+          item={logUsageTarget}
+          siteId={activeSiteId!}
+          orgId={orgId!}
+          userId={user?.id}
+        />
+      )}
     </div>
   );
 }

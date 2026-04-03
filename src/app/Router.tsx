@@ -32,6 +32,9 @@ const AuditLogPage      = lazy(() => import("@/pages/management/AuditLogPage"));
 const AlertRulesPage    = lazy(() => import("@/pages/settings/AlertRulesPage"));
 const KpiTargetsPage      = lazy(() => import("@/pages/settings/KpiTargetsPage"));
 const SyncHistoryPage     = lazy(() => import("@/pages/settings/SyncHistoryPage"));
+const CustomersPage         = lazy(() => import("@/pages/customers/CustomersPage"));
+const CustomerDetailPage    = lazy(() => import("@/pages/customers/CustomerDetailPage"));
+const ExpenseCategoriesPage = lazy(() => import("@/pages/settings/ExpenseCategoriesPage"));
 const ProductionLogPage   = lazy(() => import("@/pages/production/ProductionLogPage"));
 const TimesheetPage       = lazy(() => import("@/pages/team/TimesheetPage"));
 const EquipmentPage     = lazy(() => import("@/pages/equipment/EquipmentPage"));
@@ -76,6 +79,8 @@ export default function Router() {
           {/* Phase 2 */}
           <Route path="/inventory"    element={<BoundedRoute element={<InventoryPage />} />} />
           <Route path="/transactions" element={<BoundedRoute element={<TransactionsPage />} />} />
+          <Route path="/customers"     element={<BoundedRoute element={<CustomersPage />} />} />
+          <Route path="/customers/:id" element={<BoundedRoute element={<CustomerDetailPage />} />} />
           <Route path="/team"         element={<BoundedRoute element={<TeamPage />} />} />
 
           {/* Phase 4 */}
@@ -106,7 +111,8 @@ export default function Router() {
           <Route path="/settings/support" element={<BoundedRoute element={<SupportPage />} />} />
           <Route path="/settings/alerts"  element={<BoundedRoute element={<AlertRulesPage />} />} />
           <Route path="/settings/targets" element={<BoundedRoute element={<KpiTargetsPage />} />} />
-          <Route path="/settings/sync"    element={<BoundedRoute element={<SyncHistoryPage />} />} />
+          <Route path="/settings/sync"               element={<BoundedRoute element={<SyncHistoryPage />} />} />
+          <Route path="/settings/expense-categories" element={<BoundedRoute element={<ExpenseCategoriesPage />} />} />
           <Route path="/production"       element={<BoundedRoute element={<ProductionLogPage />} />} />
           <Route path="/team/timesheet"   element={<BoundedRoute element={<TimesheetPage />} />} />
 
