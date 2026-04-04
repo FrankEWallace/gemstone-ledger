@@ -15,6 +15,7 @@ export interface Database {
           created_at: string;
           weekly_report_enabled: boolean;
           weekly_report_email: string | null;
+          disabled_modules: string[];
         };
         Insert: {
           id?: string;
@@ -24,6 +25,7 @@ export interface Database {
           created_at?: string;
           weekly_report_enabled?: boolean;
           weekly_report_email?: string | null;
+          disabled_modules?: string[];
         };
         Update: {
           id?: string;
@@ -33,6 +35,7 @@ export interface Database {
           created_at?: string;
           weekly_report_enabled?: boolean;
           weekly_report_email?: string | null;
+          disabled_modules?: string[];
         };
       };
       sites: {

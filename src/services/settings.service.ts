@@ -12,6 +12,7 @@ export type OrgUpdatePayload = {
   logo_url?: string;
   timezone?: string;
   currency?: string;
+  disabled_modules?: string[];
 };
 
 export type SupportMessagePayload = {

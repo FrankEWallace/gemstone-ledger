@@ -39,45 +39,47 @@ import SitePicker from "@/components/shared/SitePicker";
 import { useSite } from "@/hooks/useSite";
 import { getChannelMessageCounts } from "@/services/messages.service";
 import { useNav, type NavSectionKey } from "@/context/NavContext";
+import { useOrgModules, type ModuleKey } from "@/hooks/useOrgModules";
 
 interface NavItem {
   label: string;
   icon: React.ElementType;
   to: string;
   badge?: number;
+  module?: ModuleKey;
 }
 
 const mainMenu: NavItem[] = [
-  { label: "Dashboard", icon: LayoutDashboard, to: "/" },
-  { label: "Inventory", icon: Package, to: "/inventory" },
-  { label: "Transactions", icon: ArrowLeftRight, to: "/transactions" },
-  { label: "Customers", icon: Users, to: "/customers" },
-  { label: "Reports & Analytics", icon: BarChart3, to: "/reports" },
-  { label: "Messages", icon: MessageSquare, to: "/messages" },
-  { label: "Team Performance", icon: TrendingUp, to: "/team" },
-  { label: "Campaigns", icon: Megaphone, to: "/campaigns" },
+  { label: "Dashboard",           icon: LayoutDashboard, to: "/" },
+  { label: "Inventory",           icon: Package,         to: "/inventory" },
+  { label: "Transactions",        icon: ArrowLeftRight,  to: "/transactions" },
+  { label: "Customers",           icon: Users,           to: "/customers",  module: "customers" },
+  { label: "Reports & Analytics", icon: BarChart3,       to: "/reports",    module: "reports" },
+  { label: "Messages",            icon: MessageSquare,   to: "/messages",   module: "messages" },
+  { label: "Team Performance",    icon: TrendingUp,      to: "/team",       module: "team" },
+  { label: "Campaigns",           icon: Megaphone,       to: "/campaigns",  module: "campaigns" },
 ];
 
 const supplyChain: NavItem[] = [
-  { label: "Supplier List", icon: UserCircle, to: "/supply/suppliers" },
-  { label: "Channels", icon: Layers, to: "/supply/channels" },
-  { label: "Order Management", icon: ShoppingCart, to: "/supply/orders" },
+  { label: "Supplier List",    icon: UserCircle,   to: "/supply/suppliers", module: "supply_chain" },
+  { label: "Channels",         icon: Layers,        to: "/supply/channels",  module: "supply_chain" },
+  { label: "Order Management", icon: ShoppingCart,  to: "/supply/orders",    module: "supply_chain" },
 ];
 
 const management: NavItem[] = [
-  { label: "Roles & Permissions", icon: Shield,    to: "/management/roles" },
+  { label: "Roles & Permissions",   icon: Shield,     to: "/management/roles" },
   { label: "Billing & Subscription", icon: CreditCard, to: "/management/billing" },
-  { label: "Integrations",        icon: Plug,      to: "/management/integrations" },
-  { label: "Audit Log",           icon: FileText,  to: "/management/audit" },
+  { label: "Integrations",          icon: Plug,       to: "/management/integrations" },
+  { label: "Audit Log",             icon: FileText,   to: "/management/audit" },
 ];
 
 const operations: NavItem[] = [
-  { label: "Equipment",       icon: Wrench,       to: "/equipment" },
-  { label: "Safety",          icon: ShieldAlert,  to: "/safety" },
-  { label: "Shift Schedule",  icon: CalendarDays, to: "/team/schedule" },
-  { label: "Timesheets",      icon: Clock,        to: "/team/timesheet" },
-  { label: "Production Log",  icon: Pickaxe,      to: "/production" },
-  { label: "Documents",       icon: FolderOpen,   to: "/documents" },
+  { label: "Equipment",      icon: Wrench,       to: "/equipment",       module: "operations" },
+  { label: "Safety",         icon: ShieldAlert,  to: "/safety",          module: "operations" },
+  { label: "Shift Schedule", icon: CalendarDays, to: "/team/schedule",   module: "team" },
+  { label: "Timesheets",     icon: Clock,        to: "/team/timesheet",  module: "team" },
+  { label: "Production Log", icon: Pickaxe,      to: "/production",      module: "operations" },
+  { label: "Documents",      icon: FolderOpen,   to: "/documents",       module: "operations" },
 ];
 
 const settingsItems: NavItem[] = [
@@ -217,6 +219,10 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const { isSectionHidden } = useNav();
+  const { isModuleEnabled } = useOrgModules();
+
+  const filterByModule = (items: NavItem[]) =>
+    items.filter((item) => !item.module || isModuleEnabled(item.module));
 
   // When user visits /messages, record the timestamp
   useEffect(() => {
@@ -277,14 +283,20 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           {!isSectionHidden("main") && (
-            <NavSection title="Main Menu" items={mainMenuWithBadge} onNavigate={onClose} />
+            <NavSection title="Main Menu" items={filterByModule(mainMenuWithBadge)} onNavigate={onClose} />
           )}
-          {!isSectionHidden("operations") && (
-            <NavSection title="Operations" items={operations} onNavigate={onClose} />
-          )}
-          {!isSectionHidden("supply") && (
-            <NavSection title="Supply Chain" items={supplyChain} onNavigate={onClose} />
-          )}
+          {(() => {
+            const items = filterByModule(operations);
+            return items.length > 0 && !isSectionHidden("operations") ? (
+              <NavSection title="Operations" items={items} onNavigate={onClose} />
+            ) : null;
+          })()}
+          {(() => {
+            const items = filterByModule(supplyChain);
+            return items.length > 0 && !isSectionHidden("supply") ? (
+              <NavSection title="Supply Chain" items={items} onNavigate={onClose} />
+            ) : null;
+          })()}
           {!isSectionHidden("management") && (
             <NavSection title="Management" items={management} onNavigate={onClose} />
           )}

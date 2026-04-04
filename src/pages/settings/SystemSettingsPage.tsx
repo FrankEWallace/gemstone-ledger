@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
+import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import {
@@ -14,6 +14,8 @@ import {
 import { testRestConnection } from "@/lib/providers/rest/client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgModules, type ModuleKey } from "@/hooks/useOrgModules";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -197,6 +199,56 @@ function WeeklyReportSection({
         {!org?.weekly_report_email && (
           <p className="text-xs text-muted-foreground">Save an email address to enable manual send.</p>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Module Configuration Section ────────────────────────────────────────────
+
+const MODULE_CONFIG: { key: ModuleKey; label: string; description: string }[] = [
+  { key: "messages",     label: "Messages",            description: "Internal site messaging — general, safety, and operations channels" },
+  { key: "campaigns",    label: "Campaigns",           description: "Marketing and operational campaign management" },
+  { key: "customers",    label: "Customers",           description: "Customer accounts, contracts, and drill-down views" },
+  { key: "reports",      label: "Reports & Analytics", description: "Financial and operational reporting with data exports" },
+  { key: "team",         label: "Team & Scheduling",   description: "Team performance, shift scheduling, and timesheets" },
+  { key: "supply_chain", label: "Supply Chain",        description: "Supplier list, distribution channels, and order management" },
+  { key: "operations",   label: "Operations",          description: "Equipment, safety incidents, production logs, and documents" },
+];
+
+function ModuleConfigSection() {
+  const { isModuleEnabled, toggleModule, isSaving } = useOrgModules();
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold text-sm">Module Configuration</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Enable or disable modules for all users in your organization. Disabled modules
+        are hidden from the sidebar and inaccessible org-wide.
+      </p>
+      <div className="space-y-2">
+        {MODULE_CONFIG.map(({ key, label, description }) => (
+          <div
+            key={key}
+            className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 gap-4"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            </div>
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+            ) : (
+              <Switch
+                checked={isModuleEnabled(key)}
+                onCheckedChange={() => toggleModule(key)}
+              />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -656,6 +708,14 @@ export default function SystemSettingsPage() {
 
       {/* Weekly email report */}
       <WeeklyReportSection orgId={orgId} org={org} queryClient={queryClient} />
+
+      {/* Module configuration — admin only */}
+      {activeRole === "admin" && (
+        <>
+          <Separator />
+          <ModuleConfigSection />
+        </>
+      )}
 
       {/* Backend provider — admin only, inactive by default */}
       {activeRole === "admin" && (
