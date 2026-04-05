@@ -33,6 +33,7 @@ import {
   Eye,
   EyeOff,
   CloudOff,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -40,6 +41,7 @@ import { useSite } from "@/hooks/useSite";
 import { getChannelMessageCounts } from "@/services/messages.service";
 import { useNav, type NavSectionKey } from "@/context/NavContext";
 import { useOrgModules, type ModuleKey } from "@/hooks/useOrgModules";
+import { useSystemAlerts } from "@/hooks/useSystemAlerts";
 
 interface NavItem {
   label: string;
@@ -51,6 +53,7 @@ interface NavItem {
 
 const mainMenu: NavItem[] = [
   { label: "Dashboard",           icon: LayoutDashboard, to: "/" },
+  { label: "Notifications",       icon: Bell,            to: "/notifications" },
   { label: "Inventory",           icon: Package,         to: "/inventory" },
   { label: "Transactions",        icon: ArrowLeftRight,  to: "/transactions" },
   { label: "Customers",           icon: Users,           to: "/customers",  module: "customers" },
@@ -220,6 +223,7 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const { isSectionHidden } = useNav();
   const { isModuleEnabled } = useOrgModules();
+  const { totalCount: alertCount } = useSystemAlerts(activeSiteId ?? null);
 
   const filterByModule = (items: NavItem[]) =>
     items.filter((item) => !item.module || isModuleEnabled(item.module));
@@ -251,9 +255,11 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
     return () => clearInterval(interval);
   }, [activeSiteId, location.pathname]);
 
-  const mainMenuWithBadge: NavItem[] = mainMenu.map((item) =>
-    item.to === "/messages" ? { ...item, badge: unreadMessages } : item
-  );
+  const mainMenuWithBadge: NavItem[] = mainMenu.map((item) => {
+    if (item.to === "/messages") return { ...item, badge: unreadMessages };
+    if (item.to === "/notifications") return { ...item, badge: alertCount };
+    return item;
+  });
 
   return (
     <>

@@ -13,7 +13,8 @@ import ForgotPassword from "@/pages/auth/ForgotPassword";
 
 // ─── Lazy-loaded pages ────────────────────────────────────────────────────────
 
-const Dashboard         = lazy(() => import("@/pages/Dashboard"));
+const Dashboard            = lazy(() => import("@/pages/Dashboard"));
+const NotificationsPage    = lazy(() => import("@/pages/notifications/NotificationsPage"));
 const InventoryPage     = lazy(() => import("@/pages/inventory/InventoryPage"));
 const TransactionsPage  = lazy(() => import("@/pages/transactions/TransactionsPage"));
 const TeamPage          = lazy(() => import("@/pages/team/TeamPage"));
@@ -75,6 +76,7 @@ export default function Router() {
 
           {/* Dashboard */}
           <Route path="/" element={<BoundedRoute element={<Dashboard />} />} />
+          <Route path="/notifications" element={<BoundedRoute element={<NotificationsPage />} />} />
 
           {/* Phase 2 */}
           <Route path="/inventory"    element={<BoundedRoute element={<InventoryPage />} />} />

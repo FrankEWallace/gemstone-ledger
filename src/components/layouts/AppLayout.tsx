@@ -12,6 +12,7 @@ import { OfflineBanner } from "@/components/shared/OfflineBanner";
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/": { breadcrumb: "Dashboard", title: "Overview" },
+  "/notifications": { breadcrumb: "Notifications", title: "Alerts & Notifications" },
   "/inventory": { breadcrumb: "Inventory", title: "Items" },
   "/transactions": { breadcrumb: "Transactions", title: "All Transactions" },
   "/reports": { breadcrumb: "Reports", title: "Analytics" },

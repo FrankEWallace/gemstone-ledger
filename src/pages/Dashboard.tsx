@@ -17,11 +17,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format, startOfWeek, endOfWeek, isPast, parseISO, startOfMonth, endOfMonth, differenceInCalendarDays } from "date-fns";
+import { format, startOfWeek, endOfWeek, isPast, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { isDemoMode } from "@/lib/demo";
-import { getInventoryItems } from "@/services/inventory.service";
 import { getTransactions } from "@/services/transactions.service";
 import { getEquipment } from "@/services/equipment.service";
 import { getSafetyIncidents } from "@/services/safety.service";
@@ -495,46 +494,6 @@ function ShiftsCard({ siteId }: { siteId: string }) {
   );
 }
 
-function LowStockCard({ siteId }: { siteId: string }) {
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ["inventory", siteId],
-    queryFn: () => getInventoryItems(siteId),
-  });
-
-  const lowStock = items.filter(
-    (i) => i.reorder_level !== null && i.quantity <= i.reorder_level
-  );
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <SectionHeader title="Low Stock" href="/inventory" />
-      {isLoading ? (
-        <div className="h-20 animate-pulse bg-muted rounded-lg" />
-      ) : lowStock.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-          <CheckCircle2 className="h-3 w-3 shrink-0" />
-          All items above reorder level
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {lowStock.slice(0, 4).map((i) => (
-            <div key={i.id} className="flex items-center gap-2 text-[11px]">
-              <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
-              <span className="flex-1 truncate text-muted-foreground">{i.name}</span>
-              <span className="tabular-nums font-medium">
-                {i.quantity} <span className="text-muted-foreground">{i.unit ?? ""}</span>
-              </span>
-            </div>
-          ))}
-          {lowStock.length > 4 && (
-            <p className="text-[11px] text-muted-foreground">+{lowStock.length - 4} more items</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function KpiCard2({ siteId }: { siteId: string }) {
   const today = new Date();
   const monthKey = format(startOfMonth(today), "yyyy-MM-dd");
@@ -589,137 +548,6 @@ function KpiCard2({ siteId }: { siteId: string }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Intelligence Alert Banner ────────────────────────────────────────────────
-
-type AlertItem = {
-  id: string;
-  level: "warning" | "critical" | "info";
-  message: string;
-  href?: string;
-};
-
-function IntelligenceAlertBanner({ siteId }: { siteId: string }) {
-  const today = new Date();
-  const thisMonthStart = format(startOfMonth(today), "yyyy-MM-dd");
-  const todayStr       = format(today, "yyyy-MM-dd");
-
-  const { data: customers = [] } = useQuery({
-    queryKey: ["customers", siteId],
-    queryFn: () => import("@/services/customers.service").then((m) => m.getCustomers(siteId)),
-  });
-
-  const { data: inventory = [] } = useQuery({
-    queryKey: ["inventory", siteId],
-    queryFn: () => import("@/services/inventory.service").then((m) => m.getInventoryItems(siteId)),
-  });
-
-  const { data: customerSummaries = [] } = useQuery({
-    queryKey: ["customer-summaries", siteId, thisMonthStart, todayStr],
-    queryFn: () => getCustomerSummaries(siteId, thisMonthStart, todayStr),
-  });
-
-  const { data: txs = [] } = useQuery({
-    queryKey: ["transactions", siteId, "all", "all", "all"],
-    queryFn: () => getTransactions(siteId),
-  });
-
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-
-  const alerts: AlertItem[] = [];
-
-  // 1. Contracts expiring within 14 days
-  customers
-    .filter((c) => c.status === "active" && c.contract_end)
-    .forEach((c) => {
-      const end = parseISO(c.contract_end!);
-      const daysLeft = differenceInCalendarDays(end, today);
-      if (daysLeft >= 0 && daysLeft <= 14) {
-        alerts.push({
-          id: `expiring-${c.id}`,
-          level: daysLeft <= 3 ? "critical" : "warning",
-          message: `Contract expiring in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}: ${c.name}`,
-          href: `/customers/${c.id}`,
-        });
-      }
-    });
-
-  // 2. Customers with negative profitability this month
-  customerSummaries
-    .filter((cs) => cs.netProfit < 0 && cs.transactionCount > 0)
-    .forEach((cs) => {
-      alerts.push({
-        id: `negative-profit-${cs.customerId}`,
-        level: "warning",
-        message: `${cs.customerName} is unprofitable this month (net ${cs.netProfit < 0 ? "−" : ""}$${Math.abs(Math.round(cs.netProfit)).toLocaleString()})`,
-        href: `/customers/${cs.customerId}`,
-      });
-    });
-
-  // 3. High expense ratio site-wide this month
-  const monthTxs = txs.filter((t) => t.transaction_date >= thisMonthStart && t.status === "success");
-  const monthIncome   = monthTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.unit_price * t.quantity, 0);
-  const monthExpenses = monthTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.unit_price * t.quantity, 0);
-  if (monthIncome > 0 && monthExpenses / monthIncome > 0.85) {
-    alerts.push({
-      id: "high-expense-ratio",
-      level: "warning",
-      message: `High expense ratio this month: ${Math.round((monthExpenses / monthIncome) * 100)}% of income spent on expenses`,
-      href: "/reports",
-    });
-  }
-
-  // 4. Inventory below reorder level
-  inventory
-    .filter((item) => item.reorder_level != null && item.quantity <= item.reorder_level!)
-    .slice(0, 3)
-    .forEach((item) => {
-      alerts.push({
-        id: `low-stock-${item.id}`,
-        level: item.quantity === 0 ? "critical" : "info",
-        message: `Low stock: ${item.name} — ${item.quantity} ${item.unit ?? "units"} remaining (reorder at ${item.reorder_level})`,
-        href: "/inventory",
-      });
-    });
-
-  const visible = alerts.filter((a) => !dismissed.has(a.id));
-  if (visible.length === 0) return null;
-
-  const colorMap = {
-    critical: "border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 text-red-800 dark:text-red-300",
-    warning:  "border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 text-amber-800 dark:text-amber-300",
-    info:     "border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 text-blue-800 dark:text-blue-300",
-  };
-
-  return (
-    <div className="space-y-2">
-      {visible.map((alert) => (
-        <div
-          key={alert.id}
-          className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-xs ${colorMap[alert.level]}`}
-        >
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            {alert.href ? (
-              <Link to={alert.href} className="hover:underline underline-offset-2">
-                {alert.message}
-              </Link>
-            ) : (
-              <span>{alert.message}</span>
-            )}
-          </div>
-          <button
-            onClick={() => setDismissed((prev) => new Set([...prev, alert.id]))}
-            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
-            aria-label="Dismiss"
-          >
-            ✕
-          </button>
-        </div>
-      ))}
     </div>
   );
 }
@@ -821,9 +649,6 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Intelligence Alerts */}
-      <IntelligenceAlertBanner siteId={activeSiteId} />
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
@@ -904,11 +729,10 @@ export default function Dashboard() {
       <RecentTransactions siteId={activeSiteId} />
 
       {/* Operations row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <EquipmentCard siteId={activeSiteId} />
         <SafetyCard siteId={activeSiteId} />
         <ShiftsCard siteId={activeSiteId} />
-        <LowStockCard siteId={activeSiteId} />
         <KpiCard2 siteId={activeSiteId} />
       </div>
     </div>

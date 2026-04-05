@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Bell, CheckCheck, AlertTriangle, Info, AlertCircle } from "lucide-react";
+import { Bell, CheckCheck, AlertTriangle, Info, AlertCircle, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useSite } from "@/hooks/useSite";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -20,6 +22,7 @@ import {
   subscribeToNotifications,
 } from "@/services/notifications.service";
 import { supabase } from "@/lib/supabase";
+import { useSystemAlerts } from "@/hooks/useSystemAlerts";
 
 // ─── Type icon + colour ───────────────────────────────────────────────────────
 
@@ -33,11 +36,14 @@ const TYPE_META: Record<NotificationType, { icon: React.ElementType; color: stri
 
 export default function NotificationBell() {
   const { user } = useAuth();
+  const { activeSiteId } = useSite();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loaded, setLoaded] = useState(false);
 
+  const { totalCount: systemAlertCount, criticalCount } = useSystemAlerts(activeSiteId ?? null);
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const totalBadge = unreadCount + systemAlertCount;
 
   // Initial load
   useEffect(() => {
@@ -79,9 +85,12 @@ export default function NotificationBell() {
       <PopoverTrigger asChild>
         <button className="relative rounded-lg p-2 hover:bg-accent transition-colors">
           <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-              {unreadCount > 9 ? "9+" : unreadCount}
+          {totalBadge > 0 && (
+            <span className={cn(
+              "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white",
+              criticalCount > 0 ? "bg-red-500" : "bg-destructive"
+            )}>
+              {totalBadge > 9 ? "9+" : totalBadge}
             </span>
           )}
         </button>
@@ -101,6 +110,30 @@ export default function NotificationBell() {
             </button>
           )}
         </div>
+
+        {/* System alerts summary strip */}
+        {systemAlertCount > 0 && (
+          <Link
+            to="/notifications"
+            onClick={() => setOpen(false)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 text-xs border-b border-border transition-colors hover:bg-muted/50",
+              criticalCount > 0
+                ? "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+                : "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300"
+            )}
+          >
+            {criticalCount > 0
+              ? <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            }
+            <span className="flex-1">
+              {systemAlertCount} system alert{systemAlertCount !== 1 ? "s" : ""}
+              {criticalCount > 0 && ` · ${criticalCount} critical`}
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />
+          </Link>
+        )}
 
         {/* List */}
         <div className="max-h-96 overflow-y-auto">
@@ -158,6 +191,18 @@ export default function NotificationBell() {
               );
             })
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border px-4 py-2.5">
+          <Link
+            to="/notifications"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            View all notifications
+            <ChevronRight className="h-3 w-3" />
+          </Link>
         </div>
       </PopoverContent>
     </Popover>
