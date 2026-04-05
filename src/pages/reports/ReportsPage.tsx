@@ -14,14 +14,6 @@ import {
 } from "recharts";
 import { subMonths, format, startOfMonth, endOfMonth } from "date-fns";
 import { Download } from "lucide-react";
-import {
-  pdf,
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-} from "@react-pdf/renderer";
 
 import { useSite } from "@/hooks/useSite";
 import { Input } from "@/components/ui/input";
@@ -47,156 +39,6 @@ function fmtShort(n: number) {
   return `$${n}`;
 }
 
-// ─── PDF Document ─────────────────────────────────────────────────────────────
-
-const pdfStyles = StyleSheet.create({
-  page: { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-  subtitle: { fontSize: 10, color: "#666", marginBottom: 28 },
-  section: { marginBottom: 22 },
-  sectionTitle: {
-    fontSize: 8, fontWeight: "bold", textTransform: "uppercase",
-    letterSpacing: 1.5, color: "#888", borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10,
-  },
-  row: { flexDirection: "row", marginBottom: 6 },
-  statBox: { flex: 1, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4, marginRight: 8 },
-  statLabel: { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
-  statValue: { fontSize: 15, fontWeight: "bold" },
-  tableHeader: {
-    flexDirection: "row", backgroundColor: "#f3f4f6",
-    padding: "6 8", borderRadius: 3, marginBottom: 2,
-  },
-  tableRow: {
-    flexDirection: "row", padding: "5 8",
-    borderBottomWidth: 1, borderBottomColor: "#f3f4f6",
-  },
-  tableCell: { flex: 1, fontSize: 9, color: "#555" },
-  tableCellBold: { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111" },
-  tableCellRight: { flex: 1, fontSize: 9, textAlign: "right", color: "#555" },
-  tableCellRightBold: { flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: "#111" },
-});
-
-function ReportPDF({
-  siteName, dateFrom, dateTo, summary, trend, categories, customerSummaries,
-}: {
-  siteName: string;
-  dateFrom: string;
-  dateTo: string;
-  summary: Awaited<ReturnType<typeof getReportSummary>>;
-  trend: Awaited<ReturnType<typeof getMonthlyTrend>>;
-  categories: Awaited<ReturnType<typeof getExpensesByCategory>>;
-  customerSummaries: Awaited<ReturnType<typeof getCustomerSummaries>>;
-}) {
-  return (
-    <Document>
-      <Page size="A4" style={pdfStyles.page}>
-        <Text style={pdfStyles.title}>Financial Report</Text>
-        <Text style={pdfStyles.subtitle}>
-          {siteName} · {dateFrom} → {dateTo} · Generated {format(new Date(), "d MMM yyyy")}
-        </Text>
-
-        <View style={pdfStyles.section}>
-          <Text style={pdfStyles.sectionTitle}>Summary</Text>
-          <View style={pdfStyles.row}>
-            {[
-              { label: "Total Income",   val: fmt(summary.totalIncome) },
-              { label: "Total Expenses", val: fmt(summary.totalExpenses) },
-              { label: "Net Revenue",    val: fmt(summary.netRevenue) },
-            ].map((s) => (
-              <View key={s.label} style={pdfStyles.statBox}>
-                <Text style={pdfStyles.statLabel}>{s.label}</Text>
-                <Text style={pdfStyles.statValue}>{s.val}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={{ ...pdfStyles.row, marginTop: 4 }}>
-            {[
-              { label: "Transactions",  val: String(summary.transactionCount) },
-              { label: "Shifts Logged", val: String(summary.totalShiftsLogged) },
-              { label: "Hours Worked",  val: `${summary.totalHoursWorked.toFixed(1)}h` },
-            ].map((s) => (
-              <View key={s.label} style={pdfStyles.statBox}>
-                <Text style={pdfStyles.statLabel}>{s.label}</Text>
-                <Text style={pdfStyles.statValue}>{s.val}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {trend.length > 0 && (
-          <View style={pdfStyles.section}>
-            <Text style={pdfStyles.sectionTitle}>Monthly Revenue vs Expenses</Text>
-            <View style={pdfStyles.tableHeader}>
-              <Text style={pdfStyles.tableCellBold}>Month</Text>
-              <Text style={pdfStyles.tableCellRight}>Income</Text>
-              <Text style={pdfStyles.tableCellRight}>Expenses</Text>
-              <Text style={pdfStyles.tableCellRightBold}>Net</Text>
-            </View>
-            {trend.map((row) => (
-              <View key={row.month} style={pdfStyles.tableRow}>
-                <Text style={pdfStyles.tableCell}>{row.month}</Text>
-                <Text style={pdfStyles.tableCellRight}>{fmt(row.income)}</Text>
-                <Text style={pdfStyles.tableCellRight}>{fmt(row.expenses)}</Text>
-                <Text style={pdfStyles.tableCellRightBold}>{fmt(row.income - row.expenses)}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {categories.length > 0 && (
-          <View style={pdfStyles.section}>
-            <Text style={pdfStyles.sectionTitle}>Expenses by Category</Text>
-            <View style={pdfStyles.tableHeader}>
-              <Text style={pdfStyles.tableCellBold}>Category</Text>
-              <Text style={pdfStyles.tableCellRight}>Total</Text>
-              <Text style={pdfStyles.tableCellRight}>% of Expenses</Text>
-            </View>
-            {categories.map((row) => {
-              const pct = summary.totalExpenses > 0
-                ? ((row.total / summary.totalExpenses) * 100).toFixed(1)
-                : "0.0";
-              return (
-                <View key={row.category} style={pdfStyles.tableRow}>
-                  <Text style={pdfStyles.tableCell}>{row.category}</Text>
-                  <Text style={pdfStyles.tableCellRight}>{fmt(row.total)}</Text>
-                  <Text style={pdfStyles.tableCellRight}>{pct}%</Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {customerSummaries.length > 0 && (
-          <View style={pdfStyles.section}>
-            <Text style={pdfStyles.sectionTitle}>Customer Profitability</Text>
-            <View style={pdfStyles.tableHeader}>
-              <Text style={pdfStyles.tableCellBold}>Customer</Text>
-              <Text style={{ ...pdfStyles.tableCellRight, flex: 0.6 }}>Type</Text>
-              <Text style={pdfStyles.tableCellRight}>Income</Text>
-              <Text style={pdfStyles.tableCellRight}>Expenses</Text>
-              <Text style={pdfStyles.tableCellRightBold}>Net Profit</Text>
-            </View>
-            {customerSummaries
-              .slice()
-              .sort((a, b) => b.netProfit - a.netProfit)
-              .map((cs) => (
-                <View key={cs.customerId} style={pdfStyles.tableRow}>
-                  <Text style={pdfStyles.tableCell}>{cs.customerName}</Text>
-                  <Text style={{ ...pdfStyles.tableCell, flex: 0.6, textTransform: "capitalize" }}>
-                    {cs.customerType}
-                  </Text>
-                  <Text style={pdfStyles.tableCellRight}>{fmt(cs.totalIncome)}</Text>
-                  <Text style={pdfStyles.tableCellRight}>{fmt(cs.totalExpenses)}</Text>
-                  <Text style={pdfStyles.tableCellRightBold}>{fmt(cs.netProfit)}</Text>
-                </View>
-              ))}
-          </View>
-        )}
-      </Page>
-    </Document>
-  );
-}
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -297,17 +139,138 @@ export default function ReportsPage() {
     if (!summary) return;
     setIsExporting(true);
     try {
+      // Lazy-load the renderer so it never runs at page mount (avoids crashing the route)
+      const { pdf, Document, Page, Text, View, StyleSheet } =
+        await import("@react-pdf/renderer");
+
+      const s = StyleSheet.create({
+        page:             { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
+        title:            { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
+        subtitle:         { fontSize: 10, color: "#666", marginBottom: 28 },
+        section:          { marginBottom: 22 },
+        sectionTitle:     { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#888", borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10 },
+        row:              { flexDirection: "row", marginBottom: 6 },
+        statBox:          { flex: 1, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4, marginRight: 8 },
+        statLabel:        { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+        statValue:        { fontSize: 15, fontWeight: "bold" },
+        tableHeader:      { flexDirection: "row", backgroundColor: "#f3f4f6", padding: "6 8", borderRadius: 3, marginBottom: 2 },
+        tableRow:         { flexDirection: "row", padding: "5 8", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+        tableCell:        { flex: 1, fontSize: 9, color: "#555" },
+        tableCellBold:    { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111" },
+        tableCellRight:   { flex: 1, fontSize: 9, textAlign: "right", color: "#555" },
+        tableCellRightBold: { flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: "#111" },
+      });
+
+      const siteName = activeSite?.name ?? "Site";
       const blob = await pdf(
-        <ReportPDF
-          siteName={activeSite?.name ?? "Site"}
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          summary={summary}
-          trend={trend}
-          categories={categories}
-          customerSummaries={customerSummaries}
-        />
+        <Document>
+          <Page size="A4" style={s.page}>
+            <Text style={s.title}>Financial Report</Text>
+            <Text style={s.subtitle}>
+              {siteName} · {dateFrom} → {dateTo} · Generated {format(new Date(), "d MMM yyyy")}
+            </Text>
+
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Summary</Text>
+              <View style={s.row}>
+                {[
+                  { label: "Total Income",   val: fmt(summary.totalIncome) },
+                  { label: "Total Expenses", val: fmt(summary.totalExpenses) },
+                  { label: "Net Revenue",    val: fmt(summary.netRevenue) },
+                ].map((item) => (
+                  <View key={item.label} style={s.statBox}>
+                    <Text style={s.statLabel}>{item.label}</Text>
+                    <Text style={s.statValue}>{item.val}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={{ ...s.row, marginTop: 4 }}>
+                {[
+                  { label: "Transactions",  val: String(summary.transactionCount) },
+                  { label: "Shifts Logged", val: String(summary.totalShiftsLogged) },
+                  { label: "Hours Worked",  val: `${summary.totalHoursWorked.toFixed(1)}h` },
+                ].map((item) => (
+                  <View key={item.label} style={s.statBox}>
+                    <Text style={s.statLabel}>{item.label}</Text>
+                    <Text style={s.statValue}>{item.val}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {trend.length > 0 && (
+              <View style={s.section}>
+                <Text style={s.sectionTitle}>Monthly Revenue vs Expenses</Text>
+                <View style={s.tableHeader}>
+                  <Text style={s.tableCellBold}>Month</Text>
+                  <Text style={s.tableCellRight}>Income</Text>
+                  <Text style={s.tableCellRight}>Expenses</Text>
+                  <Text style={s.tableCellRightBold}>Net</Text>
+                </View>
+                {trend.map((row) => (
+                  <View key={row.month} style={s.tableRow}>
+                    <Text style={s.tableCell}>{row.month}</Text>
+                    <Text style={s.tableCellRight}>{fmt(row.income)}</Text>
+                    <Text style={s.tableCellRight}>{fmt(row.expenses)}</Text>
+                    <Text style={s.tableCellRightBold}>{fmt(row.income - row.expenses)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {categories.length > 0 && (
+              <View style={s.section}>
+                <Text style={s.sectionTitle}>Expenses by Category</Text>
+                <View style={s.tableHeader}>
+                  <Text style={s.tableCellBold}>Category</Text>
+                  <Text style={s.tableCellRight}>Total</Text>
+                  <Text style={s.tableCellRight}>% of Expenses</Text>
+                </View>
+                {categories.map((row) => {
+                  const pct = summary.totalExpenses > 0
+                    ? ((row.total / summary.totalExpenses) * 100).toFixed(1)
+                    : "0.0";
+                  return (
+                    <View key={row.category} style={s.tableRow}>
+                      <Text style={s.tableCell}>{row.category}</Text>
+                      <Text style={s.tableCellRight}>{fmt(row.total)}</Text>
+                      <Text style={s.tableCellRight}>{pct}%</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {customerSummaries.length > 0 && (
+              <View style={s.section}>
+                <Text style={s.sectionTitle}>Customer Profitability</Text>
+                <View style={s.tableHeader}>
+                  <Text style={s.tableCellBold}>Customer</Text>
+                  <Text style={{ ...s.tableCellRight, flex: 0.6 }}>Type</Text>
+                  <Text style={s.tableCellRight}>Income</Text>
+                  <Text style={s.tableCellRight}>Expenses</Text>
+                  <Text style={s.tableCellRightBold}>Net Profit</Text>
+                </View>
+                {customerSummaries
+                  .slice()
+                  .sort((a, b) => b.netProfit - a.netProfit)
+                  .map((cs) => (
+                    <View key={cs.customerId} style={s.tableRow}>
+                      <Text style={s.tableCell}>{cs.customerName}</Text>
+                      <Text style={{ ...s.tableCell, flex: 0.6, textTransform: "capitalize" }}>
+                        {cs.customerType}
+                      </Text>
+                      <Text style={s.tableCellRight}>{fmt(cs.totalIncome)}</Text>
+                      <Text style={s.tableCellRight}>{fmt(cs.totalExpenses)}</Text>
+                      <Text style={s.tableCellRightBold}>{fmt(cs.netProfit)}</Text>
+                    </View>
+                  ))}
+              </View>
+            )}
+          </Page>
+        </Document>
       ).toBlob();
+
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href     = url;

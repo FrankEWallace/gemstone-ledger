@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import AppLayout from "@/components/layouts/AppLayout";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import ProtectedRoute from "@/components/layouts/ProtectedRoute";
@@ -49,8 +49,10 @@ const NotFound          = lazy(() => import("@/pages/NotFound"));
 
 /** Each route gets its own error boundary so one broken page can't crash others. */
 function BoundedRoute({ element }: { element: React.ReactNode }) {
+  const { pathname } = useLocation();
   return (
-    <RouteErrorBoundary>
+    // Key the boundary to the pathname so navigating away always resets error state.
+    <RouteErrorBoundary key={pathname}>
       <Suspense fallback={<PageSkeleton />}>
         {element}
       </Suspense>
