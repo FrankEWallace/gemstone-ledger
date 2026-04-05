@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Plus,
 } from "lucide-react";
 import {
   AreaChart,
@@ -62,7 +63,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import type { Transaction, TransactionType, ContractSummary } from "@/lib/supabaseTypes";
 import { getCustomers } from "@/services/customers.service";
 import { getCustomerDetail, getCustomerSummaries } from "@/services/reports.service";
-import { getTransactions } from "@/services/transactions.service";
+import { getTransactions, createTransaction, type TransactionPayload } from "@/services/transactions.service";
 import {
   getContractSummary,
   getCustomerMonthlyTrend,
@@ -315,6 +316,149 @@ function AutoInvoiceModal({
   );
 }
 
+// ─── Quick Add Transaction Modal ─────────────────────────────────────────────
+
+interface QuickAddTxModalProps {
+  open: boolean;
+  onClose: () => void;
+  type: "income" | "expense";
+  customerId: string;
+  siteId: string;
+  userId?: string;
+}
+
+function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: QuickAddTxModalProps) {
+  const queryClient = useQueryClient();
+  const today = format(new Date(), "yyyy-MM-dd");
+  const [description, setDescription] = useState("");
+  const [amount,      setAmount]      = useState("");
+  const [date,        setDate]        = useState(today);
+  const [category,    setCategory]    = useState("");
+  const [status,      setStatus]      = useState<"pending" | "success">("pending");
+
+  function reset() {
+    setDescription(""); setAmount(""); setDate(today); setCategory(""); setStatus("pending");
+  }
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => {
+      if (isDemoMode()) {
+        toast.info("Demo mode — changes are not persisted.");
+        return Promise.resolve({} as any);
+      }
+      const payload: TransactionPayload = {
+        description: description || undefined,
+        category:    category    || undefined,
+        customer_id: customerId,
+        type,
+        status,
+        quantity:         1,
+        unit_price:       Number(amount),
+        transaction_date: date,
+      };
+      return createTransaction(siteId, payload, userId);
+    },
+    onSuccess: () => {
+      if (!isDemoMode()) {
+        queryClient.invalidateQueries({ queryKey: ["transactions", siteId] });
+        queryClient.invalidateQueries({ queryKey: ["customer-detail", siteId] });
+        queryClient.invalidateQueries({ queryKey: ["customerSummaries", siteId] });
+        toast.success(`${type === "income" ? "Income" : "Expense"} recorded.`);
+      }
+      reset(); onClose();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {type === "income"
+              ? <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
+              : <ArrowDownCircle className="h-4 w-4 text-red-500" />}
+            Add {type === "income" ? "Income" : "Expense"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3 py-1">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Description</Label>
+            <Input
+              placeholder={type === "income" ? "e.g. Invoice payment" : "e.g. Equipment hire"}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-9 text-sm"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Amount ($) *</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-9 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Date *</Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-9 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Category</Label>
+            <Input
+              placeholder="e.g. Fuel, Labour, Rent…"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-9 text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Status</Label>
+            <Select value={status} onValueChange={(v) => setStatus(v as "pending" | "success")}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="success">Success (collected)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { reset(); onClose(); }} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => mutate()}
+            disabled={isPending || !amount || Number(amount) <= 0 || !date}
+            className={type === "income" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+            variant={type === "expense" ? "destructive" : "default"}
+          >
+            {isPending ? "Saving…" : `Add ${type === "income" ? "Income" : "Expense"}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CustomerDetailPage() {
@@ -325,6 +469,7 @@ export default function CustomerDetailPage() {
   const [dateFrom, setDateFrom] = useState(DEFAULT_FROM);
   const [dateTo,   setDateTo]   = useState(DEFAULT_TO);
   const [autoInvoiceOpen, setAutoInvoiceOpen] = useState(false);
+  const [addTxType, setAddTxType] = useState<"income" | "expense" | null>(null);
 
   const opts = { enabled: !!activeSiteId && !!id };
 
@@ -461,8 +606,8 @@ export default function CustomerDetailPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-[1200px]">
 
-      {/* Back */}
-      <div className="flex items-center gap-3">
+      {/* Back + Quick actions */}
+      <div className="flex items-center justify-between gap-3">
         <Link
           to="/customers"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -470,6 +615,24 @@ export default function CustomerDetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Customers
         </Link>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm" variant="outline"
+            className="h-8 text-xs gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+            onClick={() => setAddTxType("income")}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Income
+          </Button>
+          <Button
+            size="sm" variant="outline"
+            className="h-8 text-xs gap-1.5 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+            onClick={() => setAddTxType("expense")}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Expense
+          </Button>
+        </div>
       </div>
 
       {/* Customer header */}
@@ -702,6 +865,18 @@ export default function CustomerDetailPage() {
           />
         </div>
       </div>
+
+      {/* Quick-add income / expense modal */}
+      {addTxType && id && (
+        <QuickAddTxModal
+          open={!!addTxType}
+          onClose={() => setAddTxType(null)}
+          type={addTxType}
+          customerId={id}
+          siteId={activeSiteId!}
+          userId={user?.id}
+        />
+      )}
 
       {/* Auto-invoice modal */}
       {autoInvoiceOpen && customer && contractSummary && (

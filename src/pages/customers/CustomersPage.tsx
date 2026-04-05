@@ -1,18 +1,27 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Mail, Phone, Receipt } from "lucide-react";
+import {
+  Plus, Pencil, Trash2, Mail, Phone, Receipt,
+  Search, CalendarDays,
+} from "lucide-react";
 import { toast } from "sonner";
-import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import {
+  format, differenceInCalendarDays, parseISO,
+  startOfMonth, endOfMonth,
+} from "date-fns";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { isDemoMode } from "@/lib/demo";
-import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -45,7 +54,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Customer } from "@/lib/supabaseTypes";
@@ -57,8 +65,43 @@ import {
   type CustomerPayload,
 } from "@/services/customers.service";
 import { createTransaction } from "@/services/transactions.service";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { getCustomerSummaries } from "@/services/reports.service";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtK(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}k`;
+  return `$${Math.round(Math.abs(n)).toLocaleString()}`;
+}
+
+function contractProgress(start?: string | null, end?: string | null) {
+  if (!start || !end) return null;
+  const s = parseISO(start);
+  const e = parseISO(end);
+  const today = new Date();
+  const total = differenceInCalendarDays(e, s);
+  if (total <= 0) return null;
+  const elapsed = Math.max(0, differenceInCalendarDays(today, s));
+  const pct = Math.min(100, Math.round((elapsed / total) * 100));
+  const remaining = differenceInCalendarDays(e, today);
+  return { pct, remaining };
+}
+
+// ─── Status badge helpers ─────────────────────────────────────────────────────
+
+function TypeBadge({ type }: { type: Customer["type"] }) {
+  return type === "external"
+    ? <Badge variant="outline" className="text-blue-600 border-blue-200 text-[10px]">External</Badge>
+    : <Badge variant="outline" className="text-muted-foreground text-[10px]">Internal</Badge>;
+}
+
+function StatusBadge({ status }: { status: Customer["status"] }) {
+  if (status === "prospect")  return <Badge variant="outline" className="text-violet-600 border-violet-200 text-[10px]">Prospect</Badge>;
+  if (status === "active")    return <Badge variant="outline" className="text-emerald-600 border-emerald-200 text-[10px]">Active</Badge>;
+  if (status === "completed") return <Badge variant="outline" className="text-blue-500 border-blue-100 text-[10px]">Completed</Badge>;
+  return <Badge variant="outline" className="text-muted-foreground text-[10px]">Inactive</Badge>;
+}
 
 // ─── Rent Charge Modal ────────────────────────────────────────────────────────
 
@@ -176,7 +219,7 @@ const customerSchema = z.object({
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// ─── Customer Modal ───────────────────────────────────────────────────────────
 
 interface CustomerModalProps {
   open: boolean;
@@ -240,7 +283,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
         ? updateCustomer(editing.id, payload)
         : createCustomer(siteId, orgId, payload);
     },
-    onSuccess: (_, values) => {
+    onSuccess: () => {
       if (isDemoMode() && !editing) {
         onClose();
         return;
@@ -441,20 +484,37 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
 export default function CustomersPage() {
   const { activeSiteId } = useSite();
   const { orgId, user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [typeFilter, setTypeFilter] = useState<"all" | "external" | "internal">("all");
+  const today = new Date();
+  const monthStart = format(startOfMonth(today), "yyyy-MM-dd");
+  const monthEnd   = format(endOfMonth(today),   "yyyy-MM-dd");
+
+  const [search,       setSearch]       = useState("");
+  const [typeFilter,   setTypeFilter]   = useState<"all" | "external" | "internal">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "prospect" | "active" | "inactive" | "completed">("all");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Customer | null>(null);
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [editing,      setEditing]      = useState<Customer | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
-  const [rentTarget, setRentTarget] = useState<Customer | null>(null);
+  const [rentTarget,   setRentTarget]   = useState<Customer | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers", activeSiteId],
     queryFn: () => getCustomers(activeSiteId!),
     enabled: !!activeSiteId,
   });
+
+  const { data: summaries = [] } = useQuery({
+    queryKey: ["customerSummaries", activeSiteId, monthStart, monthEnd],
+    queryFn: () => getCustomerSummaries(activeSiteId!, monthStart, monthEnd),
+    enabled: !!activeSiteId,
+  });
+
+  const summaryMap = useMemo(
+    () => Object.fromEntries(summaries.map((s) => [s.customerId, s])),
+    [summaries],
+  );
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => {
@@ -474,178 +534,256 @@ export default function CustomersPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const filtered = customers.filter((c) => {
-    if (typeFilter !== "all" && c.type !== typeFilter) return false;
-    if (statusFilter !== "all" && c.status !== statusFilter) return false;
-    return true;
-  });
-
-  const columns: DataTableColumn<Customer>[] = [
-    {
-      key: "name",
-      header: "Customer",
-      sortable: true,
-      render: (_, row) => (
-        <div>
-          <p className="font-medium">{row.name}</p>
-          {row.contact_name && (
-            <p className="text-xs text-muted-foreground">{row.contact_name}</p>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "type",
-      header: "Type",
-      sortable: true,
-      render: (val) =>
-        val === "external" ? (
-          <Badge variant="outline" className="text-blue-600 border-blue-200">External</Badge>
-        ) : (
-          <Badge variant="outline" className="text-muted-foreground">Internal</Badge>
-        ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      sortable: true,
-      render: (val) => {
-        if (val === "prospect")  return <Badge variant="outline" className="text-violet-600 border-violet-200">Prospect</Badge>;
-        if (val === "active")    return <Badge variant="outline" className="text-emerald-600 border-emerald-200">Active</Badge>;
-        if (val === "completed") return <Badge variant="outline" className="text-blue-500 border-blue-100">Completed</Badge>;
-        return <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>;
-      },
-    },
-    {
-      key: "contact_email",
-      header: "Contact",
-      render: (_, row) => (
-        <div className="space-y-0.5">
-          {row.contact_email && (
-            <div className="flex items-center gap-1 text-xs">
-              <Mail className="h-3 w-3 text-muted-foreground" />
-              <a href={`mailto:${row.contact_email}`} className="hover:underline">{row.contact_email}</a>
-            </div>
-          )}
-          {row.contact_phone && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Phone className="h-3 w-3" />
-              {row.contact_phone}
-            </div>
-          )}
-          {!row.contact_email && !row.contact_phone && (
-            <span className="text-muted-foreground text-xs">—</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "contract_start",
-      header: "Contract Period",
-      render: (_, row) => {
-        if (!row.contract_start && !row.contract_end) return <span className="text-muted-foreground text-xs">—</span>;
-        const start = row.contract_start ? format(new Date(row.contract_start), "d MMM yyyy") : "—";
-        const end   = row.contract_end   ? format(new Date(row.contract_end),   "d MMM yyyy") : "—";
-        return <span className="text-xs">{start} → {end}</span>;
-      },
-    },
-    {
-      key: "daily_rate",
-      header: "Daily Rate",
-      sortable: true,
-      className: "text-right",
-      render: (val) =>
-        val != null
-          ? <span className="tabular-nums text-xs">${Number(val).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
-          : <span className="text-muted-foreground text-xs">—</span>,
-    },
-    {
-      key: "id",
-      header: "",
-      className: "w-28 text-right",
-      render: (_, row) => (
-        <div className="flex items-center justify-end gap-1">
-          {row.daily_rate != null && Number(row.daily_rate) > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-emerald-600 hover:text-emerald-700"
-              title="Charge daily rent"
-              onClick={() => setRentTarget(row)}
-            >
-              <Receipt className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => { setEditing(row); setModalOpen(true); }}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-destructive hover:text-destructive"
-            onClick={() => setDeleteTarget(row)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  const filtered = useMemo(
+    () =>
+      customers.filter((c) => {
+        if (typeFilter !== "all" && c.type !== typeFilter) return false;
+        if (statusFilter !== "all" && c.status !== statusFilter) return false;
+        if (search) {
+          const q = search.toLowerCase();
+          const hit =
+            c.name.toLowerCase().includes(q) ||
+            (c.contact_name  ?? "").toLowerCase().includes(q) ||
+            (c.contact_email ?? "").toLowerCase().includes(q);
+          if (!hit) return false;
+        }
+        return true;
+      }),
+    [customers, typeFilter, statusFilter, search],
+  );
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
+
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold">Customers</h1>
+        <div>
+          <h1 className="font-display text-2xl font-bold">Customers</h1>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Financial metrics reflect {format(startOfMonth(today), "MMMM yyyy")}
+          </p>
+        </div>
         <Button size="sm" onClick={() => { setEditing(null); setModalOpen(true); }}>
           <Plus className="h-4 w-4 mr-1.5" />
           Add Customer
         </Button>
       </div>
 
-      <DataTable
-        data={filtered as unknown as Record<string, unknown>[]}
-        columns={columns as DataTableColumn<Record<string, unknown>>[]}
-        keyField="id"
-        searchable
-        searchPlaceholder="Search by name or contact…"
-        searchKeys={["name", "contact_name", "contact_email"]}
-        pageSize={15}
-        isLoading={isLoading}
-        emptyMessage="No customers found. Add your first customer."
-        toolbar={
-          <>
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-              <SelectTrigger className="w-32 h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="external">External</SelectItem>
-                <SelectItem value="internal">Internal</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* ── Toolbar ── */}
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search by name or contact…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-9"
+          />
+        </div>
 
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-              <SelectTrigger className="w-36 h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="prospect">Prospect</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </>
-        }
-      />
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+          <SelectTrigger className="w-32 h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="external">External</SelectItem>
+            <SelectItem value="internal">Internal</SelectItem>
+          </SelectContent>
+        </Select>
 
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <SelectTrigger className="w-36 h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="prospect">Prospect</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* ── Cards grid ── */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-5 h-56 animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground text-sm">
+          {customers.length === 0
+            ? "No customers yet. Add your first customer."
+            : "No customers match your filters."}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filtered.map((c) => {
+            const summary    = summaryMap[c.id];
+            const prog       = contractProgress(c.contract_start, c.contract_end);
+            const margin     = summary && summary.totalIncome > 0
+              ? Math.round((summary.netProfit / summary.totalIncome) * 100)
+              : null;
+            const topExpense = summary?.expensesByCategory?.[0];
+            const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
+
+            return (
+              <div
+                key={c.id}
+                className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4 hover:border-foreground/20 transition-colors cursor-pointer"
+                onClick={() => navigate(`/customers/${c.id}`)}
+              >
+                {/* ── Card header ── */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center flex-wrap gap-1.5 mb-1.5">
+                      <h3 className="font-semibold text-base leading-tight">{c.name}</h3>
+                      <TypeBadge type={c.type} />
+                      <StatusBadge status={c.status} />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                      {c.contact_name && (
+                        <span>{c.contact_name}</span>
+                      )}
+                      {c.contact_email && (
+                        <a
+                          href={`mailto:${c.contact_email}`}
+                          className="flex items-center gap-1 hover:text-foreground transition-colors"
+                        >
+                          <Mail className="h-3 w-3" />
+                          {c.contact_email}
+                        </a>
+                      )}
+                      {c.contact_phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {c.contact_phone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick actions */}
+                  <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {hasDailyRate && (
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-7 w-7 text-emerald-600 hover:text-emerald-700"
+                        title="Charge daily rent"
+                        onClick={() => setRentTarget(c)}
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost" size="icon" className="h-7 w-7"
+                      onClick={() => { setEditing(c); setModalOpen(true); }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(c)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* ── Financial KPIs (this month) ── */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-muted/40 p-3">
+                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1.5">
+                      Income
+                    </p>
+                    <p className="text-xl font-bold font-display leading-none tabular-nums">
+                      {summary ? fmtK(summary.totalIncome) : "—"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {summary
+                        ? `${summary.transactionCount} txn${summary.transactionCount !== 1 ? "s" : ""}`
+                        : "this month"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-muted/40 p-3">
+                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1.5">
+                      Expenses
+                    </p>
+                    <p className="text-xl font-bold font-display leading-none tabular-nums">
+                      {summary ? fmtK(summary.totalExpenses) : "—"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5 truncate">
+                      {topExpense ? topExpense.category : "this month"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-muted/40 p-3">
+                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1.5">
+                      Net Profit
+                    </p>
+                    <p className={`text-xl font-bold font-display leading-none tabular-nums ${
+                      summary
+                        ? summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500"
+                        : ""
+                    }`}>
+                      {summary
+                        ? `${summary.netProfit < 0 ? "-" : ""}${fmtK(Math.abs(summary.netProfit))}`
+                        : "—"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {margin !== null ? `${margin}% margin` : "this month"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* ── Contract progress ── */}
+                {(c.contract_start || c.contract_end || hasDailyRate) && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3 shrink-0" />
+                        {c.contract_start
+                          ? format(parseISO(c.contract_start), "d MMM yyyy")
+                          : "—"}
+                        {" → "}
+                        {c.contract_end
+                          ? format(parseISO(c.contract_end), "d MMM yyyy")
+                          : "—"}
+                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {hasDailyRate && (
+                          <span className="tabular-nums font-medium text-foreground">
+                            ${Number(c.daily_rate).toLocaleString()}/day
+                          </span>
+                        )}
+                        {prog && (
+                          <span className="tabular-nums">
+                            {prog.pct}%
+                            {prog.remaining > 0
+                              ? ` · ${prog.remaining}d left`
+                              : " · ended"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {prog && (
+                      <Progress value={prog.pct} className="h-1.5" />
+                    )}
+                  </div>
+                )}
+
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Modals ── */}
       {modalOpen && (
         <CustomerModal
           open={modalOpen}
