@@ -7,6 +7,7 @@ import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, TrendingDown } f
 import { toast } from "sonner";
 
 import { useSite } from "@/hooks/useSite";
+import { fmtCurrency } from "@/lib/formatCurrency";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -579,7 +580,7 @@ export default function InventoryPage() {
       sortable: true,
       className: "text-right",
       render: (val) =>
-        val != null ? `$${Number(val).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+        val != null ? fmtCurrency(Number(val), 2) : "—",
     },
     {
       key: "reorder_level",

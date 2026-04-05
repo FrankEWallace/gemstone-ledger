@@ -47,6 +47,7 @@ const TIMEZONES = [
 ];
 
 const CURRENCIES = [
+  { code: "TZS", label: "Tanzanian Shilling (TSh)" },
   { code: "USD", label: "US Dollar (USD)" },
   { code: "EUR", label: "Euro (EUR)" },
   { code: "GBP", label: "British Pound (GBP)" },
@@ -507,8 +508,8 @@ export default function SystemSettingsPage() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     values: org
-      ? { name: org.name, slug: org.slug, timezone: "UTC", currency: "USD" }
-      : { name: "", slug: "", timezone: "UTC", currency: "USD" },
+      ? { name: org.name, slug: org.slug, timezone: "UTC", currency: org.currency ?? "TZS" }
+      : { name: "", slug: "", timezone: "UTC", currency: "TZS" },
   });
 
   const { mutate, isPending } = useMutation({

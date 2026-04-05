@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { isDemoMode } from "@/lib/demo";
+import { fmtCurrency, fmtTick } from "@/lib/formatCurrency";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -73,8 +74,7 @@ import {
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
-const fmt = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const fmt = fmtCurrency;
 
 function typeIcon(type: TransactionType) {
   if (type === "income")  return <ArrowUpCircle className="h-3.5 w-3.5 text-emerald-500" />;
@@ -798,7 +798,7 @@ export default function CustomerDetailPage() {
               />
               <YAxis
                 tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+                tickFormatter={(v) => fmtTick(v)}
               />
               <Tooltip
                 formatter={(value: number, name: string) => [fmt(value), name === "income" ? "Income" : "Expenses"]}

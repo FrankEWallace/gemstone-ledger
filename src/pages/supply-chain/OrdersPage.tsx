@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 
 import { useSite } from "@/hooks/useSite";
+import { fmtCurrency } from "@/lib/formatCurrency";
 import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
@@ -412,7 +413,7 @@ function CreateOrderModal({
 
               <div className="flex justify-end mt-3">
                 <p className="text-sm font-medium">
-                  Order Total: <span className="text-base">${orderTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                  Order Total: <span className="text-base">{fmtCurrency(orderTotal, 2)}</span>
                 </p>
               </div>
             </div>
@@ -616,7 +617,7 @@ function OrderDetailSheet({
 
               <div className="flex justify-between items-center mt-3 pt-3 border-t border-border font-medium">
                 <span>Total</span>
-                <span>${Number(order.total_amount ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                <span>{fmtCurrency(Number(order.total_amount ?? 0), 2)}</span>
               </div>
             </div>
 
@@ -712,7 +713,7 @@ export default function OrdersPage() {
       className: "text-right",
       render: (val) =>
         val != null
-          ? `$${Number(val).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+          ? fmtCurrency(Number(val), 2)
           : "—",
     },
     {

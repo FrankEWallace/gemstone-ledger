@@ -7,6 +7,7 @@ import { format, startOfMonth, addMonths, subMonths } from "date-fns";
 import { ChevronLeft, ChevronRight, Target, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useSite } from "@/hooks/useSite";
+import { fmtCurrency } from "@/lib/formatCurrency";
 import { useAuth } from "@/hooks/useAuth";
 import { getKpiTargets, upsertKpiTarget } from "@/services/kpi.service";
 import { Button } from "@/components/ui/button";
@@ -277,7 +278,7 @@ export default function KpiTargetsPage() {
               >
                 <p className="text-sm font-medium">{displayMonth(m)}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {t.revenue_target != null && `Revenue: $${t.revenue_target.toLocaleString()} · `}
+                  {t.revenue_target != null && `Revenue: ${fmtCurrency(t.revenue_target)} · `}
                   {t.ore_tonnes_target != null && `Ore: ${t.ore_tonnes_target}t · `}
                   {t.shift_target != null && `Shifts: ${t.shift_target}`}
                 </p>

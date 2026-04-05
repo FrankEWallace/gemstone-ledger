@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { isDemoMode } from "@/lib/demo";
+import { fmtCurrency, fmtCompact, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -69,11 +70,7 @@ import { getCustomerSummaries } from "@/services/reports.service";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function fmtK(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${Math.round(Math.abs(n)).toLocaleString()}`;
-}
+const fmtK = fmtCompact;
 
 function contractProgress(start?: string | null, end?: string | null) {
   if (!start || !end) return null;
@@ -142,7 +139,7 @@ function RentChargeModal({ open, onClose, customer, siteId, userId }: RentCharge
     onSuccess: () => {
       if (!isDemoMode()) {
         queryClient.invalidateQueries({ queryKey: ["transactions", siteId] });
-        toast.success(`Rent invoice created: ${days} day${days !== 1 ? "s" : ""} × $${dailyRate.toLocaleString()}`);
+        toast.success(`Rent invoice created: ${days} day${days !== 1 ? "s" : ""} × ${CURRENCY_SYMBOL} ${dailyRate.toLocaleString()}`);
       }
       onClose();
     },
@@ -160,7 +157,7 @@ function RentChargeModal({ open, onClose, customer, siteId, userId }: RentCharge
           <div className="rounded-lg bg-muted/40 p-3 space-y-0.5">
             <p className="text-sm font-semibold">{customer.name}</p>
             <p className="text-xs text-muted-foreground">
-              Daily rate: <span className="font-medium tabular-nums">${dailyRate.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              Daily rate: <span className="font-medium tabular-nums">{fmtCurrency(dailyRate, 2)}</span>
             </p>
           </div>
 
@@ -182,11 +179,11 @@ function RentChargeModal({ open, onClose, customer, siteId, userId }: RentCharge
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Rate / day</span>
-              <span className="tabular-nums font-medium text-foreground">${dailyRate.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="tabular-nums font-medium text-foreground">{fmtCurrency(dailyRate, 2)}</span>
             </div>
             <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
               <span>Total</span>
-              <span className="tabular-nums text-emerald-600">${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+              <span className="tabular-nums text-emerald-600">{fmtCurrency(total, 2)}</span>
             </div>
           </div>
         </div>
@@ -758,7 +755,7 @@ export default function CustomersPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         {hasDailyRate && (
                           <span className="tabular-nums font-medium text-foreground">
-                            ${Number(c.daily_rate).toLocaleString()}/day
+                            {CURRENCY_SYMBOL} {Number(c.daily_rate).toLocaleString()}/day
                           </span>
                         )}
                         {prog && (

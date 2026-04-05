@@ -28,18 +28,13 @@ import { getPlannedShifts } from "@/services/schedule.service";
 import { getWorkers } from "@/services/team.service";
 import { getKpiTargets } from "@/services/kpi.service";
 import { getMonthlyTrend, getExpensesByCategory, getCustomerSummaries } from "@/services/reports.service";
+import { fmtCompact, fmtCurrency as fmtFull_ } from "@/lib/formatCurrency";
 import { supabase } from "@/lib/supabase";
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
 
-function fmtCurrency(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${n.toLocaleString()}`;
-}
-function fmtFull(n: number) {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-}
+const fmtCurrency = fmtCompact;
+const fmtFull     = fmtFull_;
 
 // ─── Mini sparkbar ────────────────────────────────────────────────────────────
 

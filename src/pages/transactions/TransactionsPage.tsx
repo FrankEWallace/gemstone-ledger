@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Upload, Trash2, ArrowUpCircle, ArrowDownCircle, RefreshCw } from "lucide-react";
+import { Plus, Download, Upload, Trash2, ArrowUpCircle, ArrowDownCircle, RefreshCw, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { fmtCurrency, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,6 +66,15 @@ const STATUSES: TransactionStatus[] = ["success", "pending", "refunded", "cancel
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
+const CURRENCIES = [
+  { code: "TZS", label: "TSh — Tanzanian Shilling" },
+  { code: "USD", label: "USD — US Dollar" },
+  { code: "EUR", label: "EUR — Euro" },
+  { code: "GBP", label: "GBP — British Pound" },
+  { code: "ZAR", label: "ZAR — South African Rand" },
+  { code: "KES", label: "KES — Kenyan Shilling" },
+];
+
 const txSchema = z.object({
   description: z.string().min(1, "Description is required"),
   reference_no: z.string().optional(),
@@ -74,6 +84,7 @@ const txSchema = z.object({
   status: z.enum(["success", "pending", "refunded", "cancelled"]),
   quantity: z.coerce.number().min(1, "Must be ≥ 1"),
   unit_price: z.coerce.number().min(0, "Must be ≥ 0"),
+  currency: z.string().min(1),
   transaction_date: z.string().min(1, "Date is required"),
 });
 
@@ -135,9 +146,22 @@ interface AddTxModalProps {
   siteId: string;
   userId?: string;
   customers: { id: string; name: string }[];
+  transactions: { reference_no?: string | null }[];
 }
 
-function AddTransactionModal({ open, onClose, siteId, userId, customers }: AddTxModalProps) {
+function generateRefNo(transactions: { reference_no?: string | null }[]): string {
+  const dateStr = format(new Date(), "yyyyMMdd");
+  const prefix = `TXN-${dateStr}-`;
+  const existing = transactions
+    .map((t) => t.reference_no ?? "")
+    .filter((r) => r.startsWith(prefix))
+    .map((r) => parseInt(r.slice(prefix.length), 10))
+    .filter((n) => !isNaN(n));
+  const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+  return `${prefix}${String(next).padStart(3, "0")}`;
+}
+
+function AddTransactionModal({ open, onClose, siteId, userId, customers, transactions }: AddTxModalProps) {
   const queryClient = useQueryClient();
 
   const form = useForm<TxFormValues>({
@@ -151,6 +175,7 @@ function AddTransactionModal({ open, onClose, siteId, userId, customers }: AddTx
       status: "pending",
       quantity: 1,
       unit_price: 0,
+      currency: "TZS",
       transaction_date: format(new Date(), "yyyy-MM-dd"),
     },
   });
@@ -163,11 +188,12 @@ function AddTransactionModal({ open, onClose, siteId, userId, customers }: AddTx
           description: values.description,
           reference_no: values.reference_no || undefined,
           category: values.category || undefined,
-          customer_id: values.customer_id || null,
+          customer_id: (values.customer_id && values.customer_id !== "__none__") ? values.customer_id : null,
           type: values.type,
           status: values.status,
           quantity: values.quantity,
           unit_price: values.unit_price,
+          currency: values.currency,
           transaction_date: values.transaction_date,
         },
         userId
@@ -212,9 +238,21 @@ function AddTransactionModal({ open, onClose, siteId, userId, customers }: AddTx
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Reference No.</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. INV-0042" {...field} />
-                    </FormControl>
+                    <div className="flex gap-1.5">
+                      <FormControl>
+                        <Input placeholder="e.g. TXN-20260406-001" {...field} />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        title="Auto-generate reference number"
+                        onClick={() => form.setValue("reference_no", generateRefNo(transactions))}
+                      >
+                        <Wand2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -241,14 +279,14 @@ function AddTransactionModal({ open, onClose, siteId, userId, customers }: AddTx
                   render={({ field }) => (
                     <FormItem className="col-span-2">
                       <FormLabel>Customer</FormLabel>
-                      <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                      <Select value={field.value || "__none__"} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Unassigned" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
+                          <SelectItem value="__none__">Unassigned</SelectItem>
                           {customers.map((c) => (
                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}
@@ -329,10 +367,33 @@ function AddTransactionModal({ open, onClose, siteId, userId, customers }: AddTx
                 name="unit_price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unit Price ($) *</FormLabel>
+                    <FormLabel>Unit Price *</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {CURRENCIES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -586,7 +647,7 @@ export default function TransactionsPage() {
         const isIncome = row.type === "income";
         return (
           <span className={`tabular-nums font-medium ${isIncome ? "text-emerald-600" : "text-red-600"}`}>
-            {isIncome ? "+" : "-"}${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            {isIncome ? "+" : "-"}{CURRENCY_SYMBOL} {total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </span>
         );
       },
@@ -599,7 +660,7 @@ export default function TransactionsPage() {
         const n = Number(val);
         return (
           <span className={`tabular-nums text-xs font-medium ${n >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-            {n >= 0 ? "+" : ""}${Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 0 })}
+            {n >= 0 ? "+" : ""}{fmtCurrency(Math.abs(n))}
           </span>
         );
       },
@@ -647,28 +708,28 @@ export default function TransactionsPage() {
         <div className="rounded-lg border border-border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Collected Income</p>
           <p className="text-xl font-bold text-emerald-600 mt-1">
-            ${totalIncome.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+            {fmtCurrency(totalIncome)}
           </p>
           <p className="text-[11px] text-muted-foreground">success status only</p>
         </div>
         <div className="rounded-lg border border-border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Total Expenses</p>
           <p className="text-xl font-bold text-red-600 mt-1">
-            ${totalExpenses.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+            {fmtCurrency(totalExpenses)}
           </p>
           <p className="text-[11px] text-muted-foreground">success status only</p>
         </div>
         <div className="rounded-lg border border-border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Net Profit</p>
           <p className={`text-xl font-bold mt-1 ${totalIncome - totalExpenses >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-            ${(totalIncome - totalExpenses).toLocaleString("en-US", { minimumFractionDigits: 0 })}
+            {fmtCurrency(totalIncome - totalExpenses)}
           </p>
           <p className="text-[11px] text-muted-foreground">income − expenses</p>
         </div>
         <div className="rounded-lg border border-border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Running Balance</p>
           <p className={`text-xl font-bold mt-1 tabular-nums ${(txWithBalance[0]?._balance ?? 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-            ${Math.abs(txWithBalance[0]?._balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0 })}
+            {fmtCurrency(Math.abs(txWithBalance[0]?._balance ?? 0))}
           </p>
           <p className="text-[11px] text-muted-foreground">all transactions incl. pending</p>
         </div>
@@ -761,6 +822,7 @@ export default function TransactionsPage() {
           siteId={activeSiteId!}
           userId={user?.id}
           customers={customers}
+          transactions={transactions}
         />
       )}
 

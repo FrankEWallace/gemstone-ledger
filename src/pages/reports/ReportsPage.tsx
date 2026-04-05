@@ -27,16 +27,14 @@ import {
   getProductionByDay,
   getCustomerSummaries,
 } from "@/services/reports.service";
+import { fmtCurrency, fmtCompact, fmtTick, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
-const fmt = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const fmt = (n: number) => fmtCurrency(n);
 
 function fmtShort(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${n}`;
+  return fmtCompact(n).replace(" ", "\u202F"); // narrow no-break space for charts
 }
 
 
@@ -414,7 +412,7 @@ export default function ReportsPage() {
                   tickLine={false}
                 />
                 <YAxis
-                  tickFormatter={(v) => `$${v / 1000}k`}
+                  tickFormatter={(v) => fmtTick(v)}
                   tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                   axisLine={false}
                   tickLine={false}
