@@ -140,6 +140,7 @@ export async function consumeInventoryItem(
     expenseCategoryId?: string | null;
     notes?: string;
     userId?: string;
+    transactionDate?: string;
   } = {}
 ): Promise<void> {
   await updateInventoryItem(item.id, { quantity: item.quantity - qty });
@@ -154,7 +155,7 @@ export async function consumeInventoryItem(
         status: "success",
         quantity: qty,
         unit_price: unitCost,
-        transaction_date: new Date().toISOString().slice(0, 10),
+        transaction_date: opts.transactionDate ?? new Date().toISOString().slice(0, 10),
         customer_id: opts.customerId ?? null,
         expense_category_id: opts.expenseCategoryId ?? null,
         category: item.category ?? undefined,

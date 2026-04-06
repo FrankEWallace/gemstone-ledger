@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Plus, Download, Upload, Trash2, ArrowUpCircle, ArrowDownCircle, RefreshCw, Wand2 } from "lucide-react";
+import { Plus, Download, Upload, Trash2, ArrowUpCircle, ArrowDownCircle, RefreshCw, ChevronDown, Package } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fmtCurrency, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
@@ -12,7 +9,6 @@ import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -20,13 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,14 +27,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
 import {
@@ -58,37 +44,16 @@ import {
 } from "@/services/transactions.service";
 import { getCustomers } from "@/services/customers.service";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
+import {
+  RecordPaymentModal,
+  RecordExpenseModal,
+  UseInventoryModal,
+} from "./TransactionActions";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPES: TransactionType[] = ["income", "expense", "refund"];
 const STATUSES: TransactionStatus[] = ["success", "pending", "refunded", "cancelled"];
-
-// ─── Schema ──────────────────────────────────────────────────────────────────
-
-const CURRENCIES = [
-  { code: "TZS", label: "TSh — Tanzanian Shilling" },
-  { code: "USD", label: "USD — US Dollar" },
-  { code: "EUR", label: "EUR — Euro" },
-  { code: "GBP", label: "GBP — British Pound" },
-  { code: "ZAR", label: "ZAR — South African Rand" },
-  { code: "KES", label: "KES — Kenyan Shilling" },
-];
-
-const txSchema = z.object({
-  description: z.string().min(1, "Description is required"),
-  reference_no: z.string().optional(),
-  category: z.string().optional(),
-  customer_id: z.string().optional(),
-  type: z.enum(["income", "expense", "refund"]),
-  status: z.enum(["success", "pending", "refunded", "cancelled"]),
-  quantity: z.coerce.number().min(1, "Must be ≥ 1"),
-  unit_price: z.coerce.number().min(0, "Must be ≥ 0"),
-  currency: z.string().min(1),
-  transaction_date: z.string().min(1, "Date is required"),
-});
-
-type TxFormValues = z.infer<typeof txSchema>;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -136,297 +101,6 @@ function exportCSV(txs: Transaction[], customerMap: Map<string, string>) {
   a.download = "transactions.csv";
   a.click();
   URL.revokeObjectURL(url);
-}
-
-// ─── Add Transaction Modal ────────────────────────────────────────────────────
-
-interface AddTxModalProps {
-  open: boolean;
-  onClose: () => void;
-  siteId: string;
-  userId?: string;
-  customers: { id: string; name: string }[];
-  transactions: { reference_no?: string | null }[];
-}
-
-function generateRefNo(transactions: { reference_no?: string | null }[]): string {
-  const dateStr = format(new Date(), "yyyyMMdd");
-  const prefix = `TXN-${dateStr}-`;
-  const existing = transactions
-    .map((t) => t.reference_no ?? "")
-    .filter((r) => r.startsWith(prefix))
-    .map((r) => parseInt(r.slice(prefix.length), 10))
-    .filter((n) => !isNaN(n));
-  const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
-  return `${prefix}${String(next).padStart(3, "0")}`;
-}
-
-function AddTransactionModal({ open, onClose, siteId, userId, customers, transactions }: AddTxModalProps) {
-  const queryClient = useQueryClient();
-
-  const form = useForm<TxFormValues>({
-    resolver: zodResolver(txSchema),
-    defaultValues: {
-      description: "",
-      reference_no: "",
-      category: "",
-      customer_id: "",
-      type: "income",
-      status: "pending",
-      quantity: 1,
-      unit_price: 0,
-      currency: "TZS",
-      transaction_date: format(new Date(), "yyyy-MM-dd"),
-    },
-  });
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: (values: TxFormValues) =>
-      createTransaction(
-        siteId,
-        {
-          description: values.description,
-          reference_no: values.reference_no || undefined,
-          category: values.category || undefined,
-          customer_id: (values.customer_id && values.customer_id !== "__none__") ? values.customer_id : null,
-          type: values.type,
-          status: values.status,
-          quantity: values.quantity,
-          unit_price: values.unit_price,
-          currency: values.currency,
-          transaction_date: values.transaction_date,
-        },
-        userId
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions", siteId] });
-      queryClient.invalidateQueries({ queryKey: ["tx-categories", siteId] });
-      toast.success("Transaction added.");
-      onClose();
-      form.reset();
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit((v) => mutate(v))} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Description *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Diesel fuel purchase" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="reference_no"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Reference No.</FormLabel>
-                    <div className="flex gap-1.5">
-                      <FormControl>
-                        <Input placeholder="e.g. TXN-20260406-001" {...field} />
-                      </FormControl>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 h-9 w-9"
-                        title="Auto-generate reference number"
-                        onClick={() => form.setValue("reference_no", generateRefNo(transactions))}
-                      >
-                        <Wand2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Fuel, Equipment" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {customers.length > 0 && (
-                <FormField
-                  control={form.control}
-                  name="customer_id"
-                  render={({ field }) => (
-                    <FormItem className="col-span-2">
-                      <FormLabel>Customer</FormLabel>
-                      <Select value={field.value || "__none__"} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Unassigned" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">Unassigned</SelectItem>
-                          {customers.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type *</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {TYPES.map((t) => (
-                          <SelectItem key={t} value={t} className="capitalize">
-                            {t}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status *</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {STATUSES.map((s) => (
-                          <SelectItem key={s} value={s} className="capitalize">
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="quantity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity *</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={1} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="unit_price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unit Price *</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Currency</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CURRENCIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="transaction_date"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Date *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Saving…" : "Add Transaction"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 // ─── Status Update Popover ────────────────────────────────────────────────────
@@ -489,7 +163,9 @@ export default function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
 
@@ -696,10 +372,29 @@ export default function TransactionsPage() {
             <Upload className="h-4 w-4 mr-1.5" />
             Import CSV
           </Button>
-          <Button size="sm" onClick={() => setModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add Transaction
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Add
+                <ChevronDown className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={() => setPaymentOpen(true)}>
+                <ArrowUpCircle className="h-4 w-4 mr-2 text-emerald-500" />
+                Record Payment
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setInventoryOpen(true)}>
+                <Package className="h-4 w-4 mr-2 text-blue-500" />
+                Use Inventory
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setExpenseOpen(true)}>
+                <ArrowDownCircle className="h-4 w-4 mr-2 text-red-500" />
+                Record Expense
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -814,17 +509,29 @@ export default function TransactionsPage() {
         exampleRow='Diesel fuel,INV-001,Fuel,expense,success,1,450.00,2026-03-15'
       />
 
-      {/* Add Modal */}
-      {modalOpen && (
-        <AddTransactionModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          siteId={activeSiteId!}
-          userId={user?.id}
-          customers={customers}
-          transactions={transactions}
-        />
-      )}
+      {/* Action Modals */}
+      <RecordPaymentModal
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        siteId={activeSiteId!}
+        userId={user?.id}
+        customers={customers}
+        transactions={transactions}
+      />
+      <RecordExpenseModal
+        open={expenseOpen}
+        onClose={() => setExpenseOpen(false)}
+        siteId={activeSiteId!}
+        userId={user?.id}
+        transactions={transactions}
+      />
+      <UseInventoryModal
+        open={inventoryOpen}
+        onClose={() => setInventoryOpen(false)}
+        siteId={activeSiteId!}
+        userId={user?.id}
+        customers={customers}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>

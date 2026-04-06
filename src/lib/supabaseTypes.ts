@@ -292,7 +292,7 @@ export interface Database {
           category: string | null;
           type: "income" | "expense" | "refund";
           status: "success" | "pending" | "refunded" | "cancelled";
-          source: "manual" | "inventory" | "order" | null;
+          source: "manual" | "inventory" | "order" | "payment" | null;
           quantity: number;
           unit_price: number;
           currency: string;
@@ -311,7 +311,7 @@ export interface Database {
           category?: string | null;
           type: "income" | "expense" | "refund";
           status?: "success" | "pending" | "refunded" | "cancelled";
-          source?: "manual" | "inventory" | "order" | null;
+          source?: "manual" | "inventory" | "order" | "payment" | null;
           quantity?: number;
           unit_price?: number;
           currency?: string;
@@ -330,7 +330,7 @@ export interface Database {
           category?: string | null;
           type?: "income" | "expense" | "refund";
           status?: "success" | "pending" | "refunded" | "cancelled";
-          source?: "manual" | "inventory" | "order" | null;
+          source?: "manual" | "inventory" | "order" | "payment" | null;
           quantity?: number;
           unit_price?: number;
           currency?: string;
