@@ -63,7 +63,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 
-import type { Order, OrderStatus, InventoryItem, Supplier, Channel } from "@/lib/supabaseTypes";
+import type { Order, OrderStatus, InventoryItem, Supplier, Channel, Customer } from "@/lib/supabaseTypes";
 import {
   getOrders,
   getOrderWithItems,
@@ -75,6 +75,7 @@ import {
 } from "@/services/orders.service";
 import { getSuppliers, getChannels } from "@/services/suppliers.service";
 import { getInventoryItems } from "@/services/inventory.service";
+import { getCustomers } from "@/services/customers.service";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
@@ -121,6 +122,7 @@ const lineItemSchema = z.object({
 const orderSchema = z.object({
   supplier_id: z.string().optional(),
   channel_id: z.string().optional(),
+  customer_id: z.string().optional(),
   expected_date: z.string().optional(),
   notes: z.string().optional(),
   items: z.array(lineItemSchema).min(1, "Add at least one line item"),
@@ -139,6 +141,7 @@ interface CreateOrderModalProps {
   suppliers: Supplier[];
   channels: Channel[];
   inventoryItems: InventoryItem[];
+  customers: Customer[];
 }
 
 function CreateOrderModal({
@@ -149,6 +152,7 @@ function CreateOrderModal({
   suppliers,
   channels,
   inventoryItems,
+  customers,
 }: CreateOrderModalProps) {
   const queryClient = useQueryClient();
 
@@ -157,6 +161,7 @@ function CreateOrderModal({
     defaultValues: {
       supplier_id: "",
       channel_id: "",
+      customer_id: "",
       expected_date: "",
       notes: "",
       items: [{ inventory_item_id: "", quantity: 1, unit_price: 0 }],
@@ -181,6 +186,7 @@ function CreateOrderModal({
         {
           supplier_id: values.supplier_id || undefined,
           channel_id: values.channel_id || undefined,
+          customer_id: values.customer_id || null,
           expected_date: values.expected_date || undefined,
           notes: values.notes || undefined,
           items: values.items.map((i) => ({
@@ -266,6 +272,32 @@ function CreateOrderModal({
                   </FormItem>
                 )}
               />
+
+              {customers.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="customer_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer (cost attribution)</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="No customer" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No customer</SelectItem>
+                          {customers.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -442,6 +474,7 @@ interface OrderDetailSheetProps {
   channels: Channel[];
   inventoryItems: InventoryItem[];
   siteId: string;
+  userId?: string;
 }
 
 function OrderDetailSheet({
@@ -451,6 +484,7 @@ function OrderDetailSheet({
   channels,
   inventoryItems,
   siteId,
+  userId,
 }: OrderDetailSheetProps) {
   const queryClient = useQueryClient();
 
@@ -465,7 +499,7 @@ function OrderDetailSheet({
       const next = STATUS_FLOW[o.status];
       if (!next) return;
       if (next === "received") {
-        await receiveOrder(o.id);
+        await receiveOrder(o.id, { userId });
       } else {
         await updateOrderStatus(o.id, next);
       }
@@ -671,6 +705,12 @@ export default function OrdersPage() {
     enabled: !!activeSiteId,
   });
 
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers", activeSiteId],
+    queryFn: () => getCustomers(activeSiteId!),
+    enabled: !!activeSiteId,
+  });
+
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => deleteOrder(id),
     onSuccess: () => {
@@ -819,6 +859,7 @@ export default function OrdersPage() {
           suppliers={suppliers}
           channels={channels}
           inventoryItems={inventoryItems}
+          customers={customers}
         />
       )}
 
@@ -830,6 +871,7 @@ export default function OrdersPage() {
         channels={channels}
         inventoryItems={inventoryItems}
         siteId={activeSiteId!}
+        userId={user?.id}
       />
 
       {/* Delete Confirmation */}

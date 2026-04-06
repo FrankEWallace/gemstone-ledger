@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
 import type { InventoryItem } from "@/lib/supabaseTypes";
+import { createTransaction } from "@/services/transactions.service";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_INVENTORY } from "@/lib/demo/data";
 import { enqueue } from "@/lib/offline/syncQueue";
@@ -124,6 +125,45 @@ export async function getInventoryConsumptionRates(
   }
   for (const key in rates) rates[key] = rates[key] / 30;
   return rates;
+}
+
+/**
+ * Atomically deducts inventory stock and creates a `source: 'inventory'` expense transaction.
+ * Transaction is only created when unit_cost > 0.
+ */
+export async function consumeInventoryItem(
+  siteId: string,
+  item: InventoryItem,
+  qty: number,
+  opts: {
+    customerId?: string | null;
+    expenseCategoryId?: string | null;
+    notes?: string;
+    userId?: string;
+  } = {}
+): Promise<void> {
+  await updateInventoryItem(item.id, { quantity: item.quantity - qty });
+
+  const unitCost = Number(item.unit_cost ?? 0);
+  if (unitCost > 0) {
+    await createTransaction(
+      siteId,
+      {
+        description: `${item.name} usage — ${qty} ${item.unit ?? "units"}${opts.notes ? ` (${opts.notes})` : ""}`,
+        type: "expense",
+        status: "success",
+        quantity: qty,
+        unit_price: unitCost,
+        transaction_date: new Date().toISOString().slice(0, 10),
+        customer_id: opts.customerId ?? null,
+        expense_category_id: opts.expenseCategoryId ?? null,
+        category: item.category ?? undefined,
+        inventory_item_id: item.id,
+        source: "inventory",
+      },
+      opts.userId
+    );
+  }
 }
 
 export async function getInventoryCategories(siteId: string): Promise<string[]> {

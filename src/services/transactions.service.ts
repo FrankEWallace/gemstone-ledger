@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
-import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
+import type { Transaction, TransactionType, TransactionStatus, TransactionSource } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_TRANSACTIONS } from "@/lib/demo/data";
 import { enqueue } from "@/lib/offline/syncQueue";
@@ -13,6 +13,8 @@ export type TransactionPayload = {
   category?: string;
   customer_id?: string | null;
   expense_category_id?: string | null;
+  inventory_item_id?: string | null;
+  source?: TransactionSource;
   type: TransactionType;
   status: TransactionStatus;
   quantity: number;
@@ -27,6 +29,7 @@ export type TransactionFilters = {
   category?: string | "all";
   customerId?: string | "all";
   expenseCategoryId?: string | "all";
+  source?: TransactionSource | "all";
   dateFrom?: string;
   dateTo?: string;
 };
@@ -43,6 +46,7 @@ export async function getTransactions(
     if (filters?.category && filters.category !== "all") params.set("category", filters.category);
     if (filters?.customerId && filters.customerId !== "all") params.set("customer_id", filters.customerId);
     if (filters?.expenseCategoryId && filters.expenseCategoryId !== "all") params.set("expense_category_id", filters.expenseCategoryId);
+    if (filters?.source && filters.source !== "all") params.set("source", filters.source);
     if (filters?.dateFrom) params.set("from", filters.dateFrom);
     if (filters?.dateTo) params.set("to", filters.dateTo);
     return restGet<Transaction[]>(`/transactions?${params}`);
@@ -59,6 +63,7 @@ export async function getTransactions(
   if (filters?.category && filters.category !== "all") query = query.eq("category", filters.category);
   if (filters?.customerId && filters.customerId !== "all") query = query.eq("customer_id", filters.customerId);
   if (filters?.expenseCategoryId && filters.expenseCategoryId !== "all") query = query.eq("expense_category_id", filters.expenseCategoryId);
+  if (filters?.source && filters.source !== "all") query = query.eq("source", filters.source);
   if (filters?.dateFrom) query = query.gte("transaction_date", filters.dateFrom);
   if (filters?.dateTo) query = query.lte("transaction_date", filters.dateTo);
 

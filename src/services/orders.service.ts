@@ -14,6 +14,7 @@ export type OrderLineItem = {
 export type CreateOrderPayload = {
   supplier_id?: string;
   channel_id?: string;
+  customer_id?: string | null;
   expected_date?: string;
   notes?: string;
   items: OrderLineItem[];
@@ -59,6 +60,7 @@ export async function createOrder(
     return restPost<Order>("/orders", {
       ...payload,
       site_id: siteId,
+      customer_id: payload.customer_id ?? null,
       created_by: createdBy ?? null,
     });
 
@@ -74,6 +76,7 @@ export async function createOrder(
       site_id: siteId,
       supplier_id: payload.supplier_id || null,
       channel_id: payload.channel_id || null,
+      customer_id: payload.customer_id || null,
       order_number: orderNumber,
       status: "draft",
       total_amount: totalAmount,
@@ -120,18 +123,30 @@ export async function updateOrderStatus(
 }
 
 /**
- * Mark order as received and increment inventory quantities.
- * REST: single atomic call — the PHP API handles inventory update server-side.
+ * Mark order as received, increment inventory quantities, and create
+ * `source: 'order'` expense transactions for each line item.
+ * REST: single atomic call — the PHP API handles all side-effects server-side.
  */
-export async function receiveOrder(orderId: string): Promise<void> {
+export async function receiveOrder(
+  orderId: string,
+  opts?: { userId?: string }
+): Promise<void> {
   if (isRestActive()) {
     await restPost(`/orders/${orderId}/receive`, {});
     return;
   }
 
+  // Fetch order for site_id and customer_id (needed for transaction creation)
+  const { data: order, error: orderFetchError } = await supabase
+    .from("orders")
+    .select("site_id, customer_id")
+    .eq("id", orderId)
+    .single();
+  if (orderFetchError) throw orderFetchError;
+
   const { data: items, error: fetchError } = await supabase
     .from("order_items")
-    .select("inventory_item_id, quantity")
+    .select("inventory_item_id, quantity, unit_price")
     .eq("order_id", orderId);
   if (fetchError) throw fetchError;
 
@@ -144,16 +159,36 @@ export async function receiveOrder(orderId: string): Promise<void> {
 
   for (const item of items ?? []) {
     if (!item.inventory_item_id) continue;
+
     const { data: inv, error: fetchInvError } = await supabase
       .from("inventory_items")
-      .select("quantity")
+      .select("quantity, name, unit, category")
       .eq("id", item.inventory_item_id)
       .single();
     if (fetchInvError) continue;
+
     await supabase
       .from("inventory_items")
       .update({ quantity: (inv?.quantity ?? 0) + item.quantity })
       .eq("id", item.inventory_item_id);
+
+    // Auto-create expense transaction for this line item
+    if (Number(item.unit_price) > 0) {
+      await supabase.from("transactions").insert({
+        site_id: order.site_id,
+        customer_id: order.customer_id ?? null,
+        inventory_item_id: item.inventory_item_id,
+        description: `PO received — ${inv?.name ?? "item"} × ${item.quantity} ${inv?.unit ?? "units"}`,
+        type: "expense",
+        status: "success",
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        category: inv?.category ?? null,
+        transaction_date: today,
+        source: "order",
+        created_by: opts?.userId ?? null,
+      });
+    }
   }
 }
 

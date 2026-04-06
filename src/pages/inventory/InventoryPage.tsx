@@ -54,10 +54,10 @@ import {
   updateInventoryItem,
   deleteInventoryItem,
   getInventoryConsumptionRates,
+  consumeInventoryItem,
 } from "@/services/inventory.service";
 import { getCustomers } from "@/services/customers.service";
 import { getExpenseCategories } from "@/services/expense-categories.service";
-import { createTransaction } from "@/services/transactions.service";
 import { isDemoMode } from "@/lib/demo";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -321,7 +321,6 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
   const [customerId, setCustomerId] = useState("");
   const [expenseCategoryId, setExpenseCategoryId] = useState("");
   const [notes, setNotes] = useState("");
-  const [createExpense, setCreateExpense] = useState(true);
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers", siteId],
@@ -343,28 +342,17 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
         toast.info("Demo mode — changes are not persisted.");
         return;
       }
-      // 1. Deduct stock
-      await updateInventoryItem(item.id, { quantity: item.quantity - qty });
-
-      // 2. Optionally create expense transaction
-      if (createExpense && unitCost > 0) {
-        await createTransaction(siteId, {
-          description: `${item.name} usage — ${qty} ${item.unit ?? "units"}${notes ? ` (${notes})` : ""}`,
-          type: "expense",
-          status: "success",
-          quantity: qty,
-          unit_price: unitCost,
-          transaction_date: new Date().toISOString().slice(0, 10),
-          customer_id: customerId || null,
-          expense_category_id: expenseCategoryId || null,
-          category: item.category ?? undefined,
-        }, userId);
-      }
+      await consumeInventoryItem(siteId, item, qty, {
+        customerId: customerId || null,
+        expenseCategoryId: expenseCategoryId || null,
+        notes,
+        userId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", siteId] });
       queryClient.invalidateQueries({ queryKey: ["transactions", siteId] });
-      toast.success(`Logged ${qty} ${item.unit ?? "unit(s)"} of ${item.name}${createExpense && unitCost > 0 ? ` · $${total.toFixed(2)} expense created` : ""}`);
+      toast.success(`Logged ${qty} ${item.unit ?? "unit(s)"} of ${item.name}${unitCost > 0 ? ` · ${fmtCurrency(total, 2)} expense created` : ""}`);
       onClose();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -444,19 +432,11 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
           </div>
 
           {unitCost > 0 && (
-            <div className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                id="create-expense"
-                checked={createExpense}
-                onChange={(e) => setCreateExpense(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="create-expense" className="cursor-pointer">
-                Auto-create expense transaction{" "}
-                <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
-              </label>
-            </div>
+            <p className="text-xs text-muted-foreground rounded-md bg-muted/40 px-3 py-2">
+              An expense transaction of{" "}
+              <span className="font-semibold text-foreground">{fmtCurrency(total, 2)}</span>{" "}
+              will be recorded automatically.
+            </p>
           )}
         </div>
 
