@@ -67,6 +67,22 @@ self.addEventListener("activate", (e) =>
   e.waitUntil(self.clients.claim())
 );
 
+// ─── Auth cache invalidation ──────────────────────────────────────────────────
+// The app posts CLEAR_SUPABASE_CACHE on sign-out and on user-switch so that
+// the next session never sees cached API responses from the previous user.
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "CLEAR_SUPABASE_CACHE") {
+    event.waitUntil(
+      Promise.all([
+        caches.delete("supabase-api"),
+        caches.delete("supabase-auth"),
+      ]).then(() => {
+        console.info("[SW] Supabase caches cleared on auth change");
+      })
+    );
+  }
+});
+
 // ─── Background Sync ──────────────────────────────────────────────────────────
 // When the browser fires a sync event (device back online, even with tab closed),
 // we notify all active window clients to drain their queue via the syncEngine.

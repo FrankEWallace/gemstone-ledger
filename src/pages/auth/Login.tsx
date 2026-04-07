@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,14 +18,13 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function Login() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/";
   const [serverError, setServerError] = useState<string | null>(null);
 
   function handleTryDemo() {
     enterDemoMode();
-    navigate("/", { replace: true });
+    window.location.replace("/");
   }
 
   const {
@@ -43,7 +42,10 @@ export default function Login() {
     if (error) {
       setServerError(error.message);
     } else {
-      navigate(redirect, { replace: true });
+      // Full page reload instead of a SPA navigation — guarantees the JS module
+      // graph, React Query cache, and any service worker state all start fresh
+      // for the newly authenticated user. Prevents partially-hydrated UI.
+      window.location.replace(redirect);
     }
   }
 

@@ -1,6 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { queryClient } from "@/lib/queryClient";
+import { offlineDB } from "@/lib/offline/db";
 
 interface Props {
   children: ReactNode;
@@ -22,12 +24,25 @@ export default class RouteErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // In production, send to error tracking (Sentry, Datadog, etc.)
     console.error("[RouteErrorBoundary]", error, info.componentStack);
   }
 
   reset = () => {
     this.setState({ hasError: false, error: null });
+  };
+
+  // Clears every cache layer and hard-reloads. Use when the crash is likely
+  // caused by stale or malformed persisted data (e.g. after a deployment that
+  // changed a data shape). This is the last-resort "never show a frozen page"
+  // recovery path.
+  clearCacheAndReload = async () => {
+    try {
+      queryClient.clear();
+      await offlineDB.kv_store.delete("rq-cache");
+    } catch {
+      // Non-fatal — proceed to reload regardless
+    }
+    window.location.reload();
   };
 
   render() {
@@ -46,12 +61,22 @@ export default class RouteErrorBoundary extends Component<Props, State> {
               {this.state.error.message}
             </pre>
           )}
-          <div className="mt-6 flex gap-2">
-            <Button variant="outline" onClick={this.reset}>
-              Try Again
-            </Button>
-            <Button variant="outline" onClick={() => window.location.assign("/")}>
-              Go to Dashboard
+          <div className="mt-6 flex flex-col gap-2 items-center">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={this.reset}>
+                Try Again
+              </Button>
+              <Button variant="outline" onClick={() => window.location.assign("/")}>
+                Go to Dashboard
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={this.clearCacheAndReload}
+            >
+              Clear cache &amp; reload
             </Button>
           </div>
         </div>

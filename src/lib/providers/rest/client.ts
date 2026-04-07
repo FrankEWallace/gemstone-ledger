@@ -176,6 +176,14 @@ async function restRequest<T>(
 
   const json: RestResponse<T> = await res.json();
 
+  if (res.status === 401) {
+    // Token expired or revoked — tell AuthContext to sign the user out.
+    // Using a CustomEvent keeps this module decoupled from React context.
+    window.dispatchEvent(
+      new CustomEvent("auth:unauthorized", { detail: { source: "rest" } })
+    );
+  }
+
   if (!res.ok || json.error) {
     throw new Error(json.error ?? `HTTP ${res.status}`);
   }

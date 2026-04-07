@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
+import { queryClient } from "@/lib/queryClient";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { NavProvider } from "@/context/NavContext";
 import Router from "@/app/Router";
@@ -19,22 +19,25 @@ import "@/services/transactions.service";
 import "@/services/inventory.service";
 import "@/services/production.service";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
-      // Allow cached (possibly stale) data to be shown immediately while
-      // a background refetch happens — critical for offline-first UX.
-      gcTime: 24 * 60 * 60 * 1000, // keep unused cache for 24 h
-    },
-  },
-});
-
 export default function App() {
   useEffect(() => {
     const cleanup = initSyncEngine();
     return cleanup;
+  }, []);
+
+  // After a deployment the Service Worker activates the new version and fires
+  // controllerchange. Reloading here ensures users always run the latest bundle
+  // rather than old JS against a potentially-updated backend or API contract.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handleControllerChange = () => {
+      console.info("[App] New SW version active — reloading for fresh bundle");
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+    return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+    };
   }, []);
 
   return (
