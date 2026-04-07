@@ -138,8 +138,16 @@ import { getBackendConfig } from "../backendConfig";
 
 // ─── Core fetch wrapper ───────────────────────────────────────────────────────
 
+export interface PaginationMeta {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+}
+
 interface RestResponse<T> {
   data: T | null;
+  meta?: PaginationMeta;
   error: string | null;
 }
 
