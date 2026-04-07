@@ -6,11 +6,7 @@ import { z } from "zod";
 import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
-import {
-  getBackendConfig,
-  activateProvider,
-  type BackendConfig,
-} from "@/lib/providers/backendConfig";
+import { getBackendConfig } from "@/lib/providers/backendConfig";
 import { testRestConnection } from "@/lib/providers/rest/client";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -257,47 +253,27 @@ function ModuleConfigSection() {
 
 // ─── Backend Provider Section ─────────────────────────────────────────────────
 
+/**
+ * Read-only display of the active backend provider.
+ * The provider is set at deploy time via environment variables (VITE_BACKEND_PROVIDER
+ * and VITE_REST_BASE_URL) — it is not configurable by end users at runtime.
+ * Admins can run a connection test for diagnostics only.
+ */
 function BackendProviderSection({ role }: { role: string | null }) {
   const config = getBackendConfig();
   const isRest = config.provider === "rest";
-
-  const [showDialog, setShowDialog] = useState(false);
-  const [restUrl, setRestUrl] = useState(config.restBaseUrl);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"idle" | "ok" | "fail">("idle");
-  const [confirming, setConfirming] = useState(false);
 
-  // Only org admins see this section
   if (role !== "admin") return null;
 
   async function handleTest() {
-    if (!restUrl.trim()) {
-      toast.error("Enter a base URL first");
-      return;
-    }
     setTesting(true);
     setTestResult("idle");
-    const ok = await testRestConnection(restUrl.trim());
+    const ok = await testRestConnection();
     setTesting(false);
     setTestResult(ok ? "ok" : "fail");
-    if (!ok) toast.error("Connection failed — check the URL and that /health returns { data: { status: 'ok' } }");
-  }
-
-  function handleActivateRest() {
-    if (testResult !== "ok") {
-      toast.error("Test the connection successfully before activating");
-      return;
-    }
-    const next: BackendConfig = {
-      provider: "rest",
-      restBaseUrl: restUrl.trim(),
-      restActivatedAt: new Date().toISOString(),
-    };
-    activateProvider(next); // reloads the page
-  }
-
-  function handleRevertToSupabase() {
-    activateProvider({ provider: "supabase", restBaseUrl: "" });
+    if (!ok) toast.error("Connection failed — verify VITE_REST_BASE_URL and that /health returns { data: { status: 'ok' } }");
   }
 
   return (
@@ -310,17 +286,15 @@ function BackendProviderSection({ role }: { role: string | null }) {
         </span>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Switch the data backend from Supabase to the self-hosted Laravel API (cPanel, VPS, or any PHP 8+ host).
-        The app's service layer is designed so each backend can be swapped without UI changes.
+        The active backend is set at deploy time via environment variables and cannot
+        be changed here. To switch, update <code>VITE_BACKEND_PROVIDER</code> (and
+        <code>VITE_REST_BASE_URL</code> when using REST) and redeploy.
       </p>
 
-      {/* Provider cards */}
+      {/* Provider cards — read only */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        {/* Supabase card */}
-        <div className={`rounded-lg border p-4 flex items-start gap-3 transition-colors ${
-          !isRest
-            ? "border-primary bg-primary/5"
-            : "border-border bg-card opacity-60"
+        <div className={`rounded-lg border p-4 flex items-start gap-3 ${
+          !isRest ? "border-primary bg-primary/5" : "border-border bg-card opacity-50"
         }`}>
           <Database className={`h-5 w-5 mt-0.5 flex-shrink-0 ${!isRest ? "text-primary" : "text-muted-foreground"}`} />
           <div className="flex-1 min-w-0">
@@ -332,160 +306,67 @@ function BackendProviderSection({ role }: { role: string | null }) {
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              PostgreSQL · Auth · Realtime · Storage · Edge Functions
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">PostgreSQL · Auth · Realtime · Storage</p>
           </div>
         </div>
 
-        {/* REST / cPanel card */}
-        <div className={`rounded-lg border p-4 flex items-start gap-3 transition-colors ${
-          isRest
-            ? "border-primary bg-primary/5"
-            : "border-dashed border-border bg-card"
+        <div className={`rounded-lg border p-4 flex items-start gap-3 ${
+          isRest ? "border-primary bg-primary/5" : "border-dashed border-border bg-card opacity-50"
         }`}>
           <Server className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isRest ? "text-primary" : "text-muted-foreground"}`} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Custom REST API</span>
-              {isRest ? (
+              {isRest && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
                   Active
                 </span>
-              ) : (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                  Inactive
-                </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isRest ? config.restBaseUrl : "Laravel 11 · Sanctum · MySQL · cPanel / VPS"}
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {isRest && config.restBaseUrl ? config.restBaseUrl : "Laravel 11 · Sanctum · MySQL"}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-2">
-        {isRest ? (
-          <>
-            <button
-              onClick={() => setConfirming(true)}
-              className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors"
-            >
-              Edit REST URL
-            </button>
-            <button
-              onClick={handleRevertToSupabase}
-              className="text-sm px-3 py-1.5 rounded-md border border-destructive/40 text-destructive hover:bg-destructive/5 transition-colors"
-            >
-              Revert to Supabase
-            </button>
-          </>
-        ) : (
+      {/* Diagnostics — connection test for REST mode only */}
+      {isRest && (
+        <div className="flex items-center gap-3 mb-4">
           <button
-            onClick={() => { setShowDialog(true); setTestResult("idle"); }}
-            className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5"
+            onClick={handleTest}
+            disabled={testing}
+            className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
-            <Server className="h-3.5 w-3.5" />
-            Configure REST API
+            {testing
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Server className="h-3.5 w-3.5" />}
+            {testing ? "Testing…" : "Test Connection"}
           </button>
-        )}
-        <a
-          href="https://github.com/FrankEWallace/gemstone-ledger"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5 text-muted-foreground"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          Laravel API (DEPLOY.md)
-        </a>
-      </div>
+          {testResult === "ok" && (
+            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Connected
+            </span>
+          )}
+          {testResult === "fail" && (
+            <span className="flex items-center gap-1 text-xs text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" /> Failed
+            </span>
+          )}
+        </div>
+      )}
 
-      {/* Migration checklist (always visible as a guide) */}
-      <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
+      {/* Migration guide */}
+      <div className="rounded-lg border border-border bg-muted/30 p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Migration checklist</p>
         <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
           <li>Deploy <code>mining-os-api</code> (Laravel 11) to cPanel or VPS — see <code>DEPLOY.md</code></li>
           <li>Create MySQL DB, run <code>php artisan migrate</code>, set <code>APP_KEY</code></li>
-          <li>Set the base URL to <code>https://your-domain.com/api/v1</code></li>
-          <li>Click "Configure REST API", paste the URL, and test the connection</li>
-          <li>Flip the toggle — page reloads with Laravel as the active backend</li>
-          <li>Both Supabase and Laravel backends are always available — switch anytime</li>
+          <li>Set <code>VITE_BACKEND_PROVIDER=rest</code> and <code>VITE_REST_BASE_URL=https://your-domain.com/api/v1</code></li>
+          <li>Rebuild and redeploy the frontend</li>
+          <li>Use "Test Connection" above to verify the API is reachable</li>
         </ol>
       </div>
-
-      {/* Configure dialog (inline, no Radix Dialog to keep it simple) */}
-      {(showDialog || confirming) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />
-              <h3 className="font-semibold">Configure REST Backend</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Switching backends reloads the app. Make sure the PHP API is deployed and
-              all service files are updated before activating in production.
-            </p>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">REST API Base URL</label>
-              <input
-                type="url"
-                value={restUrl}
-                onChange={(e) => { setRestUrl(e.target.value); setTestResult("idle"); }}
-                placeholder="https://yoursite.com/api/v1"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <p className="text-xs text-muted-foreground">No trailing slash. Must be HTTPS in production.</p>
-            </div>
-
-            {/* Test connection */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleTest}
-                disabled={testing || !restUrl.trim()}
-                className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {testing ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Server className="h-3.5 w-3.5" />
-                )}
-                {testing ? "Testing…" : "Test Connection"}
-              </button>
-              {testResult === "ok" && (
-                <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Connected
-                </span>
-              )}
-              {testResult === "fail" && (
-                <span className="flex items-center gap-1 text-xs text-destructive">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  Failed
-                </span>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => { setShowDialog(false); setConfirming(false); setTestResult("idle"); }}
-                className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleActivateRest}
-                disabled={testResult !== "ok"}
-                className="text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
-              >
-                Activate REST Provider
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

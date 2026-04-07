@@ -1,78 +1,77 @@
 /**
  * Backend Provider Configuration
  *
- * Controls which backend is active: Supabase (default) or a custom REST API
- * (e.g. a PHP application hosted on cPanel/shared hosting).
+ * The active backend is determined at DEPLOY TIME via environment variables,
+ * not at runtime by end users. This prevents any user — even an admin — from
+ * redirecting API calls to an arbitrary server through localStorage manipulation.
  *
- * Config is stored in localStorage so it survives page reloads without
- * requiring a server round-trip. Only org admins can change it via Settings.
+ * Environment variables (set in .env / Vercel project settings):
+ *   VITE_BACKEND_PROVIDER  "supabase" | "rest"   (default: "supabase")
+ *   VITE_REST_BASE_URL     Base URL of the Laravel REST API when using "rest"
+ *                          e.g. https://api.yoursite.com/api/v1
  *
  * MIGRATION PATH:
  * ─────────────────────────────────────────────────────────────────────────
- * 1. Build the PHP REST API on cPanel (see src/lib/providers/rest/client.ts
- *    for the full endpoint contract).
- * 2. In Settings → Backend Provider, enter the base URL and test connection.
- * 3. Flip the toggle to "REST API" — the page reloads and all service calls
- *    will route through src/lib/providers/rest/client.ts.
- * 4. Each service file (src/services/*.service.ts) needs its Supabase calls
- *    replaced with the corresponding REST client calls. The REST client stubs
- *    act as a 1:1 map to guide that work.
+ * 1. Deploy the Laravel REST API (see mining-os-api/DEPLOY.md).
+ * 2. Set VITE_BACKEND_PROVIDER=rest and VITE_REST_BASE_URL=<url> in your
+ *    deployment environment and rebuild/redeploy.
+ * 3. Each service file (src/services/*.service.ts) needs its Supabase calls
+ *    replaced with the corresponding REST client calls.
  * ─────────────────────────────────────────────────────────────────────────
  */
-
-const STORAGE_KEY = "fwmining_backend_provider";
 
 export type BackendProvider = "supabase" | "rest";
 
 export interface BackendConfig {
   provider: BackendProvider;
-  /**
-   * Base URL of the Laravel REST API.
-   * e.g. https://yoursite.com/api/v1
-   * The Laravel backend lives at /Applications/MAMP/htdocs/mining-os-api
-   * and exposes all routes under /api/v1.
-   */
   restBaseUrl: string;
-  /** ISO timestamp of when the REST provider was last activated */
-  restActivatedAt?: string;
 }
 
-const DEFAULT_CONFIG: BackendConfig = {
-  provider: "supabase",
-  restBaseUrl: "",
-};
-
-export function getBackendConfig(): BackendConfig {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_CONFIG;
-    return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
-  } catch {
-    return DEFAULT_CONFIG;
+// ── Cleanup: remove any lingering localStorage config from the old system ──
+// This runs once on module load. Users who had the old localStorage toggle
+// set to "rest" would otherwise silently lose their session with no explanation.
+if (typeof localStorage !== "undefined") {
+  const OLD_KEY = "fwmining_backend_provider";
+  if (localStorage.getItem(OLD_KEY)) {
+    console.warn(
+      "[BackendConfig] Removed stale localStorage backend config. " +
+      "Backend selection is now controlled by environment variables (VITE_BACKEND_PROVIDER)."
+    );
+    localStorage.removeItem(OLD_KEY);
   }
 }
 
-export function setBackendConfig(config: BackendConfig): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+// ── Read config from env (resolved at build time by Vite) ─────────────────
+
+const _provider = (import.meta.env.VITE_BACKEND_PROVIDER ?? "supabase") as BackendProvider;
+const _restBaseUrl = (import.meta.env.VITE_REST_BASE_URL ?? "").replace(/\/$/, "");
+
+if (_provider === "rest" && !_restBaseUrl) {
+  console.error(
+    "[BackendConfig] VITE_BACKEND_PROVIDER=rest but VITE_REST_BASE_URL is not set. " +
+    "All REST API calls will fail."
+  );
+}
+
+const _config: BackendConfig = {
+  provider: _provider,
+  restBaseUrl: _restBaseUrl,
+};
+
+// ── Public API ─────────────────────────────────────────────────────────────
+
+export function getBackendConfig(): BackendConfig {
+  return _config;
 }
 
 export function getActiveProvider(): BackendProvider {
-  return getBackendConfig().provider;
+  return _config.provider;
 }
 
 export function isSupabaseActive(): boolean {
-  return getBackendConfig().provider === "supabase";
+  return _config.provider === "supabase";
 }
 
 export function isRestActive(): boolean {
-  return getBackendConfig().provider === "rest";
-}
-
-/**
- * Switches the active backend and reloads the app so all services
- * pick up the new config cleanly.
- */
-export function activateProvider(config: BackendConfig): void {
-  setBackendConfig(config);
-  window.location.reload();
+  return _config.provider === "rest";
 }

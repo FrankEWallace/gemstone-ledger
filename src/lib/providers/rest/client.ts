@@ -144,8 +144,9 @@ interface RestResponse<T> {
 }
 
 function getBaseUrl(): string {
-  const { restBaseUrl } = getBackendConfig();
-  return restBaseUrl.replace(/\/$/, "");
+  // Base URL is set at build time via VITE_REST_BASE_URL.
+  // getBackendConfig() returns the immutable env-derived value.
+  return getBackendConfig().restBaseUrl;
 }
 
 function getAuthToken(): string | null {
@@ -212,13 +213,15 @@ export function restDel(path: string): Promise<void> {
 // ─── Connection test ─────────────────────────────────────────────────────────
 
 /**
- * Pings GET /health on the given base URL.
- * Your PHP API should respond with { data: { status: "ok" }, error: null }.
+ * Pings GET /health on the configured REST base URL.
+ * The PHP API must respond with { data: { status: "ok" }, error: null }.
+ * Used only for diagnostics in the Settings page — does not change any config.
  */
-export async function testRestConnection(baseUrl: string): Promise<boolean> {
+export async function testRestConnection(): Promise<boolean> {
+  const base = getBackendConfig().restBaseUrl;
+  if (!base) return false;
   try {
-    const url = `${baseUrl.replace(/\/$/, "")}/health`;
-    const res = await fetch(url, {
+    const res = await fetch(`${base}/health`, {
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(8000),
     });
