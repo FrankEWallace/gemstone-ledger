@@ -831,6 +831,23 @@ export type IncidentType = SafetyIncident["type"];
 export type PlannedShift = Database["public"]["Tables"]["planned_shifts"]["Row"];
 export type SiteDocument = Database["public"]["Tables"]["site_documents"]["Row"];
 
+// ── Team / user management types ──────────────────────────────────────────────
+
+export interface OrgUserSiteRole {
+  site_id: string;
+  site_name: string;
+  role: UserRole;
+}
+
+export interface OrgUser {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  site_roles: OrgUserSiteRole[];
+}
+
 // ── Phase 8 types ─────────────────────────────────────────────────────────────
 export interface KpiTarget {
   id: string;
