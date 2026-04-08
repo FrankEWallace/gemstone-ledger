@@ -1,12 +1,15 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   ChevronRight,
   AlertTriangle,
   CheckCircle2,
-  Download,
-  CalendarDays,
   TrendingUp,
+  Users,
+  Wrench,
+  ShieldAlert,
+  CalendarDays,
 } from "lucide-react";
 import {
   BarChart,
@@ -17,26 +20,39 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format, startOfWeek, endOfWeek, isPast, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  isPast,
+  parseISO,
+  startOfMonth,
+  endOfMonth,
+} from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
-import { isDemoMode } from "@/lib/demo";
 import { getTransactions } from "@/services/transactions.service";
 import { getEquipment } from "@/services/equipment.service";
 import { getSafetyIncidents } from "@/services/safety.service";
 import { getPlannedShifts } from "@/services/schedule.service";
 import { getWorkers } from "@/services/team.service";
 import { getKpiTargets } from "@/services/kpi.service";
-import { getMonthlyTrend, getExpensesByCategory, getCustomerSummaries } from "@/services/reports.service";
+import {
+  getMonthlyTrend,
+  getExpensesByCategory,
+  getCustomerSummaries,
+} from "@/services/reports.service";
+import type { CustomerSummary } from "@/services/reports.service";
+import { getCustomers } from "@/services/customers.service";
 import { fmtCompact, fmtCurrency as fmtFull_ } from "@/lib/formatCurrency";
-import { supabase } from "@/lib/supabase";
+import type { Transaction } from "@/lib/supabaseTypes";
 
-// ─── Formatters ──────────────────────────────────────────────────────────────
+// ─── Formatters ───────────────────────────────────────────────────────────────
 
 const fmtCurrency = fmtCompact;
-const fmtFull     = fmtFull_;
+const fmtFull = fmtFull_;
 
-// ─── Mini sparkbar ────────────────────────────────────────────────────────────
+// ─── SparkBars ────────────────────────────────────────────────────────────────
 
 function SparkBars({ values }: { values: number[] }) {
   const max = Math.max(...values, 1);
@@ -53,7 +69,7 @@ function SparkBars({ values }: { values: number[] }) {
   );
 }
 
-// ─── KPI card ─────────────────────────────────────────────────────────────────
+// ─── KPI Card ─────────────────────────────────────────────────────────────────
 
 function KpiCard({
   label,
@@ -61,12 +77,16 @@ function KpiCard({
   sub,
   sparkValues,
   href,
+  progressPct,
+  progressLabel,
 }: {
   label: string;
   value: string;
   sub?: string;
   sparkValues?: number[];
   href: string;
+  progressPct?: number | null;
+  progressLabel?: string;
 }) {
   return (
     <Link
@@ -79,7 +99,23 @@ function KpiCard({
         </p>
         {sparkValues && <SparkBars values={sparkValues} />}
       </div>
-      <p className="text-[28px] font-bold tracking-tight leading-none font-display">{value}</p>
+      <p className="text-[28px] font-bold tracking-tight leading-none font-display">
+        {value}
+      </p>
+      {progressPct != null && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>{progressLabel ?? "vs target"}</span>
+            <span className="font-semibold tabular-nums">{progressPct}%</span>
+          </div>
+          <div className="h-1 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-foreground transition-all"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
       {sub && (
         <p className="text-[11px] text-muted-foreground flex items-center gap-1">
           <TrendingUp className="h-3 w-3" />
@@ -123,31 +159,50 @@ function ChartTooltip({ active, payload, label }: any) {
             className="inline-block h-2 w-2 rounded-full"
             style={{ background: p.fill }}
           />
-          {p.name}: <span className="font-semibold text-foreground">{fmtFull(p.value)}</span>
+          {p.name}:{" "}
+          <span className="font-semibold text-foreground">{fmtFull(p.value)}</span>
         </p>
       ))}
     </div>
   );
 }
 
+// ─── Customer Filter ──────────────────────────────────────────────────────────
+
+function CustomerFilter({
+  customers,
+  value,
+  onChange,
+}: {
+  customers: { id: string; name: string }[];
+  value: string | null;
+  onChange: (id: string | null) => void;
+}) {
+  return (
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value || null)}
+      className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground appearance-none cursor-pointer hover:border-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-border"
+    >
+      <option value="">All Customers</option>
+      {customers.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 // ─── Revenue Trend Chart ──────────────────────────────────────────────────────
 
-function RevenueTrendChart({ siteId }: { siteId: string }) {
-  const today = new Date();
-  const dateFrom = format(new Date(today.getFullYear(), today.getMonth() - 5, 1), "yyyy-MM-dd");
-  const dateTo   = format(today, "yyyy-MM-dd");
-
-  const { data: trend = [], isLoading } = useQuery({
-    queryKey: ["monthly-trend", siteId, dateFrom, dateTo],
-    queryFn: () => getMonthlyTrend(siteId, dateFrom, dateTo),
-  });
-
-  const chartData = trend.map((t) => ({
-    month: t.month.slice(5),
-    Income: t.income,
-    Expenses: t.expenses,
-  }));
-
+function RevenueTrendChart({
+  chartData,
+  isLoading,
+}: {
+  chartData: { month: string; Income: number; Expenses: number }[];
+  isLoading: boolean;
+}) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <SectionHeader title="Revenue Trend" href="/reports" />
@@ -156,7 +211,11 @@ function RevenueTrendChart({ siteId }: { siteId: string }) {
       ) : (
         <ResponsiveContainer width="100%" height={210}>
           <BarChart data={chartData} barGap={3} barCategoryGap="30%">
-            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+            <CartesianGrid
+              vertical={false}
+              stroke="hsl(var(--border))"
+              strokeDasharray="3 3"
+            />
             <XAxis
               dataKey="month"
               tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
@@ -170,9 +229,17 @@ function RevenueTrendChart({ siteId }: { siteId: string }) {
               tickLine={false}
               width={42}
             />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
+            <Tooltip
+              content={<ChartTooltip />}
+              cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
+            />
             <Bar dataKey="Income" fill="hsl(var(--foreground))" radius={[3, 3, 0, 0]} />
-            <Bar dataKey="Expenses" fill="hsl(var(--muted-foreground))" opacity={0.35} radius={[3, 3, 0, 0]} />
+            <Bar
+              dataKey="Expenses"
+              fill="hsl(var(--muted-foreground))"
+              opacity={0.35}
+              radius={[3, 3, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       )}
@@ -190,36 +257,75 @@ function RevenueTrendChart({ siteId }: { siteId: string }) {
 
 // ─── Expense Breakdown ────────────────────────────────────────────────────────
 
-function ExpenseBreakdown({ siteId }: { siteId: string }) {
-  const today = new Date();
-  const dateFrom = format(new Date(today.getFullYear(), today.getMonth() - 5, 1), "yyyy-MM-dd");
-  const dateTo   = format(today, "yyyy-MM-dd");
+function ExpenseBreakdown({
+  catData,
+  customerData,
+  isLoadingCat,
+  forceCategory,
+}: {
+  catData: { category: string; total: number }[];
+  customerData: CustomerSummary[];
+  isLoadingCat: boolean;
+  forceCategory?: boolean;
+}) {
+  const [mode, setMode] = useState<"category" | "customer">("category");
+  const activeMode = forceCategory ? "category" : mode;
 
-  const { data: cats = [], isLoading } = useQuery({
-    queryKey: ["expenses-by-category", siteId, dateFrom, dateTo],
-    queryFn: () => getExpensesByCategory(siteId, dateFrom, dateTo),
-  });
+  const items =
+    activeMode === "category"
+      ? catData.slice(0, 5).map((c) => ({ label: c.category, value: c.total }))
+      : [...customerData]
+          .sort((a, b) => b.totalExpenses - a.totalExpenses)
+          .slice(0, 5)
+          .map((c) => ({ label: c.customerName, value: c.totalExpenses }));
 
-  const top = cats.slice(0, 5);
-  const maxVal = Math.max(...top.map((c) => c.total), 1);
+  const maxVal = Math.max(...items.map((i) => i.value), 1);
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <SectionHeader title="Expense Breakdown" href="/reports" />
-      {isLoading ? (
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+          Expenses
+        </p>
+        {!forceCategory && (
+          <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
+            <button
+              onClick={() => setMode("category")}
+              className={`px-2.5 py-1 transition-colors ${
+                activeMode === "category"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Category
+            </button>
+            <button
+              onClick={() => setMode("customer")}
+              className={`px-2.5 py-1 transition-colors ${
+                activeMode === "customer"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Customer
+            </button>
+          </div>
+        )}
+      </div>
+      {isLoadingCat && activeMode === "category" ? (
         <div className="h-52 animate-pulse bg-muted rounded-lg" />
-      ) : top.length === 0 ? (
+      ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground py-4">No expense data.</p>
       ) : (
         <div className="space-y-3 mt-1">
-          {top.map((cat) => {
-            const pct = Math.round((cat.total / maxVal) * 100);
+          {items.map((item) => {
+            const pct = Math.round((item.value / maxVal) * 100);
             return (
-              <div key={cat.category} className="space-y-1">
+              <div key={item.label} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground truncate">{cat.category}</span>
+                  <span className="text-muted-foreground truncate">{item.label}</span>
                   <span className="tabular-nums font-medium text-foreground ml-2">
-                    {fmtCurrency(cat.total)}
+                    {fmtCurrency(item.value)}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -237,14 +343,82 @@ function ExpenseBreakdown({ siteId }: { siteId: string }) {
   );
 }
 
+// ─── Customer Insights ────────────────────────────────────────────────────────
+
+function CustomerInsights({
+  summaries,
+  selectedId,
+  onSelect,
+}: {
+  summaries: CustomerSummary[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
+  if (summaries.length === 0) return null;
+  const sorted = [...summaries].sort((a, b) => b.netProfit - a.netProfit);
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+          Customer Profitability — This Month
+        </p>
+        <Link
+          to="/customers"
+          className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          View all <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <div className="divide-y divide-border">
+        {sorted.slice(0, 5).map((cs, idx) => (
+          <button
+            key={cs.customerId}
+            onClick={() =>
+              onSelect(selectedId === cs.customerId ? null : cs.customerId)
+            }
+            className={`w-full flex items-center gap-4 px-5 py-3 text-left hover:bg-muted/30 transition-colors ${
+              selectedId === cs.customerId ? "bg-muted/50" : ""
+            }`}
+          >
+            <span className="text-[11px] font-semibold tabular-nums text-muted-foreground w-4 shrink-0">
+              {idx + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{cs.customerName}</p>
+              <p className="text-[10px] text-muted-foreground capitalize">
+                {cs.customerType}
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p
+                className={`text-sm font-bold tabular-nums ${
+                  cs.netProfit >= 0 ? "text-emerald-600" : "text-red-500"
+                }`}
+              >
+                {cs.netProfit >= 0 ? "+" : "−"}
+                {fmtCurrency(Math.abs(cs.netProfit))}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {fmtCurrency(cs.totalIncome)} rev
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Recent Transactions ──────────────────────────────────────────────────────
 
-function RecentTransactions({ siteId }: { siteId: string }) {
-  const { data: txs = [], isLoading } = useQuery({
-    queryKey: ["transactions", siteId, "all", "all", "all"],
-    queryFn: () => getTransactions(siteId),
-  });
-
+function RecentTransactions({
+  txs,
+  isLoading,
+}: {
+  txs: Transaction[];
+  isLoading: boolean;
+}) {
   const recent = txs.slice(0, 6);
 
   return (
@@ -262,23 +436,38 @@ function RecentTransactions({ siteId }: { siteId: string }) {
       </div>
       {isLoading ? (
         <div className="p-5 space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-8 animate-pulse bg-muted rounded" />)}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-8 animate-pulse bg-muted rounded" />
+          ))}
         </div>
       ) : (
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Description</th>
-              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Category</th>
-              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Status</th>
-              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Date</th>
-              <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Amount</th>
+              <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                Description
+              </th>
+              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">
+                Category
+              </th>
+              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                Status
+              </th>
+              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">
+                Date
+              </th>
+              <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                Amount
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {recent.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                <td
+                  colSpan={5}
+                  className="px-5 py-8 text-center text-muted-foreground"
+                >
                   No transactions yet.
                 </td>
               </tr>
@@ -287,7 +476,10 @@ function RecentTransactions({ siteId }: { siteId: string }) {
                 const total = t.quantity * t.unit_price;
                 const isIncome = t.type === "income";
                 return (
-                  <tr key={t.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={t.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-5 py-3">
                       <span className="font-medium text-foreground truncate block max-w-[200px]">
                         {t.description || "—"}
@@ -322,8 +514,13 @@ function RecentTransactions({ siteId }: { siteId: string }) {
                       {format(new Date(t.transaction_date), "d MMM")}
                     </td>
                     <td className="px-5 py-3 text-right tabular-nums font-semibold">
-                      <span className={isIncome ? "text-foreground" : "text-muted-foreground"}>
-                        {isIncome ? "+" : "−"}{fmtFull(total)}
+                      <span
+                        className={
+                          isIncome ? "text-foreground" : "text-muted-foreground"
+                        }
+                      >
+                        {isIncome ? "+" : "−"}
+                        {fmtFull(total)}
                       </span>
                     </td>
                   </tr>
@@ -337,212 +534,112 @@ function RecentTransactions({ siteId }: { siteId: string }) {
   );
 }
 
-// ─── Operations summary row ───────────────────────────────────────────────────
+// ─── Site Status Strip ────────────────────────────────────────────────────────
 
-function EquipmentCard({ siteId }: { siteId: string }) {
-  const { data: equipment = [], isLoading } = useQuery({
+function SiteStatusStrip({ siteId }: { siteId: string }) {
+  const today = new Date();
+  const from = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const to = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const todayStr = format(today, "yyyy-MM-dd");
+
+  const { data: equipment = [] } = useQuery({
     queryKey: ["equipment", siteId],
     queryFn: () => getEquipment(siteId),
   });
-
-  const operational = equipment.filter((e) => e.status === "operational").length;
-  const maintenance = equipment.filter((e) => e.status === "maintenance").length;
-  const overdue = equipment.filter(
-    (e) => e.next_service_date && isPast(parseISO(e.next_service_date)) && e.status !== "retired"
-  ).length;
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <SectionHeader title="Equipment" href="/equipment" />
-      {isLoading ? (
-        <div className="h-20 animate-pulse bg-muted rounded-lg" />
-      ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xl font-bold font-display">{operational}</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Operational</p>
-            </div>
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xl font-bold font-display">{maintenance}</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">In Service</p>
-            </div>
-          </div>
-          {overdue > 0 ? (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
-              {overdue} unit{overdue > 1 ? "s" : ""} overdue for service
-            </p>
-          ) : (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <CheckCircle2 className="h-3 w-3 shrink-0" />
-              All service schedules current
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SafetyCard({ siteId }: { siteId: string }) {
-  const { data: incidents = [], isLoading } = useQuery({
+  const { data: incidents = [] } = useQuery({
     queryKey: ["safety-incidents", siteId],
     queryFn: () => getSafetyIncidents(siteId),
   });
-
-  const open     = incidents.filter((i) => !i.resolved_at);
-  const critical = open.filter((i) => i.severity === "critical");
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <SectionHeader title="Safety" href="/safety" />
-      {isLoading ? (
-        <div className="h-20 animate-pulse bg-muted rounded-lg" />
-      ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className={`text-xl font-bold font-display ${open.length > 0 ? "text-foreground" : ""}`}>
-                {open.length}
-              </p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Open</p>
-            </div>
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xl font-bold font-display">{critical.length}</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Critical</p>
-            </div>
-          </div>
-          {open.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <CheckCircle2 className="h-3 w-3 shrink-0" />
-              All incidents resolved
-            </p>
-          ) : (
-            <div className="space-y-1">
-              {open.slice(0, 2).map((i) => (
-                <p key={i.id} className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5">
-                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    i.severity === "critical" ? "bg-red-500" : "bg-yellow-500"
-                  }`} />
-                  {i.title}
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ShiftsCard({ siteId }: { siteId: string }) {
-  const today = new Date();
-  const from = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
-  const to   = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
-
-  const { data: shifts = [], isLoading } = useQuery({
+  const { data: shifts = [] } = useQuery({
     queryKey: ["planned-shifts", siteId, from, to],
     queryFn: () => getPlannedShifts(siteId, from, to),
   });
-
   const { data: workers = [] } = useQuery({
     queryKey: ["workers", siteId],
     queryFn: () => getWorkers(siteId),
   });
 
-  const workerMap = Object.fromEntries(workers.map((w) => [w.id, w.full_name]));
-  const todayStr   = format(today, "yyyy-MM-dd");
-  const todayShifts = shifts.filter((s) => s.shift_date === todayStr);
+  const operational = equipment.filter((e) => e.status === "operational").length;
+  const maintenance = equipment.filter((e) => e.status === "maintenance").length;
+  const overdue = equipment.filter(
+    (e) =>
+      e.next_service_date &&
+      isPast(parseISO(e.next_service_date)) &&
+      e.status !== "retired"
+  ).length;
+  const openIncidents = incidents.filter((i) => !i.resolved_at).length;
+  const criticalIncidents = incidents.filter(
+    (i) => !i.resolved_at && i.severity === "critical"
+  ).length;
+  const todayShifts = shifts.filter((s) => s.shift_date === todayStr).length;
+  const activeWorkers = workers.filter((w) => w.status === "active").length;
+
+  const items = [
+    {
+      icon: <Wrench className="h-3 w-3" />,
+      label: "Equipment",
+      value: `${operational} op · ${maintenance} svc`,
+      alert: overdue > 0,
+      alertLabel: overdue > 0 ? `${overdue} overdue` : undefined,
+      href: "/equipment",
+    },
+    {
+      icon: <ShieldAlert className="h-3 w-3" />,
+      label: "Safety",
+      value:
+        openIncidents === 0
+          ? "All clear"
+          : `${openIncidents} open${criticalIncidents > 0 ? ` · ${criticalIncidents} critical` : ""}`,
+      alert: criticalIncidents > 0,
+      alertLabel: undefined,
+      href: "/safety",
+    },
+    {
+      icon: <CalendarDays className="h-3 w-3" />,
+      label: "Shifts today",
+      value: String(todayShifts),
+      alert: false,
+      alertLabel: undefined,
+      href: "/team/schedule",
+    },
+    {
+      icon: <Users className="h-3 w-3" />,
+      label: "Active team",
+      value: `${activeWorkers} of ${workers.length}`,
+      alert: false,
+      alertLabel: undefined,
+      href: "/team",
+    },
+  ];
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <SectionHeader title="Shifts This Week" href="/team/schedule" />
-      {isLoading ? (
-        <div className="h-20 animate-pulse bg-muted rounded-lg" />
-      ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xl font-bold font-display">{shifts.length}</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Planned</p>
-            </div>
-            <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-xl font-bold font-display">{todayShifts.length}</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">Today</p>
-            </div>
-          </div>
-          {todayShifts.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">No shifts scheduled for today.</p>
-          ) : (
-            todayShifts.slice(0, 2).map((s) => (
-              <p key={s.id} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                <CalendarDays className="h-3 w-3 shrink-0" />
-                <span className="truncate">{workerMap[s.worker_id] ?? "?"}</span>
-                <span className="ml-auto tabular-nums">{s.start_time.slice(0, 5)}</span>
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-border">
+        {items.map((item) => (
+          <Link
+            key={item.label}
+            to={item.href}
+            className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors"
+          >
+            <span
+              className={`shrink-0 ${
+                item.alert ? "text-yellow-500" : "text-muted-foreground"
+              }`}
+            >
+              {item.icon}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {item.label}
               </p>
-            ))
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function KpiCard2({ siteId }: { siteId: string }) {
-  const today = new Date();
-  const monthKey = format(startOfMonth(today), "yyyy-MM-dd");
-  const from = format(startOfMonth(today), "yyyy-MM-dd");
-  const to   = format(endOfMonth(today), "yyyy-MM-dd");
-
-  const { data: targets = [] } = useQuery({
-    queryKey: ["kpi_targets", siteId, [monthKey]],
-    queryFn: () => getKpiTargets(siteId, [monthKey]),
-  });
-
-  const { data: txs = [] } = useQuery({
-    queryKey: ["transactions", siteId, "all", "all", "all"],
-    queryFn: () => getTransactions(siteId),
-  });
-
-  const target = targets[0];
-  const successTxs = txs.filter((t) => t.status === "success");
-  const monthRevenue = successTxs
-    .filter((t) => t.type === "income" && t.transaction_date >= from && t.transaction_date <= to)
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
-
-  const hasTarget = target?.revenue_target != null && target.revenue_target > 0;
-  const pct = hasTarget ? Math.min(100, Math.round((monthRevenue / (target.revenue_target ?? 1)) * 100)) : null;
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <SectionHeader title="KPI — This Month" href="/settings/targets" />
-      {!hasTarget ? (
-        <div className="space-y-2">
-          <p className="text-[11px] text-muted-foreground">No targets set for {format(today, "MMMM")}.</p>
-          <Link to="/settings/targets" className="text-[11px] underline underline-offset-2 text-foreground">
-            Set targets →
+              <p className="text-xs font-semibold truncate">{item.value}</p>
+            </div>
+            {item.alert && (
+              <AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0" />
+            )}
           </Link>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div>
-            <div className="flex items-center justify-between text-[11px] mb-1.5">
-              <span className="text-muted-foreground">Revenue target</span>
-              <span className="font-semibold tabular-nums">{pct}%</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-foreground transition-all"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {fmtFull(monthRevenue)} / {fmtFull(target.revenue_target!)}
-            </p>
-          </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
@@ -552,68 +649,130 @@ function KpiCard2({ siteId }: { siteId: string }) {
 export default function Dashboard() {
   const { userProfile } = useAuth();
   const { activeSiteId } = useSite();
-  const firstName = userProfile?.full_name?.split(" ")[0] ?? "there";
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const today = new Date();
 
-  // Top-line KPIs
-  const { data: txs = [] } = useQuery({
+  // ── All transactions (KPIs + recent list)
+  const { data: txs = [], isLoading: txsLoading } = useQuery({
     queryKey: ["transactions", activeSiteId, "all", "all", "all"],
     queryFn: () => getTransactions(activeSiteId!),
     enabled: !!activeSiteId,
   });
 
-  const { data: workers = [] } = useQuery({
-    queryKey: ["workers", activeSiteId],
-    queryFn: () => getWorkers(activeSiteId!),
+  // ── Customers list (filter dropdown)
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers", activeSiteId],
+    queryFn: () => getCustomers(activeSiteId!),
     enabled: !!activeSiteId,
   });
 
-  // Unread messages
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ["messages-unread", activeSiteId],
-    queryFn: async () => {
-      if (isDemoMode()) return 4;
-      const since = localStorage.getItem("messagesLastSeen") ?? new Date(0).toISOString();
-      const { count } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("site_id", activeSiteId!)
-        .gt("created_at", since);
-      return count ?? 0;
-    },
-    enabled: !!activeSiteId,
-  });
-
-  // Monthly trend for sparkbars
-  const today = new Date();
-  const trendFrom = format(new Date(today.getFullYear(), today.getMonth() - 5, 1), "yyyy-MM-dd");
-  const trendTo   = format(today, "yyyy-MM-dd");
-  const { data: trend = [] } = useQuery({
+  // ── Monthly trend (6-month, sparkbars + "all customers" chart)
+  const trendFrom = format(
+    new Date(today.getFullYear(), today.getMonth() - 5, 1),
+    "yyyy-MM-dd"
+  );
+  const trendTo = format(today, "yyyy-MM-dd");
+  const { data: trend = [], isLoading: trendLoading } = useQuery({
     queryKey: ["monthly-trend", activeSiteId, trendFrom, trendTo],
     queryFn: () => getMonthlyTrend(activeSiteId!, trendFrom, trendTo),
     enabled: !!activeSiteId,
   });
 
-  const successTxs    = txs.filter((t) => t.status === "success");
-  const totalRevenue  = successTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.quantity * t.unit_price, 0);
-  const totalExpenses = successTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.quantity * t.unit_price, 0);
-  const netRevenue    = totalRevenue - totalExpenses;
-  const activeWorkers = workers.filter((w) => w.status === "active").length;
+  // ── Expense categories ("all customers" expense chart)
+  const { data: expenseCats = [], isLoading: catsLoading } = useQuery({
+    queryKey: ["expenses-by-category", activeSiteId, trendFrom, trendTo],
+    queryFn: () => getExpensesByCategory(activeSiteId!, trendFrom, trendTo),
+    enabled: !!activeSiteId,
+  });
 
-  const incomeSpark   = trend.map((t) => t.income);
-  const expenseSpark  = trend.map((t) => t.expenses);
-  const netSpark      = trend.map((t) => Math.max(0, t.income - t.expenses));
-
-  // Customer profitability — this month only
+  // ── Customer summaries (this month — profitability list + "by customer" chart)
   const thisMonthStart = format(startOfMonth(today), "yyyy-MM-dd");
-  const todayStr       = format(today, "yyyy-MM-dd");
+  const todayStr = format(today, "yyyy-MM-dd");
   const { data: customerSummaries = [] } = useQuery({
     queryKey: ["customer-summaries", activeSiteId, thisMonthStart, todayStr],
     queryFn: () => getCustomerSummaries(activeSiteId!, thisMonthStart, todayStr),
     enabled: !!activeSiteId,
   });
-  const topCustomers = [...customerSummaries]
-    .sort((a, b) => b.netProfit - a.netProfit)
-    .slice(0, 3);
+
+  // ── KPI targets (this month)
+  const monthKey = format(startOfMonth(today), "yyyy-MM-dd");
+  const { data: kpiTargets = [] } = useQuery({
+    queryKey: ["kpi_targets", activeSiteId, [monthKey]],
+    queryFn: () => getKpiTargets(activeSiteId!, [monthKey]),
+    enabled: !!activeSiteId,
+  });
+
+  // ── Filter transactions by selected customer
+  const filteredTxs = useMemo(
+    () =>
+      selectedCustomerId
+        ? txs.filter((t) => t.customer_id === selectedCustomerId)
+        : txs,
+    [txs, selectedCustomerId]
+  );
+
+  // ── KPIs
+  const successTxs = filteredTxs.filter((t) => t.status === "success");
+  const totalRevenue = successTxs
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const totalExpenses = successTxs
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const netRevenue = totalRevenue - totalExpenses;
+
+  // ── KPI target progress (Revenue, this month)
+  const target = kpiTargets[0];
+  const monthFrom = format(startOfMonth(today), "yyyy-MM-dd");
+  const monthTo = format(endOfMonth(today), "yyyy-MM-dd");
+  const monthRevenue = successTxs
+    .filter(
+      (t) =>
+        t.type === "income" &&
+        t.transaction_date >= monthFrom &&
+        t.transaction_date <= monthTo
+    )
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const hasTarget = target?.revenue_target != null && target.revenue_target > 0;
+  const progressPct = hasTarget
+    ? Math.min(100, Math.round((monthRevenue / (target.revenue_target ?? 1)) * 100))
+    : null;
+
+  // ── Sparkbars (always site-wide from trend)
+  const incomeSpark = trend.map((t) => t.income);
+  const expenseSpark = trend.map((t) => t.expenses);
+  const netSpark = trend.map((t) => Math.max(0, t.income - t.expenses));
+
+  // ── Revenue trend chart data
+  const chartData = useMemo(() => {
+    if (!selectedCustomerId) {
+      return trend.map((t) => ({
+        month: t.month.slice(5),
+        Income: t.income,
+        Expenses: t.expenses,
+      }));
+    }
+    const map: Record<string, { Income: number; Expenses: number }> = {};
+    for (const t of filteredTxs) {
+      const month = t.transaction_date.slice(5, 7);
+      if (!map[month]) map[month] = { Income: 0, Expenses: 0 };
+      const amount = t.quantity * t.unit_price;
+      if (t.type === "income") map[month].Income += amount;
+      else map[month].Expenses += amount;
+    }
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({ month, ...v }));
+  }, [trend, filteredTxs, selectedCustomerId]);
+
+  // ── Expense chart: use selected customer's breakdown when filtered
+  const selectedSummary = customerSummaries.find(
+    (c) => c.customerId === selectedCustomerId
+  );
+  const expenseChartCats =
+    selectedCustomerId && selectedSummary
+      ? selectedSummary.expensesByCategory
+      : expenseCats;
 
   if (!activeSiteId) {
     return (
@@ -624,112 +783,94 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-[1400px]">
+    <div className="p-4 lg:p-6 space-y-5 max-w-[1400px]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">
-            Welcome back, {firstName}
+            Dashboard
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {today.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            {today.toLocaleDateString("en-US", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
           </p>
         </div>
-        <Link
-          to="/reports"
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold hover:bg-muted transition-colors"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Export Report
-        </Link>
+        {customers.length > 0 && (
+          <CustomerFilter
+            customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+            value={selectedCustomerId}
+            onChange={setSelectedCustomerId}
+          />
+        )}
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <KpiCard
-          label="Total Revenue"
+          label="Revenue"
           value={fmtCurrency(totalRevenue)}
-          sub="All confirmed income"
+          sub={
+            selectedCustomerId
+              ? selectedSummary?.customerName
+              : "All confirmed income"
+          }
           sparkValues={incomeSpark.length ? incomeSpark : [1, 2, 3, 4, 5, 6]}
           href="/transactions"
+          progressPct={progressPct}
+          progressLabel={`${format(today, "MMM")} target`}
         />
         <KpiCard
-          label="Total Expenses"
+          label="Expenses"
           value={fmtCurrency(totalExpenses)}
-          sub="All confirmed expenses"
+          sub={
+            selectedCustomerId
+              ? selectedSummary?.customerName
+              : "All confirmed expenses"
+          }
           sparkValues={expenseSpark.length ? expenseSpark : [1, 2, 3, 4, 5, 6]}
           href="/transactions"
         />
         <KpiCard
-          label="Net Revenue"
+          label="Net Profit"
           value={fmtCurrency(Math.abs(netRevenue))}
           sub={netRevenue >= 0 ? "Positive cashflow" : "Net loss"}
           sparkValues={netSpark.length ? netSpark : [1, 2, 3, 4, 5, 6]}
           href="/reports"
         />
-        <KpiCard
-          label="Active Workers"
-          value={String(activeWorkers)}
-          sub={`${workers.length} total on roster · ${unreadCount} unread msgs`}
-          href="/team"
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <RevenueTrendChart
+            chartData={chartData}
+            isLoading={!selectedCustomerId && trendLoading}
+          />
+        </div>
+        <ExpenseBreakdown
+          catData={expenseChartCats}
+          customerData={customerSummaries}
+          isLoadingCat={!selectedCustomerId && catsLoading}
+          forceCategory={!!selectedCustomerId}
         />
       </div>
 
-      {/* Customer Profitability */}
-      {topCustomers.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
-              Customer Profitability — This Month
-            </p>
-            <Link
-              to="/customers"
-              className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              View all <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="divide-y divide-border">
-            {topCustomers.map((cs, idx) => (
-              <div key={cs.customerId} className="flex items-center gap-4 px-5 py-3">
-                <span className="text-[11px] font-semibold tabular-nums text-muted-foreground w-4 shrink-0">
-                  {idx + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{cs.customerName}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">{cs.customerType}</p>
-                </div>
-                <SparkBars values={[cs.totalIncome, cs.totalExpenses]} />
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold tabular-nums ${cs.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                    {cs.netProfit >= 0 ? "+" : "−"}{fmtCurrency(Math.abs(cs.netProfit))}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">net profit</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Customer Insights */}
+      <CustomerInsights
+        summaries={customerSummaries}
+        selectedId={selectedCustomerId}
+        onSelect={setSelectedCustomerId}
+      />
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <RevenueTrendChart siteId={activeSiteId} />
-        </div>
-        <ExpenseBreakdown siteId={activeSiteId} />
-      </div>
+      {/* Recent Transactions */}
+      <RecentTransactions txs={filteredTxs} isLoading={txsLoading} />
 
-      {/* Transactions table */}
-      <RecentTransactions siteId={activeSiteId} />
-
-      {/* Operations row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <EquipmentCard siteId={activeSiteId} />
-        <SafetyCard siteId={activeSiteId} />
-        <ShiftsCard siteId={activeSiteId} />
-        <KpiCard2 siteId={activeSiteId} />
-      </div>
+      {/* Site Status */}
+      <SiteStatusStrip siteId={activeSiteId} />
     </div>
   );
 }
