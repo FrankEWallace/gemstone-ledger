@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Plus, Pencil, Trash2, Mail, Phone, Receipt,
-  Search, CalendarDays,
+  Search, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -69,23 +68,6 @@ import { createTransaction } from "@/services/transactions.service";
 import { getCustomerSummaries } from "@/services/reports.service";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const fmtK = fmtCompact;
-
-function contractProgress(start?: string | null, end?: string | null) {
-  if (!start || !end) return null;
-  const s = parseISO(start);
-  const e = parseISO(end);
-  const today = new Date();
-  const total = differenceInCalendarDays(e, s);
-  if (total <= 0) return null;
-  const elapsed = Math.max(0, differenceInCalendarDays(today, s));
-  const pct = Math.min(100, Math.round((elapsed / total) * 100));
-  const remaining = differenceInCalendarDays(e, today);
-  return { pct, remaining };
-}
-
-// ─── Status badge helpers ─────────────────────────────────────────────────────
 
 function TypeBadge({ type }: { type: Customer["type"] }) {
   return type === "external"
@@ -229,6 +211,11 @@ interface CustomerModalProps {
 function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalProps) {
   const queryClient = useQueryClient();
 
+  // Infer from existing data whether this customer has a timed contract
+  const [hasTimedContract, setHasTimedContract] = useState<boolean>(
+    !!editing?.contract_start || !!editing?.daily_rate,
+  );
+
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     values: editing
@@ -271,9 +258,9 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
         contact_name: values.contact_name || undefined,
         contact_email: values.contact_email || undefined,
         contact_phone: values.contact_phone || undefined,
-        contract_start: values.contract_start || undefined,
-        contract_end: values.contract_end || undefined,
-        daily_rate: values.daily_rate !== "" ? Number(values.daily_rate) : undefined,
+        contract_start: hasTimedContract ? (values.contract_start || undefined) : undefined,
+        contract_end:   hasTimedContract ? (values.contract_end   || undefined) : undefined,
+        daily_rate:     hasTimedContract && values.daily_rate !== "" ? Number(values.daily_rate) : undefined,
         notes: values.notes || undefined,
       };
       return editing
@@ -324,9 +311,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
                     <FormLabel>Type *</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="external">External</SelectItem>
@@ -346,9 +331,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
                     <FormLabel>Status *</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="prospect">Prospect</SelectItem>
@@ -404,47 +387,70 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="contract_start"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contract Start</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Time-based contract toggle */}
+              <div className="col-span-2">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={hasTimedContract}
+                  onClick={() => setHasTimedContract((v) => !v)}
+                  className="flex items-center gap-3 w-full rounded-lg border border-border bg-muted/30 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className={`relative h-5 w-9 rounded-full transition-colors shrink-0 ${hasTimedContract ? "bg-foreground" : "bg-muted-foreground/30"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${hasTimedContract ? "translate-x-4" : "translate-x-0.5"}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium leading-tight">Time-based contract</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {hasTimedContract
+                        ? "Client billed on a daily rate with start/end dates"
+                        : "Client with no fixed rate or contract period"}
+                    </p>
+                  </div>
+                </button>
+              </div>
 
-              <FormField
-                control={form.control}
-                name="contract_end"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contract End</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {hasTimedContract && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="contract_start"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contract Start</FormLabel>
+                        <FormControl><Input type="date" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="daily_rate"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Daily Rate ($)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="contract_end"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contract End <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                        <FormControl><Input type="date" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="daily_rate"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <FormLabel>Daily Rate ($)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
               <FormField
                 control={form.control}
@@ -550,12 +556,12 @@ export default function CustomersPage() {
   );
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="p-4 lg:p-6 space-y-5">
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Customers</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Customers</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             Financial metrics reflect {format(startOfMonth(today), "MMMM yyyy")}
           </p>
@@ -579,9 +585,7 @@ export default function CustomersPage() {
         </div>
 
         <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-          <SelectTrigger className="w-32 h-9">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
             <SelectItem value="external">External</SelectItem>
@@ -590,9 +594,7 @@ export default function CustomersPage() {
         </Select>
 
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="w-36 h-9">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="prospect">Prospect</SelectItem>
@@ -603,181 +605,214 @@ export default function CustomersPage() {
         </Select>
       </div>
 
-      {/* ── Cards grid ── */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-5 h-56 animate-pulse" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground text-sm">
-          {customers.length === 0
-            ? "No customers yet. Add your first customer."
-            : "No customers match your filters."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filtered.map((c) => {
-            const summary    = summaryMap[c.id];
-            const prog       = contractProgress(c.contract_start, c.contract_end);
-            const margin     = summary && summary.totalIncome > 0
-              ? Math.round((summary.netProfit / summary.totalIncome) * 100)
-              : null;
-            const topExpense = summary?.expensesByCategory?.[0];
-            const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
-
-            return (
-              <div
-                key={c.id}
-                className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4 hover:border-foreground/20 transition-colors cursor-pointer"
-                onClick={() => navigate(`/customers/${c.id}`)}
-              >
-                {/* ── Card header ── */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center flex-wrap gap-1.5 mb-1.5">
-                      <h3 className="font-semibold text-base leading-tight">{c.name}</h3>
-                      <TypeBadge type={c.type} />
-                      <StatusBadge status={c.status} />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-                      {c.contact_name && (
-                        <span>{c.contact_name}</span>
-                      )}
-                      {c.contact_email && (
-                        <a
-                          href={`mailto:${c.contact_email}`}
-                          className="flex items-center gap-1 hover:text-foreground transition-colors"
-                        >
-                          <Mail className="h-3 w-3" />
-                          {c.contact_email}
-                        </a>
-                      )}
-                      {c.contact_phone && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {c.contact_phone}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Quick actions */}
-                  <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {hasDailyRate && (
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-7 w-7 text-emerald-600 hover:text-emerald-700"
-                        title="Charge daily rent"
-                        onClick={() => setRentTarget(c)}
-                      >
-                        <Receipt className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost" size="icon" className="h-7 w-7"
-                      onClick={() => { setEditing(c); setModalOpen(true); }}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteTarget(c)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+      {/* ── Table ── */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {isLoading ? (
+          <div className="space-y-0">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-border last:border-0">
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+                  <div className="h-2.5 w-48 bg-muted/60 animate-pulse rounded" />
                 </div>
-
-                {/* ── Financial KPIs (this month) ── */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg bg-muted/40 p-3">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1.5">
-                      Income
-                    </p>
-                    <p className="text-xl font-bold font-display leading-none tabular-nums">
-                      {summary ? fmtK(summary.totalIncome) : "—"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {summary
-                        ? `${summary.transactionCount} txn${summary.transactionCount !== 1 ? "s" : ""}`
-                        : "this month"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg bg-muted/40 p-3">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1.5">
-                      Expenses
-                    </p>
-                    <p className="text-xl font-bold font-display leading-none tabular-nums">
-                      {summary ? fmtK(summary.totalExpenses) : "—"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 truncate">
-                      {topExpense ? topExpense.category : "this month"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg bg-muted/40 p-3">
-                    <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1.5">
-                      Net Profit
-                    </p>
-                    <p className={`text-xl font-bold font-display leading-none tabular-nums ${
-                      summary
-                        ? summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500"
-                        : ""
-                    }`}>
-                      {summary
-                        ? `${summary.netProfit < 0 ? "-" : ""}${fmtK(Math.abs(summary.netProfit))}`
-                        : "—"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {margin !== null ? `${margin}% margin` : "this month"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* ── Contract progress ── */}
-                {(c.contract_start || c.contract_end || hasDailyRate) && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <CalendarDays className="h-3 w-3 shrink-0" />
-                        {c.contract_start
-                          ? format(parseISO(c.contract_start), "d MMM yyyy")
-                          : "—"}
-                        {" → "}
-                        {c.contract_end
-                          ? format(parseISO(c.contract_end), "d MMM yyyy")
-                          : "—"}
-                      </span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {hasDailyRate && (
-                          <span className="tabular-nums font-medium text-foreground">
-                            {CURRENCY_SYMBOL} {Number(c.daily_rate).toLocaleString()}/day
-                          </span>
-                        )}
-                        {prog && (
-                          <span className="tabular-nums">
-                            {prog.pct}%
-                            {prog.remaining > 0
-                              ? ` · ${prog.remaining}d left`
-                              : " · ended"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {prog && (
-                      <Progress value={prog.pct} className="h-1.5" />
-                    )}
-                  </div>
-                )}
-
+                <div className="h-3 w-20 bg-muted animate-pulse rounded hidden sm:block" />
+                <div className="h-3 w-24 bg-muted animate-pulse rounded hidden lg:block" />
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center text-muted-foreground text-sm">
+            {customers.length === 0
+              ? "No customers yet. Add your first customer."
+              : "No customers match your filters."}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Customer
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden sm:table-cell">
+                    Contact
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden md:table-cell">
+                    Started
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
+                    End Date
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
+                    Net Revenue
+                  </th>
+                  <th className="px-4 py-2.5 w-[88px]" />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((c) => {
+                  const summary      = summaryMap[c.id];
+                  const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
+
+                  const avatarCls: Record<string, string> = {
+                    active:    "bg-emerald-100 text-emerald-700",
+                    prospect:  "bg-violet-100 text-violet-700",
+                    completed: "bg-blue-100 text-blue-700",
+                    inactive:  "bg-muted text-muted-foreground",
+                  };
+
+                  return (
+                    <tr
+                      key={c.id}
+                      className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer group"
+                      onClick={() => navigate(`/customers/${c.id}`)}
+                    >
+                      {/* Customer */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${avatarCls[c.status] ?? "bg-muted text-muted-foreground"}`}>
+                            <span className="text-[11px] font-semibold uppercase">
+                              {c.name.slice(0, 2)}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium leading-tight truncate">{c.name}</p>
+                            <TypeBadge type={c.type} />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Contact */}
+                      <td className="px-4 py-3.5 hidden sm:table-cell">
+                        <div className="space-y-0.5 text-xs text-muted-foreground">
+                          {c.contact_name && (
+                            <p className="font-medium text-foreground">{c.contact_name}</p>
+                          )}
+                          {c.contact_email && (
+                            <a
+                              href={`mailto:${c.contact_email}`}
+                              className="flex items-center gap-1 hover:text-foreground transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Mail className="h-3 w-3 shrink-0" />
+                              <span className="truncate max-w-[160px]">{c.contact_email}</span>
+                            </a>
+                          )}
+                          {c.contact_phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3 shrink-0" />
+                              {c.contact_phone}
+                            </span>
+                          )}
+                          {!c.contact_name && !c.contact_email && !c.contact_phone && (
+                            <span className="text-muted-foreground/50">—</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Started */}
+                      <td className="px-4 py-3.5 hidden md:table-cell">
+                        {c.contract_start ? (
+                          <span className="text-xs text-foreground tabular-nums">
+                            {format(parseISO(c.contract_start), "d MMM yyyy")}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={c.status} />
+                      </td>
+
+                      {/* End Date */}
+                      <td className="px-4 py-3.5 hidden lg:table-cell">
+                        {c.contract_end ? (
+                          <span className="text-xs text-foreground tabular-nums">
+                            {format(parseISO(c.contract_end), "d MMM yyyy")}
+                          </span>
+                        ) : (
+                          <span className={`text-xs font-medium ${
+                            c.status === "active" ? "text-emerald-600" : "text-muted-foreground/50"
+                          }`}>
+                            {c.status === "active" ? "Ongoing" : "—"}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Net Revenue */}
+                      <td className="px-4 py-3.5 text-right hidden lg:table-cell">
+                        {summary ? (
+                          <div>
+                            <p className={`font-semibold tabular-nums text-sm ${
+                              summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500"
+                            }`}>
+                              {summary.netProfit < 0 ? "-" : ""}
+                              {fmtCompact(Math.abs(summary.netProfit))}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {summary.transactionCount} txn{summary.transactionCount !== 1 ? "s" : ""}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td
+                        className="px-3 py-3.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {hasDailyRate && (
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-7 w-7 text-emerald-600 hover:text-emerald-700"
+                              title="Charge daily rent"
+                              onClick={() => setRentTarget(c)}
+                            >
+                              <Receipt className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7"
+                            title="Edit"
+                            onClick={() => { setEditing(c); setModalOpen(true); }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            title="Delete"
+                            onClick={() => setDeleteTarget(c)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-0.5" />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Row count */}
+      {!isLoading && filtered.length > 0 && (
+        <p className="text-[11px] text-muted-foreground text-right">
+          {filtered.length} {filtered.length === 1 ? "customer" : "customers"}
+          {filtered.length !== customers.length && ` of ${customers.length}`}
+        </p>
       )}
 
       {/* ── Modals ── */}
