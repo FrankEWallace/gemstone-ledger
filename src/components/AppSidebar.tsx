@@ -32,8 +32,7 @@ import {
   SlidersHorizontal,
   Eye,
   EyeOff,
-  CloudOff,
-  Bell,
+  Puzzle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -51,66 +50,80 @@ interface NavItem {
   module?: ModuleKey;
 }
 
-const mainMenu: NavItem[] = [
-  { label: "Dashboard",           icon: LayoutDashboard, to: "/" },
-  { label: "Notifications",       icon: Bell,            to: "/notifications" },
-  { label: "Inventory",           icon: Package,         to: "/inventory" },
-  { label: "Transactions",        icon: ArrowLeftRight,  to: "/transactions" },
-  { label: "Customers",           icon: Users,           to: "/customers",  module: "customers" },
-  { label: "Reports & Analytics", icon: BarChart3,       to: "/reports",    module: "reports" },
-  { label: "Messages",            icon: MessageSquare,   to: "/messages",   module: "messages" },
-  { label: "Team Performance",    icon: TrendingUp,      to: "/team",       module: "team" },
-  { label: "Campaigns",           icon: Megaphone,       to: "/campaigns",  module: "campaigns" },
+// ─── Nav groups ───────────────────────────────────────────────────────────────
+
+const coreItems: NavItem[] = [
+  { label: "Dashboard",    icon: LayoutDashboard, to: "/" },
+  { label: "Customers",    icon: Users,           to: "/customers",     module: "customers" },
+  { label: "Transactions", icon: ArrowLeftRight,  to: "/transactions" },
+  { label: "Inventory",    icon: Package,         to: "/inventory" },
+  { label: "Reports",      icon: BarChart3,       to: "/reports",       module: "reports" },
 ];
 
-const supplyChain: NavItem[] = [
-  { label: "Supplier List",    icon: UserCircle,   to: "/supply/suppliers", module: "supply_chain" },
-  { label: "Channels",         icon: Layers,        to: "/supply/channels",  module: "supply_chain" },
-  { label: "Order Management", icon: ShoppingCart,  to: "/supply/orders",    module: "supply_chain" },
+const operationsItems: NavItem[] = [
+  { label: "Suppliers", icon: UserCircle,   to: "/supply/suppliers", module: "supply_chain" },
+  { label: "Orders",    icon: ShoppingCart, to: "/supply/orders",    module: "supply_chain" },
 ];
 
-const management: NavItem[] = [
-  { label: "Roles & Permissions",   icon: Shield,     to: "/management/roles" },
-  { label: "Billing & Subscription", icon: CreditCard, to: "/management/billing" },
-  { label: "Integrations",          icon: Plug,       to: "/management/integrations" },
-  { label: "Audit Log",             icon: FileText,   to: "/management/audit" },
+const teamItems: NavItem[] = [
+  { label: "Team",        icon: TrendingUp, to: "/team",              module: "team" },
+  { label: "Roles",       icon: Shield,     to: "/management/roles" },
+  { label: "Audit Log",   icon: FileText,   to: "/management/audit" },
 ];
 
-const operations: NavItem[] = [
-  { label: "Equipment",      icon: Wrench,       to: "/equipment",       module: "operations" },
-  { label: "Safety",         icon: ShieldAlert,  to: "/safety",          module: "operations" },
-  { label: "Shift Schedule", icon: CalendarDays, to: "/team/schedule",   module: "team" },
-  { label: "Timesheets",     icon: Clock,        to: "/team/timesheet",  module: "team" },
-  { label: "Production Log", icon: Pickaxe,      to: "/production",      module: "operations" },
-  { label: "Documents",      icon: FolderOpen,   to: "/documents",       module: "operations" },
+const extensionItems: NavItem[] = [
+  { label: "Equipment",  icon: Wrench,        to: "/equipment",        module: "operations" },
+  { label: "Safety",     icon: ShieldAlert,   to: "/safety",           module: "operations" },
+  { label: "Schedules",  icon: CalendarDays,  to: "/team/schedule",    module: "team" },
+  { label: "Timesheets", icon: Clock,         to: "/team/timesheet",   module: "team" },
+  { label: "Production", icon: Pickaxe,       to: "/production",       module: "operations" },
+  { label: "Documents",  icon: FolderOpen,    to: "/documents",        module: "operations" },
+  { label: "Messages",   icon: MessageSquare, to: "/messages",         module: "messages" },
+  { label: "Campaigns",  icon: Megaphone,     to: "/campaigns",        module: "campaigns" },
+  { label: "Channels",   icon: Layers,        to: "/supply/channels",  module: "supply_chain" },
 ];
 
-const settingsItems: NavItem[] = [
-  { label: "Expense Categories", icon: Tag,      to: "/settings/expense-categories" },
-  { label: "KPI Targets",        icon: Target,   to: "/settings/targets" },
-  { label: "Alert Rules",        icon: Zap,      to: "/settings/alerts" },
-  { label: "Offline Sync",     icon: CloudOff,  to: "/settings/sync" },
-  { label: "System Settings",  icon: Settings,  to: "/settings/system" },
-  { label: "Help Center",      icon: HelpCircle,to: "/settings/help" },
-  { label: "Customer Support", icon: Headphones,to: "/settings/support" },
+const settingsNavItems: NavItem[] = [
+  { label: "Categories",   icon: Tag,       to: "/settings/expense-categories" },
+  { label: "KPI Targets",  icon: Target,    to: "/settings/targets" },
+  { label: "Alert Rules",  icon: Zap,       to: "/settings/alerts" },
+  { label: "Integrations", icon: Plug,      to: "/management/integrations" },
+  { label: "Billing",      icon: CreditCard, to: "/management/billing" },
+  { label: "System",       icon: Settings,  to: "/settings/system" },
+  { label: "Help",         icon: HelpCircle, to: "/settings/help" },
+  { label: "Support",      icon: Headphones, to: "/settings/support" },
 ];
 
-// Section metadata for the customizer
-const NAV_SECTIONS: { key: NavSectionKey; label: string; description: string }[] = [
-  { key: "main",       label: "Main Menu",    description: "Dashboard, Inventory, Transactions, Reports…" },
-  { key: "operations", label: "Operations",   description: "Equipment, Safety, Schedules, Production…" },
-  { key: "supply",     label: "Supply Chain", description: "Suppliers, Channels, Orders" },
-  { key: "management", label: "Management",   description: "Roles, Billing, Integrations, Audit" },
-  { key: "settings",   label: "Settings",     description: "KPI Targets, Alerts, System, Help" },
+// Sections that can be toggled in the customizer (Core is always visible)
+const TOGGLEABLE_SECTIONS: { key: NavSectionKey; label: string; description: string }[] = [
+  { key: "operations", label: "Operations",   description: "Suppliers and order management" },
+  { key: "team",       label: "Team & System", description: "Team, roles, and audit log" },
+  { key: "extensions", label: "Extensions",   description: "Equipment, production, messages…" },
+  { key: "settings",   label: "Settings",     description: "Categories, KPIs, billing, system" },
 ];
 
-function NavSection({ title, items, onNavigate }: { title?: string; items: NavItem[]; onNavigate: () => void }) {
+// ─── NavSection ───────────────────────────────────────────────────────────────
+
+function NavSection({
+  title,
+  items,
+  onNavigate,
+  badge,
+}: {
+  title?: string;
+  items: NavItem[];
+  onNavigate: () => void;
+  badge?: React.ReactNode;
+}) {
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       {title && (
-        <p className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {title}
-        </p>
+        <div className="flex items-center gap-1.5 px-3 mb-1">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            {title}
+          </p>
+          {badge}
+        </div>
       )}
       <ul className="space-y-0.5">
         {items.map((item) => (
@@ -121,14 +134,14 @@ function NavSection({ title, items, onNavigate }: { title?: string; items: NavIt
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
                 )
               }
             >
-              <item.icon className="h-4 w-4 shrink-0" />
+              <item.icon className="h-[15px] w-[15px] shrink-0 opacity-70" />
               <span className="flex-1">{item.label}</span>
               {item.badge != null && item.badge > 0 && (
                 <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
@@ -143,55 +156,46 @@ function NavSection({ title, items, onNavigate }: { title?: string; items: NavIt
   );
 }
 
-// ─── Nav Customizer Panel ─────────────────────────────────────────────────────
+// ─── NavCustomizer ────────────────────────────────────────────────────────────
 
 function NavCustomizer({ onClose }: { onClose: () => void }) {
   const { isSectionHidden, toggleSection } = useNav();
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-2xl border border-sidebar-border bg-sidebar shadow-2xl">
+    <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-xl border border-sidebar-border bg-sidebar shadow-2xl">
       <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border">
-        <div>
-          <p className="text-sm font-semibold">Customize Navigation</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Show or hide sidebar sections</p>
-        </div>
+        <p className="text-sm font-medium">Customize sidebar</p>
         <button
           onClick={onClose}
-          className="rounded-lg p-1.5 hover:bg-sidebar-accent transition-colors"
+          className="rounded-md p-1 hover:bg-sidebar-accent transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="px-4 py-3 space-y-1 max-h-72 overflow-y-auto">
-        {NAV_SECTIONS.map((section) => {
+      <div className="px-3 py-2 space-y-0.5 max-h-64 overflow-y-auto">
+        {TOGGLEABLE_SECTIONS.map((section) => {
           const hidden = isSectionHidden(section.key);
           return (
             <button
               key={section.key}
               onClick={() => toggleSection(section.key)}
               className={cn(
-                "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                hidden
-                  ? "opacity-50 hover:opacity-70"
-                  : "hover:bg-sidebar-accent/50"
+                "w-full flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-sidebar-accent/50",
+                hidden && "opacity-50"
               )}
             >
               <span className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-md border transition-colors shrink-0",
+                "flex h-7 w-7 items-center justify-center rounded border shrink-0 transition-colors",
                 hidden
                   ? "border-border bg-card text-muted-foreground"
                   : "border-primary/30 bg-primary/10 text-primary"
               )}>
-                {hidden
-                  ? <EyeOff className="h-3.5 w-3.5" />
-                  : <Eye className="h-3.5 w-3.5" />
-                }
+                {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium leading-tight">{section.label}</p>
-                <p className="text-[11px] text-muted-foreground truncate mt-0.5">{section.description}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{section.description}</p>
               </div>
-              {/* Toggle pill */}
               <span className={cn(
                 "inline-flex h-5 w-9 shrink-0 rounded-full border-2 transition-colors",
                 hidden ? "border-muted bg-muted" : "border-primary bg-primary"
@@ -205,14 +209,14 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
           );
         })}
       </div>
-      <div className="px-4 py-3 border-t border-sidebar-border">
-        <p className="text-[11px] text-muted-foreground text-center">
-          Preferences saved to this browser
-        </p>
+      <div className="px-4 py-2.5 border-t border-sidebar-border">
+        <p className="text-[11px] text-muted-foreground text-center">Saved to this browser</p>
       </div>
     </div>
   );
 }
+
+// ─── AppSidebar ───────────────────────────────────────────────────────────────
 
 const MESSAGES_SEEN_KEY = "messagesLastSeen";
 
@@ -228,7 +232,6 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
   const filterByModule = (items: NavItem[]) =>
     items.filter((item) => !item.module || isModuleEnabled(item.module));
 
-  // When user visits /messages, record the timestamp
   useEffect(() => {
     if (location.pathname === "/messages") {
       localStorage.setItem(MESSAGES_SEEN_KEY, new Date().toISOString());
@@ -236,14 +239,12 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
     }
   }, [location.pathname]);
 
-  // Poll for new messages since last seen (every 60s when not on messages page)
   useEffect(() => {
     if (!activeSiteId || location.pathname === "/messages") return;
     const since = localStorage.getItem(MESSAGES_SEEN_KEY) ?? new Date(0).toISOString();
 
     getChannelMessageCounts(activeSiteId, since).then((counts) => {
-      const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-      setUnreadMessages(total);
+      setUnreadMessages(Object.values(counts).reduce((sum, n) => sum + n, 0));
     });
 
     const interval = setInterval(async () => {
@@ -255,11 +256,11 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
     return () => clearInterval(interval);
   }, [activeSiteId, location.pathname]);
 
-  const mainMenuWithBadge: NavItem[] = mainMenu.map((item) => {
-    if (item.to === "/messages") return { ...item, badge: unreadMessages };
-    if (item.to === "/notifications") return { ...item, badge: alertCount };
-    return item;
-  });
+  const extensionsWithBadge: NavItem[] = extensionItems.map((item) =>
+    item.to === "/messages" ? { ...item, badge: unreadMessages } : item
+  );
+
+  const visibleExtensions = filterByModule(extensionsWithBadge);
 
   return (
     <>
@@ -268,63 +269,80 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-sidebar-border bg-sidebar transition-transform lg:static lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Pickaxe className="h-5 w-5" />
+        <div className="flex items-center gap-2.5 border-b border-sidebar-border px-4 py-3.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
+            <Pickaxe className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground">Mining Co.</p>
-            <p className="font-display font-semibold text-sm truncate">FW Mining OS</p>
+            <p className="font-semibold text-sm leading-tight truncate">FW Mining OS</p>
+            <p className="text-[11px] text-muted-foreground leading-tight">Mining Co.</p>
           </div>
-          <button className="lg:hidden" onClick={onClose}>
-            <X className="h-5 w-5" />
+          <button className="lg:hidden rounded-md p-1 hover:bg-sidebar-accent" onClick={onClose}>
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3">
-          {!isSectionHidden("main") && (
-            <NavSection title="Main Menu" items={filterByModule(mainMenuWithBadge)} onNavigate={onClose} />
-          )}
-          {(() => {
-            const items = filterByModule(operations);
-            return items.length > 0 && !isSectionHidden("operations") ? (
+        <nav className="flex-1 overflow-y-auto px-2 py-4">
+          {/* Core — always visible */}
+          <NavSection title="Core" items={filterByModule(coreItems)} onNavigate={onClose} />
+
+          {/* Operations */}
+          {!isSectionHidden("operations") && (() => {
+            const items = filterByModule(operationsItems);
+            return items.length > 0 ? (
               <NavSection title="Operations" items={items} onNavigate={onClose} />
             ) : null;
           })()}
-          {(() => {
-            const items = filterByModule(supplyChain);
-            return items.length > 0 && !isSectionHidden("supply") ? (
-              <NavSection title="Supply Chain" items={items} onNavigate={onClose} />
+
+          {/* Team & System */}
+          {!isSectionHidden("team") && (() => {
+            const items = filterByModule(teamItems);
+            return items.length > 0 ? (
+              <NavSection title="Team & System" items={items} onNavigate={onClose} />
             ) : null;
           })()}
-          {!isSectionHidden("management") && (
-            <NavSection title="Management" items={management} onNavigate={onClose} />
+
+          {/* Extensions */}
+          {!isSectionHidden("extensions") && visibleExtensions.length > 0 && (
+            <NavSection
+              title="Extensions"
+              items={visibleExtensions}
+              onNavigate={onClose}
+              badge={
+                <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground uppercase tracking-wide">
+                  <Puzzle className="h-2.5 w-2.5" />
+                  optional
+                </span>
+              }
+            />
           )}
+
+          {/* Settings */}
           {!isSectionHidden("settings") && (
-            <NavSection title="Settings" items={settingsItems} onNavigate={onClose} />
+            <NavSection title="Settings" items={settingsNavItems} onNavigate={onClose} />
           )}
         </nav>
 
-        {/* Footer: Site Picker + Customize button */}
+        {/* Footer */}
         <div className="border-t border-sidebar-border p-3 relative">
           <SitePicker />
           <button
             onClick={() => setCustomizerOpen((o) => !o)}
-            title="Customize navigation"
+            title="Customize sidebar"
             className={cn(
-              "absolute top-3 right-3 rounded-lg p-1.5 transition-colors",
+              "absolute top-3 right-3 rounded-md p-1.5 transition-colors",
               customizerOpen
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                : "text-muted-foreground hover:bg-sidebar-accent/50"
             )}
           >
-            <SlidersHorizontal className="h-4 w-4" />
+            <SlidersHorizontal className="h-3.5 w-3.5" />
           </button>
 
           {customizerOpen && (

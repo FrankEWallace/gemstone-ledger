@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useCallback } from "react";
 
-// Keys matching the sidebar section titles
+// Keys matching the sidebar section groups
 export type NavSectionKey =
-  | "main"
+  | "core"
   | "operations"
-  | "supply"
-  | "management"
+  | "team"
+  | "extensions"
   | "settings";
 
 const STORAGE_KEY = "fw-hidden-nav";
