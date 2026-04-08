@@ -17,22 +17,19 @@ import {
   Phone,
   Zap,
   CalendarDays,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   CheckCircle2,
   Clock,
   Plus,
 } from "lucide-react";
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { toast } from "sonner";
 
@@ -80,6 +77,43 @@ function typeIcon(type: TransactionType) {
   if (type === "income")  return <ArrowUpCircle className="h-3.5 w-3.5 text-emerald-500" />;
   if (type === "expense") return <ArrowDownCircle className="h-3.5 w-3.5 text-red-500" />;
   return <RefreshCw className="h-3.5 w-3.5 text-yellow-500" />;
+}
+
+// ─── Spark bars ───────────────────────────────────────────────────────────────
+
+function SparkBars({ values }: { values: number[] }) {
+  const max = Math.max(...values, 1);
+  return (
+    <div className="flex items-end gap-[2px] h-8 opacity-60 shrink-0">
+      {values.map((v, i) => (
+        <div
+          key={i}
+          className="w-[5px] rounded-[2px] bg-foreground"
+          style={{ height: `${Math.max(12, (v / max) * 100)}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Chart tooltip ────────────────────────────────────────────────────────────
+
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
+      <p className="font-semibold mb-1">
+        {label ? format(parseISO(String(label) + "-01"), "MMMM yyyy") : ""}
+      </p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} className="flex items-center gap-2 text-muted-foreground">
+          <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.fill }} />
+          {p.name}:{" "}
+          <span className="font-semibold text-foreground">{fmtCurrency(p.value)}</span>
+        </p>
+      ))}
+    </div>
+  );
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -507,19 +541,20 @@ export default function CustomerDetailPage() {
 
   const maxCat = Math.max(...(summary?.expensesByCategory ?? []).map((c) => c.total), 1);
 
-  // Running balance for this customer's transactions
+  // Derive activity stats from transactions
   const sortedTx = [...transactions].sort(
     (a, b) => a.transaction_date.localeCompare(b.transaction_date)
   );
-  let runningBalance = 0;
-  const txWithBalance = sortedTx.map((t) => {
-    const amount = t.unit_price * t.quantity;
-    if (t.type === "income")  runningBalance += amount;
-    else if (t.type !== "refund") runningBalance -= amount;
-    return { ...t, _balance: runningBalance };
-  }).reverse(); // show newest first in table
+  const firstActivityDate = sortedTx.length > 0 ? sortedTx[0].transaction_date : null;
+  const lastActivityDate  = sortedTx.length > 0 ? sortedTx[sortedTx.length - 1].transaction_date : null;
+  const daysWorked = new Set(
+    transactions.filter((t) => t.type === "income").map((t) => t.transaction_date)
+  ).size;
+  const revenuePerDay = daysWorked > 0 ? (summary?.totalIncome ?? 0) / daysWorked : 0;
 
-  const columns: DataTableColumn<(typeof txWithBalance)[number]>[] = [
+  const txRows = [...sortedTx].reverse(); // show newest first in table
+
+  const columns: DataTableColumn<(typeof txRows)[number]>[] = [
     {
       key: "transaction_date",
       header: "Date",
@@ -583,20 +618,7 @@ export default function CustomerDetailPage() {
         const isIncome = row.type === "income";
         return (
           <span className={`tabular-nums font-medium ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
-            {isIncome ? "+" : "−"}{fmt(total)}
-          </span>
-        );
-      },
-    },
-    {
-      key: "_balance" as keyof (typeof txWithBalance)[number],
-      header: "Balance",
-      className: "text-right",
-      render: (val) => {
-        const n = Number(val);
-        return (
-          <span className={`tabular-nums text-xs font-medium ${n >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-            {fmt(n)}
+            {fmt(total)}
           </span>
         );
       },
@@ -651,6 +673,31 @@ export default function CustomerDetailPage() {
                 <StatusBadge status={customer.status} />
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                {firstActivityDate ? (
+                  <span className="flex items-center gap-1">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Active since {format(new Date(firstActivityDate), "d MMM yyyy")}
+                  </span>
+                ) : customer.contract_start ? (
+                  <span className="flex items-center gap-1">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Active since {format(new Date(customer.contract_start), "d MMM yyyy")}
+                  </span>
+                ) : null}
+                {lastActivityDate && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    Last activity {format(new Date(lastActivityDate), "d MMM yyyy")}
+                  </span>
+                )}
+                {daysWorked > 0 && (
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    {daysWorked} days worked
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 {customer.contact_name && <span>{customer.contact_name}</span>}
                 {customer.contact_email && (
                   <a href={`mailto:${customer.contact_email}`} className="flex items-center gap-1 hover:text-foreground">
@@ -692,8 +739,8 @@ export default function CustomerDetailPage() {
         <div className="h-24 animate-pulse bg-muted rounded-xl" />
       )}
 
-      {/* Contract progress card */}
-      {contractSummary && customer?.daily_rate && (
+      {/* Contract progress card — fixed-term clients only */}
+      {contractSummary && customer?.daily_rate && customer.contract_end && (
         <ContractProgressCard
           contract={contractSummary}
           dailyRate={Number(customer.daily_rate)}
@@ -715,62 +762,78 @@ export default function CustomerDetailPage() {
 
       {/* Summary KPI cards */}
       {loadingSummary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-20 animate-pulse bg-muted rounded-xl" />)}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-28 animate-pulse bg-muted rounded-xl" />)}
         </div>
-      ) : summary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            {
-              label: "Total Income",
-              value: fmt(summary.totalIncome),
-              sub: `${summary.transactionCount} transactions`,
-              color: "text-emerald-600",
-              icon: <TrendingUp className="h-4 w-4 text-emerald-500" />,
-            },
-            {
-              label: "Total Expenses",
-              value: fmt(summary.totalExpenses),
-              sub: summary.expensesByCategory.length > 0
-                ? `${summary.expensesByCategory[0].category} is largest`
-                : "No expenses",
-              color: "text-red-500",
-              icon: <TrendingDown className="h-4 w-4 text-red-500" />,
-            },
-            {
-              label: "Net Profit",
-              value: fmt(summary.netProfit),
-              sub: summary.totalIncome > 0
-                ? `${Math.round((summary.netProfit / summary.totalIncome) * 100)}% margin`
-                : "",
-              color: summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500",
-              icon: summary.netProfit >= 0
-                ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                : <AlertTriangle className="h-4 w-4 text-red-500" />,
-            },
-            {
-              label: "Expense Ratio",
-              value: summary.totalIncome > 0
-                ? `${Math.round((summary.totalExpenses / summary.totalIncome) * 100)}%`
-                : "—",
-              sub: "expenses / income",
-              color: summary.totalExpenses / Math.max(summary.totalIncome, 1) > 0.8
-                ? "text-red-500"
-                : "text-foreground",
-              icon: null,
-            },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">{s.label}</p>
-                {s.icon}
+      ) : summary ? (() => {
+        const incomeSpark  = monthlyTrend.map((t) => t.income);
+        const expenseSpark = monthlyTrend.map((t) => t.expenses);
+        const netSpark     = monthlyTrend.map((t) => Math.max(0, t.income - t.expenses));
+        const kpis = [
+          {
+            label: "Total Income",
+            value: fmt(summary.totalIncome),
+            sub: `${summary.transactionCount} transactions`,
+            color: "text-emerald-600",
+            spark: incomeSpark,
+          },
+          {
+            label: "Total Expenses",
+            value: fmt(summary.totalExpenses),
+            sub: summary.expensesByCategory.length > 0
+              ? `${summary.expensesByCategory[0].category} is largest`
+              : "No expenses",
+            color: "text-red-500",
+            spark: expenseSpark,
+          },
+          {
+            label: "Net Profit",
+            value: fmt(summary.netProfit),
+            sub: summary.totalIncome > 0
+              ? `${Math.round((summary.netProfit / summary.totalIncome) * 100)}% margin`
+              : "",
+            color: summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500",
+            spark: netSpark,
+          },
+          {
+            label: "Revenue / Day",
+            value: daysWorked > 0 ? fmt(revenuePerDay) : "—",
+            sub: daysWorked > 0 ? "avg per working day" : "no income days yet",
+            color: "text-foreground",
+            spark: null,
+          },
+          {
+            label: "Days Worked",
+            value: daysWorked > 0 ? String(daysWorked) : "—",
+            sub: daysWorked > 0 ? "days with income" : "no income recorded",
+            color: "text-foreground",
+            spark: null,
+          },
+        ];
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {kpis.map((s) => (
+              <div
+                key={s.label}
+                className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3 hover:border-foreground/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+                    {s.label}
+                  </p>
+                  {s.spark && s.spark.some((v) => v > 0) && <SparkBars values={s.spark} />}
+                </div>
+                <p className={`text-[28px] font-bold tracking-tight leading-none font-display ${s.color}`}>
+                  {s.value}
+                </p>
+                {s.sub && (
+                  <p className="text-[11px] text-muted-foreground">{s.sub}</p>
+                )}
               </div>
-              <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-              {s.sub && <p className="text-[11px] text-muted-foreground mt-0.5">{s.sub}</p>}
-            </div>
-          ))}
-        </div>
-      ) : null}
+            ))}
+          </div>
+        );
+      })() : null}
 
       {/* Monthly trend chart */}
       {monthlyTrend.length > 1 && (
@@ -778,38 +841,36 @@ export default function CustomerDetailPage() {
           <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground mb-4">
             Monthly Income vs Expenses
           </p>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={monthlyTrend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#10b981" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={monthlyTrend} barGap={3} barCategoryGap="30%">
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickFormatter={(v) => format(parseISO(v + "-01"), "MMM yy")}
+                axisLine={false}
+                tickLine={false}
               />
               <YAxis
                 tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickFormatter={(v) => fmtTick(v)}
+                axisLine={false}
+                tickLine={false}
+                width={42}
               />
-              <Tooltip
-                formatter={(value: number, name: string) => [fmt(value), name === "income" ? "Income" : "Expenses"]}
-                labelFormatter={(l) => format(parseISO(String(l) + "-01"), "MMMM yyyy")}
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", color: "hsl(var(--foreground))" }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Area type="monotone" dataKey="income"   stroke="#10b981" fill="url(#incomeGrad)"  strokeWidth={2} name="Income" />
-              <Area type="monotone" dataKey="expenses" stroke="#ef4444" fill="url(#expenseGrad)" strokeWidth={2} name="Expenses" />
-            </AreaChart>
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
+              <Bar dataKey="income"   fill="hsl(var(--foreground))"          radius={[3, 3, 0, 0]} name="Income" />
+              <Bar dataKey="expenses" fill="hsl(var(--muted-foreground))" opacity={0.35} radius={[3, 3, 0, 0]} name="Expenses" />
+            </BarChart>
           </ResponsiveContainer>
+          <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-foreground" /> Income
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-muted-foreground opacity-60" /> Expenses
+            </span>
+          </div>
         </div>
       )}
 
@@ -853,7 +914,7 @@ export default function CustomerDetailPage() {
         {/* Transactions table */}
         <div className={`${summary && summary.expensesByCategory.length > 0 ? "lg:col-span-2" : "lg:col-span-3"}`}>
           <DataTable
-            data={txWithBalance as unknown as Record<string, unknown>[]}
+            data={txRows as unknown as Record<string, unknown>[]}
             columns={columns as DataTableColumn<Record<string, unknown>>[]}
             keyField="id"
             searchable
