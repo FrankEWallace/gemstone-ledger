@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { isDemoMode } from "@/lib/demo";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +54,7 @@ const categorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   color: z.string().optional(),
+  type: z.enum(["expense", "income"]),
 });
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
@@ -71,16 +73,22 @@ interface CategoryModalProps {
   onClose: () => void;
   orgId: string;
   editing: ExpenseCategory | null;
+  defaultType: "expense" | "income";
 }
 
-function CategoryModal({ open, onClose, orgId, editing }: CategoryModalProps) {
+function CategoryModal({ open, onClose, orgId, editing, defaultType }: CategoryModalProps) {
   const queryClient = useQueryClient();
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     values: editing
-      ? { name: editing.name, description: editing.description ?? "", color: editing.color ?? "" }
-      : { name: "", description: "", color: COLOR_PRESETS[0] },
+      ? {
+          name: editing.name,
+          description: editing.description ?? "",
+          color: editing.color ?? "",
+          type: editing.type ?? defaultType,
+        }
+      : { name: "", description: "", color: COLOR_PRESETS[0], type: defaultType },
   });
 
   const selectedColor = form.watch("color");
@@ -95,6 +103,7 @@ function CategoryModal({ open, onClose, orgId, editing }: CategoryModalProps) {
         name: values.name,
         description: values.description || undefined,
         color: values.color || undefined,
+        type: values.type,
       };
       return editing
         ? updateExpenseCategory(editing.id, payload)
@@ -119,6 +128,38 @@ function CategoryModal({ open, onClose, orgId, editing }: CategoryModalProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit((v) => mutate(v))} className="space-y-4">
+
+            {/* Type toggle */}
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Type *</FormLabel>
+                  <div className="flex gap-2">
+                    {(["expense", "income"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => field.onChange(t)}
+                        className={[
+                          "flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors",
+                          field.value === t
+                            ? t === "expense"
+                              ? "border-destructive bg-destructive/10 text-destructive"
+                              : "border-green-600 bg-green-600/10 text-green-700 dark:text-green-400"
+                            : "border-border text-muted-foreground hover:bg-muted",
+                        ].join(" ")}
+                      >
+                        {t === "expense" ? "Expense" : "Income"}
+                      </button>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="name"
@@ -126,7 +167,7 @@ function CategoryModal({ open, onClose, orgId, editing }: CategoryModalProps) {
                 <FormItem>
                   <FormLabel>Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Chemicals / Reagents" {...field} />
+                    <Input placeholder={form.watch("type") === "income" ? "e.g. Sales / Royalties" : "e.g. Chemicals / Reagents"} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -197,19 +238,29 @@ function CategoryModal({ open, onClose, orgId, editing }: CategoryModalProps) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+type Tab = "expense" | "income";
+
+const TAB_LABELS: Record<Tab, string> = {
+  expense: "Expenses",
+  income: "Income",
+};
+
 export default function ExpenseCategoriesPage() {
   const { orgId } = useAuth();
   const queryClient = useQueryClient();
 
+  const [activeTab, setActiveTab] = useState<Tab>("expense");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseCategory | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ExpenseCategory | null>(null);
 
-  const { data: categories = [], isLoading } = useQuery({
+  const { data: allCategories = [], isLoading } = useQuery({
     queryKey: ["expense-categories", orgId],
     queryFn: () => getExpenseCategories(orgId!),
     enabled: !!orgId,
   });
+
+  const categories = allCategories.filter((c) => (c.type ?? "expense") === activeTab);
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => {
@@ -245,6 +296,25 @@ export default function ExpenseCategoriesPage() {
           <span className="font-medium">{row.name}</span>
         </div>
       ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      render: (_, row) => {
+        const t = row.type ?? "expense";
+        return (
+          <Badge
+            variant="outline"
+            className={
+              t === "income"
+                ? "border-green-600 text-green-700 dark:text-green-400"
+                : "border-destructive text-destructive"
+            }
+          >
+            {t === "income" ? "Income" : "Expense"}
+          </Badge>
+        );
+      },
     },
     {
       key: "description",
@@ -284,9 +354,9 @@ export default function ExpenseCategoriesPage() {
     <div className="p-4 lg:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Expense Categories</h1>
+          <h1 className="font-display text-2xl font-bold">Categories</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Categorise expenses for reporting and per-customer breakdowns.
+            Manage expense and income categories for reporting and transaction breakdowns.
           </p>
         </div>
         <Button size="sm" onClick={() => { setEditing(null); setModalOpen(true); }}>
@@ -295,16 +365,38 @@ export default function ExpenseCategoriesPage() {
         </Button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border">
+        {(Object.keys(TAB_LABELS) as Tab[]).map((tab) => {
+          const count = allCategories.filter((c) => (c.type ?? "expense") === tab).length;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={[
+                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                activeTab === tab
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              ].join(" ")}
+            >
+              {TAB_LABELS[tab]}
+              <span className="ml-1.5 text-xs text-muted-foreground">({count})</span>
+            </button>
+          );
+        })}
+      </div>
+
       <DataTable
         data={categories as unknown as Record<string, unknown>[]}
         columns={columns as DataTableColumn<Record<string, unknown>>[]}
         keyField="id"
         searchable
-        searchPlaceholder="Search categories…"
+        searchPlaceholder={`Search ${TAB_LABELS[activeTab].toLowerCase()} categories…`}
         searchKeys={["name", "description"]}
         pageSize={20}
         isLoading={isLoading}
-        emptyMessage="No expense categories yet. Add your first category."
+        emptyMessage={`No ${TAB_LABELS[activeTab].toLowerCase()} categories yet. Add your first category.`}
       />
 
       {modalOpen && (
@@ -313,6 +405,7 @@ export default function ExpenseCategoriesPage() {
           onClose={() => { setModalOpen(false); setEditing(null); }}
           orgId={orgId!}
           editing={editing}
+          defaultType={activeTab}
         />
       )}
 

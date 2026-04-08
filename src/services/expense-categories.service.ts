@@ -9,6 +9,7 @@ export type ExpenseCategoryPayload = {
   name: string;
   description?: string;
   color?: string;
+  type?: "expense" | "income";
 };
 
 export async function getExpenseCategories(orgId: string): Promise<ExpenseCategory[]> {

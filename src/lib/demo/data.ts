@@ -25,12 +25,15 @@ export const DEMO_CUSTOMER_ID_INTERNAL = "dc-int";
 export const DEMO_CUSTOMER_ID_EXT1     = "dc-ext1";
 export const DEMO_CUSTOMER_ID_EXT2     = "dc-ext2";
 
-// ─── Expense Category IDs ─────────────────────────────────────────────────────
+// ─── Category IDs ─────────────────────────────────────────────────────────────
 const DEC_CHEMICALS  = "dec1";
 const DEC_FUEL       = "dec2";
 const DEC_LABOR      = "dec3";
 const DEC_MAINT      = "dec4";
 const DEC_TRANSPORT  = "dec5";
+const DIC_SALES      = "dic1";
+const DIC_ROYALTIES  = "dic2";
+const DIC_GRANTS     = "dic3";
 
 // ─── Org & Site ───────────────────────────────────────────────────────────────
 
@@ -121,11 +124,14 @@ export const DEMO_CUSTOMERS = [
 // ─── Expense Categories ────────────────────────────────────────────────────────
 
 export const DEMO_EXPENSE_CATEGORIES = [
-  { id: DEC_CHEMICALS, org_id: DEMO_ORG_ID, name: "Chemicals/Reagents", description: "Cyanide, lime, activated carbon and other process chemicals", color: "#7c3aed", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
-  { id: DEC_FUEL,      org_id: DEMO_ORG_ID, name: "Fuel",               description: "Diesel, petrol and other fuel costs",                          color: "#dc2626", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
-  { id: DEC_LABOR,     org_id: DEMO_ORG_ID, name: "Labor",              description: "Payroll, contractor labour and workforce costs",                color: "#2563eb", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
-  { id: DEC_MAINT,     org_id: DEMO_ORG_ID, name: "Maintenance",        description: "Equipment parts, repairs and servicing",                       color: "#d97706", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
-  { id: DEC_TRANSPORT, org_id: DEMO_ORG_ID, name: "Transport",          description: "Ore haulage, logistics and freight",                           color: "#059669", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_CHEMICALS, org_id: DEMO_ORG_ID, type: "expense" as const, name: "Chemicals/Reagents", description: "Cyanide, lime, activated carbon and other process chemicals", color: "#7c3aed", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_FUEL,      org_id: DEMO_ORG_ID, type: "expense" as const, name: "Fuel",               description: "Diesel, petrol and other fuel costs",                          color: "#dc2626", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_LABOR,     org_id: DEMO_ORG_ID, type: "expense" as const, name: "Labor",              description: "Payroll, contractor labour and workforce costs",                color: "#2563eb", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_MAINT,     org_id: DEMO_ORG_ID, type: "expense" as const, name: "Maintenance",        description: "Equipment parts, repairs and servicing",                       color: "#d97706", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DEC_TRANSPORT, org_id: DEMO_ORG_ID, type: "expense" as const, name: "Transport",          description: "Ore haulage, logistics and freight",                           color: "#059669", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DIC_SALES,     org_id: DEMO_ORG_ID, type: "income"  as const, name: "Sales",              description: "Gold, silver, copper and other mineral sales",                  color: "#16a34a", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DIC_ROYALTIES, org_id: DEMO_ORG_ID, type: "income"  as const, name: "Royalties",          description: "Royalty income from licensed mineral rights",                   color: "#0891b2", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
+  { id: DIC_GRANTS,    org_id: DEMO_ORG_ID, type: "income"  as const, name: "Grants & Subsidies", description: "Government grants, subsidies and rebates",                      color: "#9333ea", created_at: tsAgo(8760), updated_at: tsAgo(8760) },
 ];
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
