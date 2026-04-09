@@ -18,7 +18,8 @@ const NotificationsPage    = lazy(() => import("@/pages/notifications/Notificati
 const InventoryPage     = lazy(() => import("@/pages/inventory/InventoryPage"));
 const TransactionsPage  = lazy(() => import("@/pages/transactions/TransactionsPage"));
 const TeamPage          = lazy(() => import("@/pages/team/TeamPage"));
-const ReportsPage       = lazy(() => import("@/pages/reports/ReportsPage"));
+const ReportsPage           = lazy(() => import("@/pages/reports/ReportsPage"));
+const CustomerReportPage    = lazy(() => import("@/pages/reports/CustomerReportPage"));
 const MessagesPage      = lazy(() => import("@/pages/messages/MessagesPage"));
 const CampaignsPage     = lazy(() => import("@/pages/campaigns/CampaignsPage"));
 const SuppliersPage     = lazy(() => import("@/pages/supply-chain/SuppliersPage"));
@@ -88,7 +89,8 @@ export default function Router() {
           <Route path="/team"         element={<BoundedRoute element={<TeamPage />} />} />
 
           {/* Phase 4 */}
-          <Route path="/reports"    element={<BoundedRoute element={<ReportsPage />} />} />
+          <Route path="/reports"                    element={<BoundedRoute element={<ReportsPage />} />} />
+          <Route path="/reports/customers/:id"  element={<BoundedRoute element={<CustomerReportPage />} />} />
           <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
           <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />
 

@@ -72,10 +72,10 @@ function ChartTooltip({ active, payload, label }: any) {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-2">
-      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">{label}</p>
-      <p className="text-[26px] font-bold tracking-tight leading-none font-display">{value}</p>
-      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-2 min-w-0">
+      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground truncate">{label}</p>
+      <p className="text-[22px] font-bold tracking-tight leading-none tabular-nums font-display truncate">{value}</p>
+      {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
     </div>
   );
 }
@@ -681,16 +681,15 @@ export default function ReportsPage() {
               {customerSummaries.map((cs) => {
                 const maxCatVal = Math.max(...cs.expensesByCategory.map((c) => c.total), 1);
                 return (
-                  <div key={cs.customerId} className="rounded-xl border border-border bg-card p-5 space-y-4">
+                  <Link
+                    key={cs.customerId}
+                    to={`/reports/customers/${cs.customerId}`}
+                    className="group rounded-xl border border-border bg-card p-5 space-y-4 hover:border-foreground/30 transition-colors block"
+                  >
                     {/* Header */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <Link
-                          to={`/customers/${cs.customerId}`}
-                          className="font-semibold truncate hover:underline underline-offset-2 block"
-                        >
-                          {cs.customerName}
-                        </Link>
+                        <p className="font-semibold truncate">{cs.customerName}</p>
                         <Badge
                           variant="outline"
                           className={cs.customerType === "external" ? "text-blue-600 border-blue-200 mt-1" : "text-muted-foreground mt-1"}
@@ -744,10 +743,15 @@ export default function ReportsPage() {
                       </div>
                     )}
 
-                    <p className="text-[10px] text-muted-foreground">
-                      {cs.transactionCount} transaction{cs.transactionCount !== 1 ? "s" : ""}
-                    </p>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-muted-foreground">
+                        {cs.transactionCount} transaction{cs.transactionCount !== 1 ? "s" : ""}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
+                        View report →
+                      </span>
+                    </div>
+                  </Link>
                 );
               })}
             </div>

@@ -44,7 +44,7 @@ import {
 } from "@/services/reports.service";
 import type { CustomerSummary } from "@/services/reports.service";
 import { getCustomers } from "@/services/customers.service";
-import { fmtCompact, fmtCurrency as fmtFull_ } from "@/lib/formatCurrency";
+import { fmtCompact, fmtCurrency as fmtFull_, fmtCompactNum, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 import type { Transaction } from "@/lib/supabaseTypes";
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ function SparkBars({ values }: { values: number[] }) {
 
 function KpiCard({
   label,
-  value,
+  rawValue,
   sub,
   sparkValues,
   href,
@@ -81,7 +81,7 @@ function KpiCard({
   progressLabel,
 }: {
   label: string;
-  value: string;
+  rawValue: number;
   sub?: string;
   sparkValues?: number[];
   href: string;
@@ -99,9 +99,14 @@ function KpiCard({
         </p>
         {sparkValues && <SparkBars values={sparkValues} />}
       </div>
-      <p className="text-[28px] font-semibold tracking-tight leading-none font-display">
-        {value}
-      </p>
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">
+          {CURRENCY_SYMBOL}
+        </span>
+        <span className="font-display text-[32px] font-bold leading-none tabular-nums tracking-tight truncate">
+          {fmtCompactNum(rawValue)}
+        </span>
+      </div>
       {progressPct != null && (
         <div className="space-y-1">
           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
@@ -119,7 +124,7 @@ function KpiCard({
       {sub && (
         <p className="text-[11px] text-muted-foreground flex items-center gap-1">
           <TrendingUp className="h-3 w-3" />
-          {sub}
+          <span className="truncate">{sub}</span>
         </p>
       )}
     </Link>
@@ -812,7 +817,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <KpiCard
           label="Revenue"
-          value={fmtCurrency(totalRevenue)}
+          rawValue={totalRevenue}
           sub={
             selectedCustomerId
               ? selectedSummary?.customerName
@@ -825,7 +830,7 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Expenses"
-          value={fmtCurrency(totalExpenses)}
+          rawValue={totalExpenses}
           sub={
             selectedCustomerId
               ? selectedSummary?.customerName
@@ -836,7 +841,7 @@ export default function Dashboard() {
         />
         <KpiCard
           label="Net Profit"
-          value={fmtCurrency(Math.abs(netRevenue))}
+          rawValue={Math.abs(netRevenue)}
           sub={netRevenue >= 0 ? "Positive cashflow" : "Net loss"}
           sparkValues={netSpark.length ? netSpark : [1, 2, 3, 4, 5, 6]}
           href="/reports"
