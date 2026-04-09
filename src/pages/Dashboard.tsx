@@ -99,7 +99,7 @@ function KpiCard({
         </p>
         {sparkValues && <SparkBars values={sparkValues} />}
       </div>
-      <p className="text-[28px] font-bold tracking-tight leading-none font-display">
+      <p className="text-[28px] font-semibold tracking-tight leading-none font-display">
         {value}
       </p>
       {progressPct != null && (

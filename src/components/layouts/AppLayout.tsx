@@ -84,8 +84,8 @@ export default function AppLayout() {
     <div className="flex h-screen overflow-hidden">
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur px-4 lg:px-6 py-3">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card px-4 lg:px-6 py-3">
           <div className="flex items-center gap-3">
             <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-5 w-5" />

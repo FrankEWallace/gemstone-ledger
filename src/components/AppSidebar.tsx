@@ -136,12 +136,12 @@ function NavSection({
                 cn(
                   "flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
                 )
               }
             >
-              <item.icon className="h-[15px] w-[15px] shrink-0 opacity-70" />
+              <item.icon className="h-[15px] w-[15px] shrink-0 opacity-60" />
               <span className="flex-1">{item.label}</span>
               {item.badge != null && item.badge > 0 && (
                 <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
