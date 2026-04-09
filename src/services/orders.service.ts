@@ -3,7 +3,7 @@ import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
 import type { Order, OrderItem, OrderStatus } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_ORDERS } from "@/lib/demo/data";
+import { DEMO_ORDERS, DEMO_ORDER_ITEMS } from "@/lib/demo/data";
 
 export type OrderLineItem = {
   inventory_item_id: string;
@@ -39,6 +39,12 @@ export async function getOrders(siteId: string): Promise<Order[]> {
 }
 
 export async function getOrderWithItems(orderId: string): Promise<OrderWithItems> {
+  if (isDemoMode()) {
+    const order = DEMO_ORDERS.find((o) => o.id === orderId);
+    if (!order) throw new Error("Order not found");
+    const items = DEMO_ORDER_ITEMS.filter((i) => i.order_id === orderId);
+    return { ...order, order_items: items } as unknown as OrderWithItems;
+  }
   if (isRestActive())
     return restGet<OrderWithItems>(`/orders/${orderId}/items`);
 

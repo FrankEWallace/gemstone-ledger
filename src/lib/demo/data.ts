@@ -304,12 +304,24 @@ export const DEMO_CHANNELS = [
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
 export const DEMO_ORDERS = [
-  { id: "do1", site_id: DEMO_SITE_ID, supplier_id: "dsu2", order_number: "PO-2026-0041", status: "delivered" as const,  total_amount: 18130, expected_delivery: daysAgo(4),  notes: "Diesel — 9,800L @ $1.85/L",              created_at: tsAgo(192) },
-  { id: "do2", site_id: DEMO_SITE_ID, supplier_id: "dsu1", order_number: "PO-2026-0042", status: "delivered" as const,  total_amount: 4860,  expected_delivery: daysAgo(18), notes: "ANFO 3.2t + electric blast caps x200",    created_at: tsAgo(528) },
-  { id: "do3", site_id: DEMO_SITE_ID, supplier_id: "dsu3", order_number: "PO-2026-0043", status: "confirmed" as const,  total_amount: 2340,  expected_delivery: daysAgo(-5), notes: "PPE restock — helmets, boots, glasses",   created_at: tsAgo(72) },
-  { id: "do4", site_id: DEMO_SITE_ID, supplier_id: "dsu4", order_number: "PO-2026-0044", status: "pending"   as const,  total_amount: 7040,  expected_delivery: daysAgo(-8), notes: "Cyanide 320L + activated carbon 300kg",   created_at: tsAgo(24) },
-  { id: "do5", site_id: DEMO_SITE_ID, supplier_id: "dsu2", order_number: "PO-2026-0045", status: "pending"   as const,  total_amount: 19200, expected_delivery: daysAgo(-3), notes: "Diesel bulk — scheduled replenishment",   created_at: tsAgo(4) },
-  { id: "do6", site_id: DEMO_SITE_ID, supplier_id: "dsu5", order_number: "PO-2026-0040", status: "delivered" as const,  total_amount: 22400, expected_delivery: daysAgo(38), notes: "D9 dozer track replacement parts",         created_at: tsAgo(1056) },
+  { id: "do1", site_id: DEMO_SITE_ID, supplier_id: "dsu2", order_number: "PO-2026-0041", status: "received"  as const, total_amount: 18130, expected_date: daysAgo(4),  received_date: daysAgo(3), channel_id: null, customer_id: null, created_by: null, notes: "Diesel — 9,800L @ $1.85/L",              created_at: tsAgo(192) },
+  { id: "do2", site_id: DEMO_SITE_ID, supplier_id: "dsu1", order_number: "PO-2026-0042", status: "received"  as const, total_amount: 4860,  expected_date: daysAgo(18), received_date: daysAgo(17), channel_id: null, customer_id: null, created_by: null, notes: "ANFO 3.2t + electric blast caps x200",    created_at: tsAgo(528) },
+  { id: "do3", site_id: DEMO_SITE_ID, supplier_id: "dsu3", order_number: "PO-2026-0043", status: "confirmed" as const, total_amount: 2340,  expected_date: daysAgo(-5), received_date: null, channel_id: null, customer_id: null, created_by: null, notes: "PPE restock — helmets, boots, glasses",   created_at: tsAgo(72) },
+  { id: "do4", site_id: DEMO_SITE_ID, supplier_id: "dsu4", order_number: "PO-2026-0044", status: "sent"      as const, total_amount: 7040,  expected_date: daysAgo(-8), received_date: null, channel_id: null, customer_id: null, created_by: null, notes: "Cyanide 320L + activated carbon 300kg",   created_at: tsAgo(24) },
+  { id: "do5", site_id: DEMO_SITE_ID, supplier_id: "dsu2", order_number: "PO-2026-0045", status: "draft"     as const, total_amount: 19200, expected_date: daysAgo(-3), received_date: null, channel_id: null, customer_id: null, created_by: null, notes: "Diesel bulk — scheduled replenishment",   created_at: tsAgo(4) },
+  { id: "do6", site_id: DEMO_SITE_ID, supplier_id: "dsu5", order_number: "PO-2026-0040", status: "received"  as const, total_amount: 22400, expected_date: daysAgo(38), received_date: daysAgo(35), channel_id: null, customer_id: null, created_by: null, notes: "D9 dozer track replacement parts",         created_at: tsAgo(1056) },
+];
+
+export const DEMO_ORDER_ITEMS = [
+  { id: "doi1",  order_id: "do1", inventory_item_id: "di5",  quantity: 9800, unit_price: 1.85, total: 18130 },
+  { id: "doi2",  order_id: "do2", inventory_item_id: "di7",  quantity: 3200, unit_price: 1.30, total: 4160 },
+  { id: "doi3",  order_id: "do2", inventory_item_id: "di6",  quantity: 200,  unit_price: 3.50, total: 700 },
+  { id: "doi4",  order_id: "do3", inventory_item_id: "di1",  quantity: 20,   unit_price: 45,   total: 900 },
+  { id: "doi5",  order_id: "do3", inventory_item_id: "di2",  quantity: 20,   unit_price: 18,   total: 360 },
+  { id: "doi6",  order_id: "do3", inventory_item_id: "di3",  quantity: 20,   unit_price: 54,   total: 1080 },
+  { id: "doi7",  order_id: "do4", inventory_item_id: "di8",  quantity: 320,  unit_price: 22,   total: 7040 },
+  { id: "doi8",  order_id: "do5", inventory_item_id: "di5",  quantity: 12000, unit_price: 1.60, total: 19200 },
+  { id: "doi9",  order_id: "do6", inventory_item_id: "di9",  quantity: 1,    unit_price: 22400, total: 22400 },
 ];
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
