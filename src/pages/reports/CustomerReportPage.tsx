@@ -12,9 +12,8 @@ import {
   ArrowLeft,
   Download,
   FileSpreadsheet,
-  TrendingUp,
-  TrendingDown,
 } from "lucide-react";
+import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
   BarChart,
   Bar,
@@ -473,7 +472,7 @@ export default function CustomerReportPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-[1200px]">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1200px] mx-auto">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -581,14 +580,14 @@ export default function CustomerReportPage() {
             value={fmtShort(summary.totalIncome).replace(`${CURRENCY_SYMBOL} `, "")}
             sub={`${summary.transactionCount} transactions`}
             color="text-emerald-600"
-            icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
+            icon={<TrendArrow direction="up" className="h-2.5 w-2.5 text-emerald-500" />}
           />
           <KpiCard
             label="Total Expenses"
             value={fmtShort(summary.totalExpenses).replace(`${CURRENCY_SYMBOL} `, "")}
             sub={expenseByCategory.length > 0 ? `${expenseByCategory[0].category} is largest` : "No expenses"}
             color="text-red-500"
-            icon={<TrendingDown className="h-3.5 w-3.5 text-red-400 shrink-0" />}
+            icon={<TrendArrow direction="down" className="h-2.5 w-2.5 text-red-400" />}
           />
           <KpiCard
             label="Net Profit"
@@ -706,10 +705,10 @@ export default function CustomerReportPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Category</th>
-                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Total Spent</th>
-                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">% of Expenses</th>
-                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Share</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Category</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Total Spent</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">% of Expenses</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Share</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -719,11 +718,11 @@ export default function CustomerReportPage() {
                   : 0;
                 return (
                   <tr key={c.category} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-5 py-3 font-medium text-foreground">{c.category}</td>
-                    <td className="px-3 py-3 text-right tabular-nums font-semibold">{fmt(c.total)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground hidden sm:table-cell">{pct.toFixed(1)}%</td>
+                    <td className="px-5 py-3 text-center font-medium text-foreground">{c.category}</td>
+                    <td className="px-3 py-3 text-center tabular-nums font-semibold">{fmt(c.total)}</td>
+                    <td className="px-3 py-3 text-center tabular-nums text-muted-foreground hidden sm:table-cell">{pct.toFixed(1)}%</td>
                     <td className="px-5 py-3 hidden md:table-cell">
-                      <div className="flex items-center justify-end">
+                      <div className="flex items-center justify-center">
                         <div className="w-24 h-1 rounded-full bg-muted overflow-hidden">
                           <div className="h-full rounded-full bg-foreground/60" style={{ width: `${Math.round(pct)}%` }} />
                         </div>
@@ -735,9 +734,9 @@ export default function CustomerReportPage() {
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-border bg-muted/20">
-                <td className="px-5 py-3 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Total</td>
-                <td className="px-3 py-3 text-right tabular-nums font-bold">{fmt(summary.totalExpenses)}</td>
-                <td className="px-3 py-3 text-right text-muted-foreground hidden sm:table-cell">100%</td>
+                <td className="px-5 py-3 text-center font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Total</td>
+                <td className="px-3 py-3 text-center tabular-nums font-bold">{fmt(summary.totalExpenses)}</td>
+                <td className="px-3 py-3 text-center text-muted-foreground hidden sm:table-cell">100%</td>
                 <td className="px-5 py-3 hidden md:table-cell" />
               </tr>
             </tfoot>
@@ -772,12 +771,12 @@ export default function CustomerReportPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Date</th>
-                <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Description</th>
-                <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Category</th>
-                <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Type</th>
-                <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Status</th>
-                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Amount</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Date</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Description</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Category</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Type</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Status</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -786,17 +785,17 @@ export default function CustomerReportPage() {
                 const isIncome = t.type === "income";
                 return (
                   <tr key={t.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-5 py-3 tabular-nums text-muted-foreground whitespace-nowrap">
+                    <td className="px-5 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
                       {format(new Date(t.transaction_date), "d MMM yyyy")}
                     </td>
-                    <td className="px-3 py-3 font-medium text-foreground max-w-[180px] truncate">
+                    <td className="px-3 py-3 text-center font-medium text-foreground max-w-[180px] truncate">
                       {t.description || "—"}
                     </td>
-                    <td className="px-3 py-3 text-muted-foreground hidden sm:table-cell truncate max-w-[120px]">
+                    <td className="px-3 py-3 text-center text-muted-foreground hidden sm:table-cell truncate max-w-[120px]">
                       {t.category || "—"}
                     </td>
-                    <td className="px-3 py-3 capitalize text-muted-foreground">{t.type}</td>
-                    <td className="px-3 py-3 hidden md:table-cell">
+                    <td className="px-3 py-3 text-center capitalize text-muted-foreground">{t.type}</td>
+                    <td className="px-3 py-3 text-center hidden md:table-cell">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
                         t.status === "success"   ? "bg-emerald-100 text-emerald-700"  :
                         t.status === "pending"   ? "bg-yellow-100 text-yellow-700"    :
@@ -806,9 +805,9 @@ export default function CustomerReportPage() {
                         {t.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-right tabular-nums font-semibold">
+                    <td className="px-5 py-3 text-center tabular-nums font-semibold">
                       <span className={isIncome ? "text-emerald-600" : "text-red-500"}>
-                        {isIncome ? "+" : "−"}{fmt(total)}
+                        {fmt(total)}
                       </span>
                     </td>
                   </tr>
