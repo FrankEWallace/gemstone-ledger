@@ -451,7 +451,7 @@ export default function SystemSettingsPage() {
         <div className="flex items-center gap-4">
           <div className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
             {(logoPreview ?? org?.logo_url) ? (
-              <img src={logoPreview ?? org?.logo_url!} alt="Logo" className="h-full w-full object-cover" />
+              <img src={logoPreview ?? org?.logo_url} alt="Logo" className="h-full w-full object-cover" />
             ) : (
               <Building2 className="h-6 w-6 text-muted-foreground" />
             )}
