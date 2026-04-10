@@ -19,9 +19,8 @@ import {
   CheckCircle2,
   Clock,
   Plus,
-  TrendingUp,
-  TrendingDown,
 } from "lucide-react";
+import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
   PieChart,
   Pie,
@@ -461,7 +460,7 @@ export default function CustomerDetailPage() {
           value: fmt(summary.totalIncome),
           sub: `${summary.transactionCount} transactions`,
           color: "text-emerald-600",
-          icon: <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" />,
+          icon: <TrendArrow direction="up" className="h-2.5 w-2.5 text-emerald-500" />,
           spark: incomeSpark,
         },
         {
@@ -469,7 +468,7 @@ export default function CustomerDetailPage() {
           value: fmt(summary.totalExpenses),
           sub: expenseByCategory.length > 0 ? `${expenseByCategory[0].category} is largest` : "No expenses",
           color: "text-red-500",
-          icon: <TrendingDown className="h-3.5 w-3.5 text-red-400 shrink-0" />,
+          icon: <TrendArrow direction="down" className="h-2.5 w-2.5 text-red-400" />,
           spark: expenseSpark,
         },
         {

@@ -231,14 +231,17 @@ function CreateOrderModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Supplier</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value || "__none__"}
+                      onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select supplier" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {suppliers.filter((s) => s.status === "active").map((s) => (
                           <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))}
@@ -255,14 +258,17 @@ function CreateOrderModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Channel</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value || "__none__"}
+                      onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select channel" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {channels.map((c) => (
                           <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                         ))}
@@ -280,14 +286,17 @@ function CreateOrderModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Customer (cost attribution)</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                          value={field.value || "__none__"}
+                          onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
+                        >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="No customer" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No customer</SelectItem>
+                          <SelectItem value="__none__">No customer</SelectItem>
                           {customers.map((c) => (
                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}

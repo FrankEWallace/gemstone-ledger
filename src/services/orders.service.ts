@@ -62,6 +62,28 @@ export async function createOrder(
   payload: CreateOrderPayload,
   createdBy?: string
 ): Promise<Order> {
+  if (isDemoMode()) {
+    const totalAmount = payload.items.reduce(
+      (sum, item) => sum + item.quantity * item.unit_price,
+      0
+    );
+    return {
+      id: `demo-po-${Date.now()}`,
+      site_id: siteId,
+      supplier_id: payload.supplier_id ?? null,
+      channel_id: payload.channel_id ?? null,
+      customer_id: payload.customer_id ?? null,
+      order_number: `PO-${Date.now().toString().slice(-6)}`,
+      status: "draft",
+      total_amount: totalAmount,
+      expected_date: payload.expected_date ?? null,
+      received_date: null,
+      notes: payload.notes ?? null,
+      created_by: createdBy ?? null,
+      created_at: new Date().toISOString(),
+    } as Order;
+  }
+
   if (isRestActive())
     return restPost<Order>("/orders", {
       ...payload,
@@ -115,6 +137,10 @@ export async function updateOrderStatus(
   status: OrderStatus,
   extraFields?: { received_date?: string }
 ): Promise<Order> {
+  if (isDemoMode()) {
+    const demo = DEMO_ORDERS.find((o) => o.id === id);
+    return { ...(demo ?? DEMO_ORDERS[0]), status, ...extraFields } as unknown as Order;
+  }
   if (isRestActive())
     return restPut<Order>(`/orders/${id}/status`, { status, ...extraFields });
 
@@ -137,6 +163,7 @@ export async function receiveOrder(
   orderId: string,
   opts?: { userId?: string }
 ): Promise<void> {
+  if (isDemoMode()) return;
   if (isRestActive()) {
     await restPost(`/orders/${orderId}/receive`, {});
     return;
@@ -199,6 +226,7 @@ export async function receiveOrder(
 }
 
 export async function deleteOrder(id: string): Promise<void> {
+  if (isDemoMode()) return;
   if (isRestActive()) return restDel(`/orders/${id}`);
 
   const { error } = await supabase.from("orders").delete().eq("id", id);

@@ -5,12 +5,12 @@ import {
   ChevronRight,
   AlertTriangle,
   CheckCircle2,
-  TrendingUp,
   Users,
   Wrench,
   ShieldAlert,
   CalendarDays,
 } from "lucide-react";
+import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
   BarChart,
   Bar,
@@ -123,7 +123,7 @@ function KpiCard({
       )}
       {sub && (
         <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-          <TrendingUp className="h-3 w-3" />
+          <TrendArrow direction="up" className="h-2.5 w-2.5 text-emerald-500" />
           <span className="truncate">{sub}</span>
         </p>
       )}

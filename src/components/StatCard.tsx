@@ -1,4 +1,4 @@
-import { TrendingUp } from "lucide-react";
+import { TrendArrow } from "@/components/shared/TrendArrow";
 
 interface StatCardProps {
   title: string;
@@ -49,12 +49,15 @@ export default function StatCard({ title, value, subtitle, change, sparkData }: 
         </div>
         {sparkData && <MiniSpark data={sparkData} />}
       </div>
-      {change && (
-        <div className="mt-2 flex items-center gap-1 text-xs text-success">
-          <TrendingUp className="h-3 w-3" />
-          <span>{change}</span>
-        </div>
-      )}
+      {change && (() => {
+        const down = change.trimStart().startsWith("-");
+        return (
+          <div className={`mt-2 flex items-center gap-1 text-xs ${down ? "text-red-500" : "text-emerald-500"}`}>
+            <TrendArrow direction={down ? "down" : "up"} className="h-2.5 w-2.5" />
+            <span>{change}</span>
+          </div>
+        );
+      })()}
     </div>
   );
 }
