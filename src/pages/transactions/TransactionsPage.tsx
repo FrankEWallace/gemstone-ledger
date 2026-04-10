@@ -322,8 +322,8 @@ export default function TransactionsPage() {
         const total = (row.quantity as number) * (row.unit_price as number);
         const isIncome = row.type === "income";
         return (
-          <span className={`tabular-nums font-medium ${isIncome ? "text-emerald-600" : "text-red-600"}`}>
-            {isIncome ? "+" : "-"}{CURRENCY_SYMBOL} {total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          <span className={`tabular-nums font-medium ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
+            {CURRENCY_SYMBOL} {total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </span>
         );
       },
@@ -336,7 +336,7 @@ export default function TransactionsPage() {
         const n = Number(val);
         return (
           <span className={`tabular-nums text-xs font-medium ${n >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-            {n >= 0 ? "+" : ""}{fmtCurrency(Math.abs(n))}
+            {fmtCurrency(Math.abs(n))}
           </span>
         );
       },

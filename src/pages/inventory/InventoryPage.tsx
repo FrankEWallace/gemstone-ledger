@@ -3,14 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, TrendingDown } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSite } from "@/hooks/useSite";
 import { fmtCurrency } from "@/lib/formatCurrency";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -286,20 +285,55 @@ function ItemModal({ open, onClose, siteId, editing }: ItemModalProps) {
   );
 }
 
-// ─── Stockout chip ────────────────────────────────────────────────────────────
+// ─── Status badge ─────────────────────────────────────────────────────────────
 
-function StockoutChip({ daysLeft }: { daysLeft: number }) {
-  const label = daysLeft < 1 ? "Stockout" : daysLeft < 7 ? `${Math.round(daysLeft)}d left` : `${Math.round(daysLeft)}d`;
+type StockStatus = "out" | "low" | "in";
+
+function getStockStatus(quantity: number, reorderLevel: number | null): StockStatus {
+  if (quantity === 0) return "out";
+  if (reorderLevel !== null && quantity <= reorderLevel) return "low";
+  return "in";
+}
+
+function StatusBadge({ quantity, reorderLevel }: { quantity: number; reorderLevel: number | null }) {
+  const status = getStockStatus(quantity, reorderLevel);
+  if (status === "out") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-50 text-red-600 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800">
+        <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+        Out of Stock
+      </span>
+    );
+  }
+  if (status === "low") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold bg-amber-50 text-amber-600 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-800">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+        Low Stock
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-800">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+      In Stock
+    </span>
+  );
+}
+
+// ─── Days-left chip ───────────────────────────────────────────────────────────
+
+function DaysLeftChip({ daysLeft }: { daysLeft: number }) {
+  const label = daysLeft < 1 ? "Stockout" : `${Math.round(daysLeft)}d left`;
   const color =
     daysLeft < 7
-      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+      ? "text-red-500 dark:text-red-400"
       : daysLeft < 30
-      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+      ? "text-amber-500 dark:text-amber-400"
+      : "text-muted-foreground";
   return (
-    <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color}`}>
-      <TrendingDown className="h-2.5 w-2.5" />
-      {label}
+    <span className={`text-[10px] font-medium tabular-nums ${color}`}>
+      ({label})
     </span>
   );
 }
@@ -519,38 +553,56 @@ export default function InventoryPage() {
 
   const columns: DataTableColumn<InventoryItem>[] = [
     {
+      key: "sku",
+      header: "Item ID",
+      className: "text-center",
+      render: (val) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {(val as string | null) ?? "—"}
+        </span>
+      ),
+    },
+    {
       key: "name",
       header: "Item Name",
       sortable: true,
+      className: "text-center",
       render: (_, row) => {
         const rate = consumptionRates[row.id as string] ?? 0;
         const daysLeft = rate > 0 ? (row.quantity as number) / rate : null;
         return (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium">{row.name as string}</span>
-            {(row.reorder_level as number | null) !== null && (row.quantity as number) <= (row.reorder_level as number) && (
-              <Badge variant="destructive" className="text-xs py-0 gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Low
-              </Badge>
-            )}
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="font-medium text-sm leading-tight">{row.name as string}</span>
             {daysLeft !== null && daysLeft < 60 && (
-              <StockoutChip daysLeft={daysLeft} />
+              <DaysLeftChip daysLeft={daysLeft} />
             )}
           </div>
         );
       },
     },
-    { key: "category", header: "Category", sortable: true },
-    { key: "sku", header: "SKU" },
+    {
+      key: "category",
+      header: "Category",
+      sortable: true,
+      className: "text-center",
+      render: (val) =>
+        val ? (
+          <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground ring-1 ring-border">
+            {val as string}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
+        ),
+    },
     {
       key: "quantity",
-      header: "Qty",
+      header: "Stock",
       sortable: true,
-      className: "text-right",
+      className: "text-center",
       render: (_, row) => (
-        <span className="tabular-nums">
-          {row.quantity} {row.unit ?? ""}
+        <span className="tabular-nums text-sm font-semibold">
+          {row.quantity as number}{" "}
+          <span className="text-xs font-normal text-muted-foreground">{(row.unit as string | null) ?? ""}</span>
         </span>
       ),
     },
@@ -558,36 +610,54 @@ export default function InventoryPage() {
       key: "unit_cost",
       header: "Unit Cost",
       sortable: true,
-      className: "text-right",
-      render: (val) =>
-        val != null ? fmtCurrency(Number(val), 2) : "—",
+      className: "text-center",
+      render: (val) => (
+        <span className="tabular-nums text-sm">
+          {val != null ? fmtCurrency(Number(val), 2) : <span className="text-muted-foreground">—</span>}
+        </span>
+      ),
     },
     {
       key: "reorder_level",
       header: "Reorder At",
-      className: "text-right",
-      render: (val) => (val != null ? String(val) : "—"),
+      className: "text-center",
+      render: (val) => (
+        <span className="tabular-nums text-sm text-muted-foreground">
+          {val != null ? String(val) : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "id",
+      header: "Status",
+      className: "text-center",
+      render: (_, row) => (
+        <StatusBadge
+          quantity={row.quantity as number}
+          reorderLevel={row.reorder_level as number | null}
+        />
+      ),
     },
     {
       key: "id",
       header: "",
-      className: "w-32 text-right",
+      className: "w-28 text-center",
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-center gap-0.5">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-amber-600 hover:text-amber-700 px-2"
+            className="h-7 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 gap-1"
             title="Log usage → auto-expense"
             onClick={() => setLogUsageTarget(row as unknown as InventoryItem)}
           >
-            <TrendingDown className="h-3 w-3 mr-1" />
+            <PackageSearch className="h-3.5 w-3.5" />
             Use
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
             onClick={() => { setEditing(row); setModalOpen(true); }}
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -595,7 +665,7 @@ export default function InventoryPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-destructive hover:text-destructive"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
             onClick={() => setDeleteTarget(row)}
           >
             <Trash2 className="h-3.5 w-3.5" />
