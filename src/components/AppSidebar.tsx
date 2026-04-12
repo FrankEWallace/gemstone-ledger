@@ -25,6 +25,7 @@ import {
   CalendarDays,
   FolderOpen,
   FileText,
+  Activity,
   Zap,
   Target,
   Tag,
@@ -54,6 +55,7 @@ interface NavItem {
 
 const coreItems: NavItem[] = [
   { label: "Dashboard",    icon: LayoutDashboard, to: "/" },
+  { label: "Activity",     icon: Activity,        to: "/activity" },
   { label: "Customers",    icon: Users,           to: "/customers",     module: "customers" },
   { label: "Transactions", icon: ArrowLeftRight,  to: "/transactions" },
   { label: "Inventory",    icon: Package,         to: "/inventory" },

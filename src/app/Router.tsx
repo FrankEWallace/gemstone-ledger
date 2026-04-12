@@ -43,6 +43,7 @@ const EquipmentPage     = lazy(() => import("@/pages/equipment/EquipmentPage"));
 const SafetyPage        = lazy(() => import("@/pages/safety/SafetyPage"));
 const ShiftSchedulePage = lazy(() => import("@/pages/team/ShiftSchedulePage"));
 const DocumentsPage     = lazy(() => import("@/pages/documents/DocumentsPage"));
+const ActivityPage      = lazy(() => import("@/pages/activity/ActivityPage"));
 const ComingSoon        = lazy(() => import("@/pages/ComingSoon"));
 const NotFound          = lazy(() => import("@/pages/NotFound"));
 
@@ -80,6 +81,9 @@ export default function Router() {
           {/* Dashboard */}
           <Route path="/" element={<BoundedRoute element={<Dashboard />} />} />
           <Route path="/notifications" element={<BoundedRoute element={<NotificationsPage />} />} />
+
+          {/* Activity */}
+          <Route path="/activity" element={<BoundedRoute element={<ActivityPage />} />} />
 
           {/* Phase 2 */}
           <Route path="/inventory"    element={<BoundedRoute element={<InventoryPage />} />} />
