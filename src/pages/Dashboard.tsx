@@ -446,7 +446,8 @@ function RecentTransactions({
           ))}
         </div>
       ) : (
-        <table className="w-full text-xs">
+        <div className="overflow-x-auto">
+        <table className="w-full text-xs min-w-[480px]">
           <thead>
             <tr className="border-b border-border">
               <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
@@ -534,6 +535,7 @@ function RecentTransactions({
             )}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

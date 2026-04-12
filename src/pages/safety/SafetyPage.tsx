@@ -335,7 +335,7 @@ export default function SafetyPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {[
           { label: "Open Incidents", value: openIncidents.length, icon: <AlertTriangle className="h-4 w-4 text-orange-500" />, color: openIncidents.length > 0 ? "text-orange-600" : "" },
           { label: "Critical (Open)", value: criticalIncidents.length, icon: <ShieldAlert className="h-4 w-4 text-red-500" />, color: criticalIncidents.length > 0 ? "text-red-600" : "" },

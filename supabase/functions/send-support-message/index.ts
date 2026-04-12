@@ -12,6 +12,27 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Auth is required — support form is only for logged-in users
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
     const { name, email, subject, message } = await req.json();
 
     if (!name || !email || !subject || !message) {
@@ -21,27 +42,12 @@ serve(async (req: Request) => {
       );
     }
 
-    // Store the support message using service role (bypasses RLS)
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Verify caller is authenticated
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const supabaseClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
+    // Enforce input length limits to prevent abuse
+    if (name.length > 100 || email.length > 254 || subject.length > 200 || message.length > 5000) {
+      return new Response(
+        JSON.stringify({ error: "One or more fields exceed the maximum allowed length" }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-        });
-      }
     }
 
     // Log to notifications table as a record for admins
@@ -61,6 +67,9 @@ serve(async (req: Request) => {
     const supportEmailTo = Deno.env.get("SUPPORT_EMAIL_TO");
 
     if (resendApiKey && supportEmailTo) {
+      const esc = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
       const emailRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -71,13 +80,13 @@ serve(async (req: Request) => {
           from: "support@fwmining.io",
           to: [supportEmailTo],
           reply_to: email,
-          subject: `[Support] ${subject}`,
+          subject: `[Support] ${esc(subject)}`,
           html: `
-            <h2>Support Request from ${name}</h2>
-            <p><strong>From:</strong> ${name} &lt;${email}&gt;</p>
-            <p><strong>Subject:</strong> ${subject}</p>
+            <h2>Support Request from ${esc(name)}</h2>
+            <p><strong>From:</strong> ${esc(name)} &lt;${esc(email)}&gt;</p>
+            <p><strong>Subject:</strong> ${esc(subject)}</p>
             <hr />
-            <p>${message.replace(/\n/g, "<br>")}</p>
+            <p>${esc(message).replace(/\n/g, "<br>")}</p>
           `,
         }),
       });

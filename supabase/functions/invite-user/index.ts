@@ -22,6 +22,24 @@ serve(async (req: Request) => {
       );
     }
 
+    // Validate email format and length
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email) || email.length > 254) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email address" }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate role is one of the allowed values
+    const ALLOWED_ROLES = ["admin", "site_manager", "worker", "viewer"];
+    if (!ALLOWED_ROLES.includes(role)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid role. Must be one of: ${ALLOWED_ROLES.join(", ")}` }),
+        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
     // Verify the calling user is authenticated and belongs to the org
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {

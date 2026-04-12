@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY     = Deno.env.get("SUPABASE_ANON_KEY")!;
 const RESEND_KEY   = Deno.env.get("RESEND_API_KEY") ?? "";
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -113,6 +114,34 @@ async function buildSiteReport(siteId: string, siteName: string, from: string, t
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 serve(async (req) => {
+  // Auth: accept either the CRON_SECRET (for scheduled invocations) or a valid
+  // user JWT (for manual triggers from the System Settings UI).
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const cronSecret = Deno.env.get("CRON_SECRET");
+
+  let authed = false;
+
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    // Called by the Supabase cron scheduler
+    authed = true;
+  } else if (authHeader.startsWith("Bearer ")) {
+    // Called manually from the UI — verify the user JWT
+    const supabaseClient = createClient(
+      SUPABASE_URL,
+      ANON_KEY,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    authed = !!user;
+  }
+
+  if (!authed) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   // Allow manual trigger from UI with optional org_id filter
   let targetOrgId: string | null = null;
   if (req.method === "POST") {

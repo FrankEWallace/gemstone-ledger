@@ -346,7 +346,7 @@ export default function ShiftSchedulePage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* View toggle */}
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button

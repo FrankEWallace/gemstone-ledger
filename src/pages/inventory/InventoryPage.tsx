@@ -711,7 +711,7 @@ export default function InventoryPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => exportCSV(filteredItems)}>
             <Download className="h-4 w-4 mr-1.5" />
             Export CSV

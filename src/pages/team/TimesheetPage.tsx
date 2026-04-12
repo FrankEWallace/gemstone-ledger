@@ -258,7 +258,7 @@ export default function TimesheetPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total Hours</p>
           <p className="text-2xl font-bold font-display mt-1">{grandTotal}</p>

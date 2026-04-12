@@ -17,6 +17,19 @@ const CORS = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
+  // Require a shared secret so only the Supabase cron system (or an admin)
+  // can trigger this function. Set CRON_SECRET in Supabase Edge Function secrets.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (cronSecret) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   try {
     // Fetch all enabled rules
     const { data: rules, error: rulesError } = await supabase
