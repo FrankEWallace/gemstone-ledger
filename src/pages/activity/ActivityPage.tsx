@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { getCustomers, updateCustomer } from "@/services/customers.service";
 import { createTransaction } from "@/services/transactions.service";
+import { getExpenseCategories } from "@/services/expense-categories.service";
 import { getCustomerSummaries } from "@/services/reports.service";
 import type { CustomerSummary } from "@/services/reports.service";
 import type { Customer } from "@/lib/supabaseTypes";
@@ -42,14 +43,28 @@ function QuickTxModal({
   onClose: () => void;
 }) {
   const { activeSiteId } = useSite();
-  const { userProfile } = useAuth();
+  const { userProfile, orgId } = useAuth();
   const queryClient = useQueryClient();
 
   const [txType, setTxType] = useState<"income" | "expense">("income");
   const [amount, setAmount] = useState("");
+  const [categoryId, setCategoryId] = useState<string>("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(TODAY);
   const [status, setStatus] = useState<"success" | "pending">("success");
+
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ["expense-categories", orgId],
+    queryFn: () => getExpenseCategories(orgId!),
+    enabled: !!orgId,
+  });
+
+  const categories = allCategories.filter((c) => c.type === txType);
+
+  function handleTypeChange(type: "income" | "expense") {
+    setTxType(type);
+    setCategoryId(""); // reset when type switches
+  }
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
@@ -64,6 +79,7 @@ function QuickTxModal({
           status,
           customer_id: customer.id,
           source: "manual",
+          expense_category_id: categoryId || null,
         },
         userProfile?.id
       ),
@@ -90,7 +106,7 @@ function QuickTxModal({
         <div className="flex rounded-lg border border-border overflow-hidden">
           <button
             type="button"
-            onClick={() => setTxType("income")}
+            onClick={() => handleTypeChange("income")}
             className={cn(
               "flex-1 py-2 text-sm font-medium transition-colors",
               txType === "income"
@@ -102,7 +118,7 @@ function QuickTxModal({
           </button>
           <button
             type="button"
-            onClick={() => setTxType("expense")}
+            onClick={() => handleTypeChange("expense")}
             className={cn(
               "flex-1 py-2 text-sm font-medium transition-colors border-l border-border",
               txType === "expense"
@@ -127,6 +143,27 @@ function QuickTxModal({
               onChange={(e) => setAmount(e.target.value)}
               autoFocus
             />
+          </div>
+          <div>
+            <Label htmlFor="qt-category">Category</Label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger id="qt-category">
+                <SelectValue placeholder="Select category…" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.length === 0 ? (
+                  <SelectItem value="_none" disabled>
+                    No {txType} categories found
+                  </SelectItem>
+                ) : (
+                  categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label htmlFor="qt-desc">Description</Label>
