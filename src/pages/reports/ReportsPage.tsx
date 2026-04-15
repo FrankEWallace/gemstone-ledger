@@ -186,7 +186,7 @@ export default function ReportsPage() {
                 {[
                   { label: "Transactions",  val: String(summary.transactionCount) },
                   { label: "Shifts Logged", val: String(summary.totalShiftsLogged) },
-                  { label: "Hours Worked",  val: `${summary.totalHoursWorked.toFixed(1)}h` },
+                  { label: "Profit Margin", val: summary.totalIncome > 0 ? `${((summary.netRevenue / summary.totalIncome) * 100).toFixed(1)}%` : "—" },
                 ].map((item) => (
                   <View key={item.label} style={s.statBox}>
                     <Text style={s.statLabel}>{item.label}</Text>
@@ -386,8 +386,13 @@ export default function ReportsPage() {
           value={String(summary?.totalShiftsLogged ?? 0)}
         />
         <StatCard
-          label="Hours Worked"
-          value={`${(summary?.totalHoursWorked ?? 0).toFixed(0)}h`}
+          label="Profit Margin"
+          value={
+            (summary?.totalIncome ?? 0) > 0
+              ? `${((( summary!.netRevenue) / summary!.totalIncome) * 100).toFixed(1)}%`
+              : "—"
+          }
+          sub={(summary?.netRevenue ?? 0) >= 0 ? "Of income retained" : "Net loss"}
         />
       </div>
 
