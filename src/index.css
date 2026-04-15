@@ -56,6 +56,15 @@
     --chart-new: 220 13% 18%;
     --chart-existing: 220 8% 62%;
 
+    --chart-income: 217 91% 60%;
+    --chart-expense: 38 92% 50%;
+    --chart-net: 262 83% 58%;
+    --chart-cat-1: 217 91% 60%;
+    --chart-cat-2: 262 83% 58%;
+    --chart-cat-3: 175 84% 32%;
+    --chart-cat-4: 38 92% 50%;
+    --chart-cat-5: 16 85% 56%;
+
     --font-display: 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
@@ -109,6 +118,15 @@
 
   --chart-new: 220 10% 78%;
   --chart-existing: 220 8% 42%;
+
+  --chart-income: 217 91% 65%;
+  --chart-expense: 38 92% 55%;
+  --chart-net: 262 83% 65%;
+  --chart-cat-1: 217 91% 65%;
+  --chart-cat-2: 262 83% 65%;
+  --chart-cat-3: 175 84% 40%;
+  --chart-cat-4: 38 92% 55%;
+  --chart-cat-5: 16 85% 62%;
 }
 
 @layer base {

@@ -52,17 +52,35 @@ import type { Transaction } from "@/lib/supabaseTypes";
 const fmtCurrency = fmtCompact;
 const fmtFull = fmtFull_;
 
+// ─── Chart color palette ──────────────────────────────────────────────────────
+
+const C = {
+  income:  "hsl(var(--chart-income))",
+  expense: "hsl(var(--chart-expense))",
+  net:     "hsl(var(--chart-net))",
+  cat: [
+    "hsl(var(--chart-cat-1))",
+    "hsl(var(--chart-cat-2))",
+    "hsl(var(--chart-cat-3))",
+    "hsl(var(--chart-cat-4))",
+    "hsl(var(--chart-cat-5))",
+  ],
+} as const;
+
 // ─── SparkBars ────────────────────────────────────────────────────────────────
 
-function SparkBars({ values }: { values: number[] }) {
+function SparkBars({ values, color }: { values: number[]; color?: string }) {
   const max = Math.max(...values, 1);
   return (
-    <div className="flex items-end gap-[2px] h-8 opacity-60">
+    <div className="flex items-end gap-[2px] h-8 opacity-70">
       {values.map((v, i) => (
         <div
           key={i}
-          className="w-[5px] rounded-[2px] bg-foreground"
-          style={{ height: `${Math.max(12, (v / max) * 100)}%` }}
+          className="w-[5px] rounded-[2px]"
+          style={{
+            height: `${Math.max(12, (v / max) * 100)}%`,
+            backgroundColor: color ?? "hsl(var(--foreground))",
+          }}
         />
       ))}
     </div>
@@ -79,6 +97,7 @@ function KpiCard({
   href,
   progressPct,
   progressLabel,
+  color,
 }: {
   label: string;
   rawValue: number;
@@ -87,17 +106,24 @@ function KpiCard({
   href: string;
   progressPct?: number | null;
   progressLabel?: string;
+  color?: string;
 }) {
   return (
     <Link
       to={href}
-      className="group rounded-xl border border-border bg-card p-5 flex flex-col gap-3 hover:border-foreground/30 transition-colors"
+      className="group rounded-xl border border-border bg-card p-5 flex flex-col gap-3 hover:border-foreground/30 transition-colors overflow-hidden relative"
     >
-      <div className="flex items-start justify-between gap-2">
+      {color && (
+        <div
+          className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl"
+          style={{ backgroundColor: color }}
+        />
+      )}
+      <div className="flex items-start justify-between gap-2 pt-0.5">
         <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
           {label}
         </p>
-        {sparkValues && <SparkBars values={sparkValues} />}
+        {sparkValues && <SparkBars values={sparkValues} color={color} />}
       </div>
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">
@@ -115,15 +141,14 @@ function KpiCard({
           </div>
           <div className="h-1 rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full rounded-full bg-foreground transition-all"
-              style={{ width: `${progressPct}%` }}
+              className="h-full rounded-full transition-all"
+              style={{ width: `${progressPct}%`, backgroundColor: color ?? "hsl(var(--foreground))" }}
             />
           </div>
         </div>
       )}
       {sub && (
         <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-          <TrendArrow direction="up" className="h-2.5 w-2.5 text-emerald-500" />
           <span className="truncate">{sub}</span>
         </p>
       )}
@@ -238,22 +263,17 @@ function RevenueTrendChart({
               content={<ChartTooltip />}
               cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
             />
-            <Bar dataKey="Income" fill="hsl(var(--foreground))" radius={[3, 3, 0, 0]} />
-            <Bar
-              dataKey="Expenses"
-              fill="hsl(var(--muted-foreground))"
-              opacity={0.35}
-              radius={[3, 3, 0, 0]}
-            />
+            <Bar dataKey="Income" fill={C.income} radius={[3, 3, 0, 0]} />
+            <Bar dataKey="Expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}
       <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-foreground" /> Income
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: C.income }} /> Income
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-muted-foreground opacity-60" /> Expenses
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: C.expense }} /> Expenses
         </span>
       </div>
     </div>
@@ -323,20 +343,24 @@ function ExpenseBreakdown({
         <p className="text-xs text-muted-foreground py-4">No expense data.</p>
       ) : (
         <div className="space-y-3 mt-1">
-          {items.map((item) => {
+          {items.map((item, idx) => {
             const pct = Math.round((item.value / maxVal) * 100);
+            const barColor = C.cat[idx % C.cat.length];
             return (
               <div key={item.label} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground truncate">{item.label}</span>
+                  <span className="flex items-center gap-1.5 text-muted-foreground truncate">
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
+                    {item.label}
+                  </span>
                   <span className="tabular-nums font-medium text-foreground ml-2">
                     {fmtCurrency(item.value)}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-foreground/70 transition-all"
-                    style={{ width: `${pct}%` }}
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${pct}%`, backgroundColor: barColor }}
                   />
                 </div>
               </div>
@@ -397,9 +421,8 @@ function CustomerInsights({
             </div>
             <div className="text-right shrink-0">
               <p
-                className={`text-sm font-bold tabular-nums ${
-                  cs.netProfit >= 0 ? "text-emerald-600" : "text-red-500"
-                }`}
+                className="text-sm font-bold tabular-nums"
+                style={{ color: cs.netProfit >= 0 ? C.income : C.expense }}
               >
                 {cs.netProfit >= 0 ? "+" : "−"}
                 {fmtCurrency(Math.abs(cs.netProfit))}
@@ -520,11 +543,7 @@ function RecentTransactions({
                       {format(new Date(t.transaction_date), "d MMM")}
                     </td>
                     <td className="px-5 py-3 text-right tabular-nums font-semibold">
-                      <span
-                        className={
-                          isIncome ? "text-foreground" : "text-muted-foreground"
-                        }
-                      >
+                      <span style={{ color: isIncome ? C.income : C.expense }}>
                         {isIncome ? "+" : "−"}
                         {fmtFull(total)}
                       </span>
@@ -829,6 +848,7 @@ export default function Dashboard() {
           href="/transactions"
           progressPct={progressPct}
           progressLabel={`${format(today, "MMM")} target`}
+          color={C.income}
         />
         <KpiCard
           label="Expenses"
@@ -840,6 +860,7 @@ export default function Dashboard() {
           }
           sparkValues={expenseSpark.length ? expenseSpark : [1, 2, 3, 4, 5, 6]}
           href="/transactions"
+          color={C.expense}
         />
         <KpiCard
           label="Net Profit"
@@ -847,6 +868,7 @@ export default function Dashboard() {
           sub={netRevenue >= 0 ? "Positive cashflow" : "Net loss"}
           sparkValues={netSpark.length ? netSpark : [1, 2, 3, 4, 5, 6]}
           href="/reports"
+          color={C.net}
         />
       </div>
 
