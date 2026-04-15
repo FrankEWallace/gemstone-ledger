@@ -50,6 +50,14 @@ import {
   UseInventoryModal,
 } from "./TransactionActions";
 
+// ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
+
+const C = {
+  income:  "hsl(var(--chart-income))",
+  expense: "hsl(var(--chart-expense))",
+  net:     "hsl(var(--chart-net))",
+} as const;
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPES: TransactionType[] = ["income", "expense", "refund"];
@@ -58,16 +66,16 @@ const STATUSES: TransactionStatus[] = ["success", "pending", "refunded", "cancel
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function typeIcon(type: TransactionType) {
-  if (type === "income") return <ArrowUpCircle className="h-3.5 w-3.5 text-emerald-500" />;
-  if (type === "expense") return <ArrowDownCircle className="h-3.5 w-3.5 text-red-500" />;
-  return <RefreshCw className="h-3.5 w-3.5 text-yellow-500" />;
+  if (type === "income") return <ArrowUpCircle className="h-3.5 w-3.5" style={{ color: C.income }} />;
+  if (type === "expense") return <ArrowDownCircle className="h-3.5 w-3.5" style={{ color: C.expense }} />;
+  return <RefreshCw className="h-3.5 w-3.5" style={{ color: C.net }} />;
 }
 
 function statusBadge(status: TransactionStatus) {
   const map: Record<TransactionStatus, string> = {
-    success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    refunded: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    success:   "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    pending:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    refunded:  "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
     cancelled: "bg-muted text-muted-foreground",
   };
   return (
@@ -322,7 +330,7 @@ export default function TransactionsPage() {
         const total = (row.quantity as number) * (row.unit_price as number);
         const isIncome = row.type === "income";
         return (
-          <span className={`tabular-nums font-medium ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
+          <span className="tabular-nums font-medium" style={{ color: isIncome ? C.income : C.expense }}>
             {CURRENCY_SYMBOL} {total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </span>
         );
@@ -335,7 +343,7 @@ export default function TransactionsPage() {
       render: (val) => {
         const n = Number(val);
         return (
-          <span className={`tabular-nums text-xs font-medium ${n >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+          <span className="tabular-nums text-xs font-medium" style={{ color: n >= 0 ? C.income : C.expense }}>
             {fmtCurrency(Math.abs(n))}
           </span>
         );
@@ -382,15 +390,15 @@ export default function TransactionsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onClick={() => setPaymentOpen(true)}>
-                <ArrowUpCircle className="h-4 w-4 mr-2 text-emerald-500" />
+                <ArrowUpCircle className="h-4 w-4 mr-2" style={{ color: C.income }} />
                 Record Payment
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setInventoryOpen(true)}>
-                <Package className="h-4 w-4 mr-2 text-blue-500" />
+                <Package className="h-4 w-4 mr-2" style={{ color: C.net }} />
                 Use Inventory
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setExpenseOpen(true)}>
-                <ArrowDownCircle className="h-4 w-4 mr-2 text-red-500" />
+                <ArrowDownCircle className="h-4 w-4 mr-2" style={{ color: C.expense }} />
                 Record Expense
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -400,30 +408,34 @@ export default function TransactionsPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Collected Income</p>
-          <p className="text-xl font-bold text-emerald-600 mt-1">
+        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.income }} />
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Collected Income</p>
+          <p className="text-xl font-bold mt-1" style={{ color: C.income }}>
             {fmtCurrency(totalIncome)}
           </p>
           <p className="text-[11px] text-muted-foreground">success status only</p>
         </div>
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Total Expenses</p>
-          <p className="text-xl font-bold text-red-600 mt-1">
+        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.expense }} />
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Total Expenses</p>
+          <p className="text-xl font-bold mt-1" style={{ color: C.expense }}>
             {fmtCurrency(totalExpenses)}
           </p>
           <p className="text-[11px] text-muted-foreground">success status only</p>
         </div>
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Net Profit</p>
-          <p className={`text-xl font-bold mt-1 ${totalIncome - totalExpenses >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.net }} />
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Net Profit</p>
+          <p className="text-xl font-bold mt-1" style={{ color: totalIncome - totalExpenses >= 0 ? C.income : C.expense }}>
             {fmtCurrency(totalIncome - totalExpenses)}
           </p>
           <p className="text-[11px] text-muted-foreground">income − expenses</p>
         </div>
-        <div className="rounded-lg border border-border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Running Balance</p>
-          <p className={`text-xl font-bold mt-1 tabular-nums ${(txWithBalance[0]?._balance ?? 0) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
+          <div className="absolute inset-x-0 top-0 h-[3px] bg-foreground/20" />
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Running Balance</p>
+          <p className="text-xl font-bold mt-1 tabular-nums" style={{ color: (txWithBalance[0]?._balance ?? 0) >= 0 ? C.income : C.expense }}>
             {fmtCurrency(Math.abs(txWithBalance[0]?._balance ?? 0))}
           </p>
           <p className="text-[11px] text-muted-foreground">all transactions incl. pending</p>
