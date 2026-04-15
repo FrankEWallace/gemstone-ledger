@@ -67,6 +67,13 @@ import {
 import { createTransaction } from "@/services/transactions.service";
 import { getCustomerSummaries } from "@/services/reports.service";
 
+// ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
+
+const C = {
+  income:  "hsl(var(--chart-income))",
+  expense: "hsl(var(--chart-expense))",
+} as const;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function TypeBadge({ type }: { type: Customer["type"] }) {
@@ -77,7 +84,7 @@ function TypeBadge({ type }: { type: Customer["type"] }) {
 
 function StatusBadge({ status }: { status: Customer["status"] }) {
   if (status === "prospect")  return <Badge variant="outline" className="text-violet-600 border-violet-200 text-[10px]">Prospect</Badge>;
-  if (status === "active")    return <Badge variant="outline" className="text-emerald-600 border-emerald-200 text-[10px]">Active</Badge>;
+  if (status === "active")    return <Badge variant="outline" className="text-blue-600 border-blue-200 text-[10px]">Active</Badge>;
   if (status === "completed") return <Badge variant="outline" className="text-blue-500 border-blue-100 text-[10px]">Completed</Badge>;
   return <Badge variant="outline" className="text-muted-foreground text-[10px]">Inactive</Badge>;
 }
@@ -165,7 +172,7 @@ function RentChargeModal({ open, onClose, customer, siteId, userId }: RentCharge
             </div>
             <div className="flex justify-between font-semibold border-t border-border pt-1 mt-1">
               <span>Total</span>
-              <span className="tabular-nums text-emerald-600">{fmtCurrency(total, 2)}</span>
+              <span className="tabular-nums" style={{ color: C.income }}>{fmtCurrency(total, 2)}</span>
             </div>
           </div>
         </div>
@@ -659,7 +666,7 @@ export default function CustomersPage() {
                   const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
 
                   const avatarCls: Record<string, string> = {
-                    active:    "bg-emerald-100 text-emerald-700",
+                    active:    "bg-blue-100 text-blue-700",
                     prospect:  "bg-violet-100 text-violet-700",
                     completed: "bg-blue-100 text-blue-700",
                     inactive:  "bg-muted text-muted-foreground",
@@ -737,10 +744,11 @@ export default function CustomersPage() {
                             {format(parseISO(c.contract_end), "d MMM yyyy")}
                           </span>
                         ) : (
-                          <span className={`text-xs font-medium ${
-                            c.status === "active" ? "text-emerald-600" : "text-muted-foreground/50"
-                          }`}>
-                            {c.status === "active" ? "Ongoing" : "—"}
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: c.status === "active" ? C.income : undefined }}
+                          >
+                            {c.status === "active" ? "Ongoing" : <span className="text-muted-foreground/50">—</span>}
                           </span>
                         )}
                       </td>
@@ -749,9 +757,7 @@ export default function CustomersPage() {
                       <td className="px-4 py-3.5 text-right hidden lg:table-cell">
                         {summary ? (
                           <div>
-                            <p className={`font-semibold tabular-nums text-sm ${
-                              summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500"
-                            }`}>
+                            <p className="font-semibold tabular-nums text-sm" style={{ color: summary.netProfit >= 0 ? C.income : C.expense }}>
                               {summary.netProfit < 0 ? "-" : ""}
                               {fmtCompact(Math.abs(summary.netProfit))}
                             </p>
@@ -773,7 +779,7 @@ export default function CustomersPage() {
                           {hasDailyRate && (
                             <Button
                               variant="ghost" size="icon"
-                              className="h-7 w-7 text-emerald-600 hover:text-emerald-700"
+                              className="h-7 w-7 text-blue-600 hover:text-blue-700"
                               title="Charge daily rent"
                               onClick={() => setRentTarget(c)}
                             >

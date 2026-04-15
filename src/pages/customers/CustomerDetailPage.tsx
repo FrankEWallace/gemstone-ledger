@@ -68,10 +68,17 @@ import { getCustomerMonthlyTrend } from "@/services/contract.service";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// Palette-aligned (matches chart-cat-1..5 tokens + extras)
 const PIE_COLORS = [
-  "#10b981", "#6366f1", "#f59e0b", "#0ea5e9",
-  "#ef4444", "#8b5cf6", "#f97316", "#14b8a6",
+  "#3b82f6", "#7c3aed", "#0d9488", "#f59e0b",
+  "#ea580c", "#6366f1", "#0ea5e9", "#a855f7",
 ];
+
+const C = {
+  income:  "hsl(var(--chart-income))",
+  expense: "hsl(var(--chart-expense))",
+  net:     "hsl(var(--chart-net))",
+} as const;
 
 const DEFAULT_FROM = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
 const DEFAULT_TO   = format(endOfMonth(new Date()), "yyyy-MM-dd");
@@ -81,22 +88,22 @@ const DEFAULT_TO   = format(endOfMonth(new Date()), "yyyy-MM-dd");
 const fmt = fmtCurrency;
 
 function typeIcon(type: TransactionType) {
-  if (type === "income")  return <ArrowUpCircle className="h-3.5 w-3.5 text-emerald-500" />;
-  if (type === "expense") return <ArrowDownCircle className="h-3.5 w-3.5 text-red-500" />;
-  return <RefreshCw className="h-3.5 w-3.5 text-yellow-500" />;
+  if (type === "income")  return <ArrowUpCircle className="h-3.5 w-3.5" style={{ color: C.income }} />;
+  if (type === "expense") return <ArrowDownCircle className="h-3.5 w-3.5" style={{ color: C.expense }} />;
+  return <RefreshCw className="h-3.5 w-3.5" style={{ color: C.net }} />;
 }
 
 // ─── Spark bars ───────────────────────────────────────────────────────────────
 
-function SparkBars({ values }: { values: number[] }) {
+function SparkBars({ values, color }: { values: number[]; color?: string }) {
   const max = Math.max(...values, 1);
   return (
-    <div className="flex items-end gap-[2px] h-7 opacity-50 shrink-0">
+    <div className="flex items-end gap-[2px] h-7 opacity-60 shrink-0">
       {values.map((v, i) => (
         <div
           key={i}
-          className="w-[4px] rounded-[2px] bg-foreground"
-          style={{ height: `${Math.max(12, (v / max) * 100)}%` }}
+          className="w-[4px] rounded-[2px]"
+          style={{ height: `${Math.max(12, (v / max) * 100)}%`, backgroundColor: color ?? "hsl(var(--foreground))" }}
         />
       ))}
     </div>
@@ -138,7 +145,7 @@ function BarTooltip({ active, payload, label }: { active?: boolean; payload?: an
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     prospect:  "text-violet-600 border-violet-200",
-    active:    "text-emerald-600 border-emerald-200",
+    active:    "text-blue-600 border-blue-200",
     inactive:  "text-muted-foreground",
     completed: "text-blue-500 border-blue-100",
   };
@@ -209,8 +216,8 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: Qu
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {type === "income"
-              ? <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
-              : <ArrowDownCircle className="h-4 w-4 text-red-500" />}
+              ? <ArrowUpCircle className="h-4 w-4" style={{ color: C.income }} />
+              : <ArrowDownCircle className="h-4 w-4" style={{ color: C.expense }} />}
             Add {type === "income" ? "Income" : "Expense"}
           </DialogTitle>
         </DialogHeader>
@@ -279,8 +286,7 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: Qu
           <Button
             onClick={() => mutate()}
             disabled={isPending || !amount || Number(amount) <= 0 || !date}
-            className={type === "income" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
-            variant={type === "expense" ? "destructive" : "default"}
+            style={type === "income" ? { backgroundColor: C.income, color: "#fff" } : type === "expense" ? { backgroundColor: C.expense, color: "#fff" } : {}}
           >
             {isPending ? "Saving…" : `Add ${type === "income" ? "Income" : "Expense"}`}
           </Button>
@@ -417,9 +423,9 @@ export default function CustomerDetailPage() {
       header: "Status",
       render: (val) => {
         const map: Record<string, string> = {
-          success:   "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+          success:   "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
           pending:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-          refunded:  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+          refunded:  "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
           cancelled: "bg-muted text-muted-foreground",
         };
         const s = String(val);
@@ -439,7 +445,7 @@ export default function CustomerDetailPage() {
         const total = (row.quantity as number) * (row.unit_price as number);
         const isIncome = row.type === "income";
         return (
-          <span className={`tabular-nums font-medium ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
+          <span className="tabular-nums font-medium" style={{ color: isIncome ? C.income : C.expense }}>
             {fmt(total)}
           </span>
         );
@@ -459,17 +465,17 @@ export default function CustomerDetailPage() {
           label: "Total Income",
           value: fmt(summary.totalIncome),
           sub: `${summary.transactionCount} transactions`,
-          color: "text-emerald-600",
-          icon: <TrendArrow direction="up" className="h-2.5 w-2.5 text-emerald-500" />,
+          color: C.income,
           spark: incomeSpark,
+          sparkColor: C.income,
         },
         {
           label: "Total Expenses",
           value: fmt(summary.totalExpenses),
           sub: expenseByCategory.length > 0 ? `${expenseByCategory[0].category} is largest` : "No expenses",
-          color: "text-red-500",
-          icon: <TrendArrow direction="down" className="h-2.5 w-2.5 text-red-400" />,
+          color: C.expense,
           spark: expenseSpark,
+          sparkColor: C.expense,
         },
         {
           label: "Net Profit",
@@ -477,25 +483,25 @@ export default function CustomerDetailPage() {
           sub: summary.totalIncome > 0
             ? `${Math.round((summary.netProfit / summary.totalIncome) * 100)}% margin`
             : "",
-          color: summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500",
-          icon: null,
+          color: summary.netProfit >= 0 ? C.income : C.expense,
           spark: netSpark,
+          sparkColor: C.net,
         },
         {
           label: "Revenue / Day",
           value: daysWorked > 0 ? fmt(revenuePerDay) : "—",
           sub: daysWorked > 0 ? "avg per working day" : "no income days yet",
-          color: "text-foreground",
-          icon: null,
+          color: undefined as string | undefined,
           spark: null,
+          sparkColor: undefined as string | undefined,
         },
         {
           label: "Days Worked",
           value: daysWorked > 0 ? String(daysWorked) : "—",
           sub: daysWorked > 0 ? "days with income" : "no income recorded",
-          color: "text-foreground",
-          icon: null,
+          color: undefined as string | undefined,
           spark: null,
+          sparkColor: undefined as string | undefined,
         },
       ]
     : [];
@@ -517,7 +523,8 @@ export default function CustomerDetailPage() {
         <div className="flex items-center gap-2">
           <Button
             size="sm" variant="outline"
-            className="h-8 text-xs gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+            className="h-8 text-xs gap-1.5"
+            style={{ color: C.income, borderColor: "hsl(var(--chart-income) / 0.4)" }}
             onClick={() => setAddTxType("income")}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -525,7 +532,8 @@ export default function CustomerDetailPage() {
           </Button>
           <Button
             size="sm" variant="outline"
-            className="h-8 text-xs gap-1.5 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+            className="h-8 text-xs gap-1.5"
+            style={{ color: C.expense, borderColor: "hsl(var(--chart-expense) / 0.4)" }}
             onClick={() => setAddTxType("expense")}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -540,7 +548,7 @@ export default function CustomerDetailPage() {
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
-              customer.status === "active"    ? "bg-emerald-100 text-emerald-700" :
+              customer.status === "active"    ? "bg-blue-100 text-blue-700"      :
               customer.status === "prospect"  ? "bg-violet-100 text-violet-700"  :
               customer.status === "completed" ? "bg-blue-100 text-blue-700"      :
               "bg-muted text-muted-foreground"
@@ -605,7 +613,7 @@ export default function CustomerDetailPage() {
                 )}
                 {daysWorked > 0 && (
                   <span className="flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    <CheckCircle2 className="h-3 w-3" style={{ color: C.income }} />
                     {daysWorked} days worked
                   </span>
                 )}
@@ -646,16 +654,17 @@ export default function CustomerDetailPage() {
       ) : kpis.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {kpis.map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2.5">
-              <div className="flex items-center justify-between gap-2">
+            <div key={s.label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2.5 overflow-hidden relative">
+              {s.color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl" style={{ backgroundColor: s.color }} />}
+              <div className="flex items-center justify-between gap-2 pt-0.5">
                 <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground leading-tight">
                   {s.label}
                 </p>
                 {s.spark && s.spark.some((v) => v > 0)
-                  ? <SparkBars values={s.spark} />
-                  : s.icon}
+                  ? <SparkBars values={s.spark} color={s.sparkColor} />
+                  : null}
               </div>
-              <p className={`text-2xl font-bold tracking-tight leading-none font-display tabular-nums ${s.color}`}>
+              <p className="text-2xl font-bold tracking-tight leading-none font-display tabular-nums" style={s.color ? { color: s.color } : undefined}>
                 {s.value}
               </p>
               {s.sub && (
@@ -754,8 +763,8 @@ export default function CustomerDetailPage() {
                   width={42}
                 />
                 <Tooltip content={<BarTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
-                <Bar dataKey="income" fill="hsl(var(--foreground))" radius={[3, 3, 0, 0]} name="Income" />
-                <Bar dataKey="expenses" fill="hsl(var(--muted-foreground))" opacity={0.35} radius={[3, 3, 0, 0]} name="Expenses" />
+                <Bar dataKey="income" fill={C.income} radius={[3, 3, 0, 0]} name="Income" />
+                <Bar dataKey="expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} name="Expenses" />
               </BarChart>
             </ResponsiveContainer>
           ) : (

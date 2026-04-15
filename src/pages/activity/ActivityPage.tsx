@@ -33,6 +33,11 @@ import {
 
 const TODAY = format(new Date(), "yyyy-MM-dd");
 
+const C = {
+  income:  "hsl(var(--chart-income))",
+  expense: "hsl(var(--chart-expense))",
+} as const;
+
 // ─── QuickTxModal ─────────────────────────────────────────────────────────────
 
 function QuickTxModal({
@@ -107,24 +112,16 @@ function QuickTxModal({
           <button
             type="button"
             onClick={() => handleTypeChange("income")}
-            className={cn(
-              "flex-1 py-2 text-sm font-medium transition-colors",
-              txType === "income"
-                ? "bg-emerald-600 text-white"
-                : "text-muted-foreground hover:bg-muted"
-            )}
+            className={cn("flex-1 py-2 text-sm font-medium transition-colors", txType !== "income" && "text-muted-foreground hover:bg-muted")}
+            style={txType === "income" ? { backgroundColor: C.income, color: "#fff" } : undefined}
           >
             Income
           </button>
           <button
             type="button"
             onClick={() => handleTypeChange("expense")}
-            className={cn(
-              "flex-1 py-2 text-sm font-medium transition-colors border-l border-border",
-              txType === "expense"
-                ? "bg-red-600 text-white"
-                : "text-muted-foreground hover:bg-muted"
-            )}
+            className={cn("flex-1 py-2 text-sm font-medium transition-colors border-l border-border", txType !== "expense" && "text-muted-foreground hover:bg-muted")}
+            style={txType === "expense" ? { backgroundColor: C.expense, color: "#fff" } : undefined}
           >
             Expense
           </button>
@@ -300,20 +297,15 @@ function CloseActivityModal({
         <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2 text-sm">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Total Income</span>
-            <span className="font-semibold text-emerald-600">{fmtCompact(totalIncome)}</span>
+            <span className="font-semibold" style={{ color: C.income }}>{fmtCompact(totalIncome)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Total Expenses</span>
-            <span className="font-semibold text-red-500">{fmtCompact(totalExpenses)}</span>
+            <span className="font-semibold" style={{ color: C.expense }}>{fmtCompact(totalExpenses)}</span>
           </div>
           <div className="flex justify-between items-center border-t border-border pt-2">
             <span className="font-medium">Net</span>
-            <span
-              className={cn(
-                "font-bold",
-                net >= 0 ? "text-emerald-600" : "text-red-600"
-              )}
-            >
+            <span className="font-bold" style={{ color: net >= 0 ? C.income : C.expense }}>
               {net < 0 ? "−" : ""}
               {fmtCompact(Math.abs(net))}
             </span>
@@ -451,7 +443,7 @@ export default function ActivityPage() {
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
                       Income
                     </p>
-                    <p className="font-semibold text-emerald-600">
+                    <p className="font-semibold" style={{ color: C.income }}>
                       {fmtCompact(income)}
                     </p>
                   </div>
@@ -459,7 +451,7 @@ export default function ActivityPage() {
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
                       Expenses
                     </p>
-                    <p className="font-semibold text-red-500">
+                    <p className="font-semibold" style={{ color: C.expense }}>
                       {fmtCompact(expenses)}
                     </p>
                   </div>
@@ -467,12 +459,7 @@ export default function ActivityPage() {
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
                       Net
                     </p>
-                    <p
-                      className={cn(
-                        "font-bold",
-                        net >= 0 ? "text-emerald-600" : "text-red-600"
-                      )}
-                    >
+                    <p className="font-bold" style={{ color: net >= 0 ? C.income : C.expense }}>
                       {net < 0 ? "−" : ""}
                       {fmtCompact(Math.abs(net))}
                     </p>
