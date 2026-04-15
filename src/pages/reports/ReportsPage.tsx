@@ -38,6 +38,21 @@ function fmtShort(n: number) {
 }
 
 
+// ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
+
+const C = {
+  income:  "hsl(var(--chart-income))",
+  expense: "hsl(var(--chart-expense))",
+  net:     "hsl(var(--chart-net))",
+  cat: [
+    "hsl(var(--chart-cat-1))",
+    "hsl(var(--chart-cat-2))",
+    "hsl(var(--chart-cat-3))",
+    "hsl(var(--chart-cat-4))",
+    "hsl(var(--chart-cat-5))",
+  ],
+} as const;
+
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -70,11 +85,12 @@ function ChartTooltip({ active, payload, label }: any) {
 
 // ─── KPI stat cards ───────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-2 min-w-0">
-      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground truncate">{label}</p>
-      <p className="text-[22px] font-bold tracking-tight leading-none tabular-nums font-display truncate">{value}</p>
+    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-2 min-w-0 overflow-hidden relative">
+      {color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl" style={{ backgroundColor: color }} />}
+      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">{label}</p>
+      <p className="text-[22px] font-bold tracking-tight leading-none tabular-nums font-display truncate" style={color ? { color } : undefined}>{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
     </div>
   );
@@ -366,16 +382,19 @@ export default function ReportsPage() {
           label="Total Income"
           value={fmtShort(summary?.totalIncome ?? 0)}
           sub={fmt(summary?.totalIncome ?? 0)}
+          color={C.income}
         />
         <StatCard
           label="Total Expenses"
           value={fmtShort(summary?.totalExpenses ?? 0)}
           sub={fmt(summary?.totalExpenses ?? 0)}
+          color={C.expense}
         />
         <StatCard
           label="Net Revenue"
           value={fmtShort(summary?.netRevenue ?? 0)}
           sub={(summary?.netRevenue ?? 0) >= 0 ? "Positive cashflow" : "Net loss"}
+          color={(summary?.netRevenue ?? 0) >= 0 ? C.income : C.expense}
         />
         <StatCard
           label="Transactions"
@@ -393,6 +412,7 @@ export default function ReportsPage() {
               : "—"
           }
           sub={(summary?.netRevenue ?? 0) >= 0 ? "Of income retained" : "Net loss"}
+          color={C.net}
         />
       </div>
 
@@ -424,16 +444,16 @@ export default function ReportsPage() {
                   width={44}
                 />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
-                <Bar dataKey="Income"   name="Income"   fill="hsl(var(--foreground))"                  radius={[3, 3, 0, 0]} />
-                <Bar dataKey="Expenses" name="Expenses" fill="hsl(var(--muted-foreground))" opacity={0.35} radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Income"   name="Income"   fill={C.income}          radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Expenses" name="Expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
             <div className="flex items-center gap-5 mt-3 text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-foreground" /> Income
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: C.income }} /> Income
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground opacity-60" /> Expenses
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: C.expense }} /> Expenses
               </span>
             </div>
           </>
@@ -454,15 +474,19 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {categories.slice(0, 7).map((c) => {
+              {categories.slice(0, 7).map((c, idx) => {
                 const pct = Math.round((c.total / maxCat) * 100);
                 const sharePct = summary && summary.totalExpenses > 0
                   ? ((c.total / summary.totalExpenses) * 100).toFixed(0)
                   : "0";
+                const barColor = C.cat[idx % C.cat.length];
                 return (
                   <div key={c.category} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground truncate mr-2">{c.category}</span>
+                      <span className="flex items-center gap-1.5 text-muted-foreground truncate mr-2">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
+                        {c.category}
+                      </span>
                       <span className="tabular-nums font-semibold text-foreground shrink-0">
                         {fmtShort(c.total)}
                         <span className="text-muted-foreground font-normal ml-1.5">{sharePct}%</span>
@@ -470,8 +494,8 @@ export default function ReportsPage() {
                     </div>
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-foreground/70 transition-all"
-                        style={{ width: `${pct}%` }}
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${pct}%`, backgroundColor: barColor }}
                       />
                     </div>
                   </div>
@@ -512,10 +536,10 @@ export default function ReportsPage() {
                   type="monotone"
                   dataKey="Hours"
                   name="Hours"
-                  stroke="hsl(var(--foreground))"
+                  stroke={C.net}
                   strokeWidth={1.5}
-                  dot={{ r: 2.5, fill: "hsl(var(--foreground))", strokeWidth: 0 }}
-                  activeDot={{ r: 4, fill: "hsl(var(--foreground))", strokeWidth: 0 }}
+                  dot={{ r: 2.5, fill: C.net, strokeWidth: 0 }}
+                  activeDot={{ r: 4, fill: C.net, strokeWidth: 0 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -549,13 +573,19 @@ export default function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {categories.map((c) => {
+              {categories.map((c, idx) => {
                 const pct = summary && summary.totalExpenses > 0
                   ? (c.total / summary.totalExpenses) * 100
                   : 0;
+                const barColor = C.cat[idx % C.cat.length];
                 return (
                   <tr key={c.category} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-5 py-3 font-medium text-foreground">{c.category}</td>
+                    <td className="px-5 py-3 font-medium text-foreground">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
+                        {c.category}
+                      </span>
+                    </td>
                     <td className="px-3 py-3 text-right tabular-nums font-semibold">{fmt(c.total)}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground hidden sm:table-cell">
                       {pct.toFixed(1)}%
@@ -564,8 +594,8 @@ export default function ReportsPage() {
                       <div className="flex items-center justify-end">
                         <div className="w-24 h-1 rounded-full bg-muted overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-foreground/60"
-                            style={{ width: `${Math.round(pct)}%` }}
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${Math.round(pct)}%`, backgroundColor: barColor }}
                           />
                         </div>
                       </div>
@@ -613,7 +643,7 @@ export default function ReportsPage() {
                     <td className="px-5 py-3 font-medium text-foreground">{row.month}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{fmt(row.income)}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{fmt(row.expenses)}</td>
-                    <td className={`px-5 py-3 text-right tabular-nums font-semibold ${net >= 0 ? "text-foreground" : "text-muted-foreground"}`}>
+                    <td className="px-5 py-3 text-right tabular-nums font-semibold" style={{ color: net >= 0 ? C.income : C.expense }}>
                       {net >= 0 ? "+" : "−"}{fmt(Math.abs(net))}
                     </td>
                   </tr>
@@ -704,7 +734,7 @@ export default function ReportsPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Net Profit</p>
-                        <p className={`text-lg font-bold tabular-nums ${cs.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                        <p className="text-lg font-bold tabular-nums" style={{ color: cs.netProfit >= 0 ? C.income : C.expense }}>
                           {cs.netProfit >= 0 ? "+" : "−"}{fmt(Math.abs(cs.netProfit))}
                         </p>
                       </div>
@@ -714,11 +744,11 @@ export default function ReportsPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div className="rounded-lg bg-muted/40 p-3">
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Income</p>
-                        <p className="text-sm font-semibold tabular-nums text-emerald-600">{fmt(cs.totalIncome)}</p>
+                        <p className="text-sm font-semibold tabular-nums" style={{ color: C.income }}>{fmt(cs.totalIncome)}</p>
                       </div>
                       <div className="rounded-lg bg-muted/40 p-3">
                         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Expenses</p>
-                        <p className="text-sm font-semibold tabular-nums text-red-500">{fmt(cs.totalExpenses)}</p>
+                        <p className="text-sm font-semibold tabular-nums" style={{ color: C.expense }}>{fmt(cs.totalExpenses)}</p>
                       </div>
                     </div>
 
@@ -728,18 +758,22 @@ export default function ReportsPage() {
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Expenses by Category
                         </p>
-                        {cs.expensesByCategory.slice(0, 4).map((c) => {
+                        {cs.expensesByCategory.slice(0, 4).map((c, idx) => {
                           const pct = Math.round((c.total / maxCatVal) * 100);
+                          const barColor = C.cat[idx % C.cat.length];
                           return (
                             <div key={c.category} className="space-y-0.5">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground truncate mr-2">{c.category}</span>
+                                <span className="flex items-center gap-1.5 text-muted-foreground truncate mr-2">
+                                  <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
+                                  {c.category}
+                                </span>
                                 <span className="tabular-nums font-medium shrink-0">{fmtShort(c.total)}</span>
                               </div>
                               <div className="h-1 rounded-full bg-muted overflow-hidden">
                                 <div
-                                  className="h-full rounded-full bg-foreground/60 transition-all"
-                                  style={{ width: `${pct}%` }}
+                                  className="h-full rounded-full transition-all"
+                                  style={{ width: `${pct}%`, backgroundColor: barColor }}
                                 />
                               </div>
                             </div>
