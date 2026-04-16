@@ -1,4 +1,5 @@
 import { MapPin, ChevronDown, LogOut, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import {
@@ -13,6 +14,7 @@ import {
 export default function SitePicker() {
   const { userProfile, signOut } = useAuth();
   const { activeSite, sites, setActiveSite } = useSite();
+  const navigate = useNavigate();
 
   const initials = userProfile?.full_name
     ? userProfile.full_name
@@ -64,7 +66,7 @@ export default function SitePicker() {
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => navigate("/settings/profile")}>
           <User className="mr-2 h-4 w-4" />
           Profile settings
         </DropdownMenuItem>

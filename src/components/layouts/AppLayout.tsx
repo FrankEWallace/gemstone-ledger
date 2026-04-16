@@ -45,6 +45,7 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/settings/help":     { breadcrumb: "Settings", title: "Help" },
   "/settings/support":  { breadcrumb: "Settings", title: "Support" },
   "/settings/sync":     { breadcrumb: "Settings", title: "Offline Sync" },
+  "/settings/profile":  { breadcrumb: "Settings", title: "My Profile" },
 };
 
 export default function AppLayout() {

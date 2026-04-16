@@ -44,6 +44,7 @@ const SafetyPage        = lazy(() => import("@/pages/safety/SafetyPage"));
 const ShiftSchedulePage = lazy(() => import("@/pages/team/ShiftSchedulePage"));
 const DocumentsPage     = lazy(() => import("@/pages/documents/DocumentsPage"));
 const ActivityPage      = lazy(() => import("@/pages/activity/ActivityPage"));
+const ProfilePage       = lazy(() => import("@/pages/settings/ProfilePage"));
 const ComingSoon        = lazy(() => import("@/pages/ComingSoon"));
 const NotFound          = lazy(() => import("@/pages/NotFound"));
 
@@ -123,6 +124,7 @@ export default function Router() {
           <Route path="/settings/targets" element={<BoundedRoute element={<KpiTargetsPage />} />} />
           <Route path="/settings/sync"               element={<BoundedRoute element={<SyncHistoryPage />} />} />
           <Route path="/settings/expense-categories" element={<BoundedRoute element={<ExpenseCategoriesPage />} />} />
+          <Route path="/settings/profile"            element={<BoundedRoute element={<ProfilePage />} />} />
           <Route path="/production"       element={<BoundedRoute element={<ProductionLogPage />} />} />
           <Route path="/team/timesheet"   element={<BoundedRoute element={<TimesheetPage />} />} />
 
