@@ -205,7 +205,7 @@ export default function ProfilePage() {
   });
 
   return (
-    <div className="p-4 lg:p-6 space-y-8 max-w-2xl">
+    <div className="p-4 lg:p-6 space-y-8 max-w-2xl mx-auto">
       <h1 className="font-display text-2xl font-bold">My Profile</h1>
 
       {/* Avatar */}
