@@ -57,6 +57,11 @@ export default function Register() {
 
     const userId = authData.user.id;
 
+    // If email confirmation is required Supabase returns no session yet.
+    // We can still write to the DB using the anon key as long as RLS policies
+    // allow it, but we need to signal to the user when confirmation is pending.
+    const needsConfirmation = !authData.session;
+
     // 2. Create organization
     const slug = slugify(values.orgName);
     const { data: org, error: orgError } = await supabase
@@ -66,7 +71,7 @@ export default function Register() {
       .single();
 
     if (orgError || !org) {
-      setServerError("Could not create organization. The name may already be taken.");
+      setServerError(orgError?.message ?? "Could not create organization.");
       return;
     }
 
@@ -78,7 +83,7 @@ export default function Register() {
     });
 
     if (profileError) {
-      setServerError("Could not create user profile.");
+      setServerError(profileError.message);
       return;
     }
 
@@ -90,7 +95,6 @@ export default function Register() {
       .single();
 
     if (!siteError && site) {
-      // Assign admin role on default site
       await supabase.from("user_site_roles").insert({
         user_id: userId,
         site_id: site.id,
@@ -98,7 +102,11 @@ export default function Register() {
       });
     }
 
-    navigate("/", { replace: true });
+    if (needsConfirmation) {
+      navigate("/check-email", { replace: true });
+    } else {
+      navigate("/", { replace: true });
+    }
   }
 
   return (

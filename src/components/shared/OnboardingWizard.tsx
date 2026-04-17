@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CheckCircle2, ChevronRight, Pickaxe, X } from "lucide-react";
+import { CheckCircle2, ChevronRight, Pickaxe, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
@@ -63,7 +63,6 @@ function StepOrg({ onNext }: { onNext: (orgId: string) => void }) {
   async function onSubmit(values: z.infer<typeof orgSchema>) {
     setIsSubmitting(true);
     try {
-      // Check slug availability
       const { data: existing } = await supabase
         .from("organizations")
         .select("id")
@@ -78,7 +77,6 @@ function StepOrg({ onNext }: { onNext: (orgId: string) => void }) {
         .single();
       if (error) throw error;
 
-      // Link user to org
       await supabase
         .from("user_profiles")
         .update({ org_id: org.id })
@@ -155,7 +153,6 @@ function StepSite({ orgId, onNext }: { orgId: string; onNext: (siteId: string) =
         .single();
       if (error) throw error;
 
-      // Give the current user admin role on this site
       await supabase
         .from("site_roles")
         .insert({ site_id: site.id, user_id: user!.id, role: "admin" });
@@ -320,10 +317,18 @@ interface OnboardingWizardProps {
 }
 
 export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
-  const { user } = useAuth();
-  const [step, setStep] = useState(1);
+  const { user, userProfile } = useAuth();
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [orgId, setOrgId] = useState<string>("");
   const [siteId, setSiteId] = useState<string>("");
+
+  const firstName = userProfile?.full_name?.split(" ")[0] ?? null;
+
+  function advance(nextStep: number) {
+    setDirection("forward");
+    setStep(nextStep);
+  }
 
   async function markComplete() {
     await supabase
@@ -333,92 +338,153 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
     onComplete();
   }
 
+  const slideClass = direction === "forward"
+    ? "animate-in slide-in-from-right-4 fade-in duration-300"
+    : "animate-in slide-in-from-left-4 fade-in duration-300";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" />
 
       <div className="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-primary px-6 py-5 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/20">
-              <Pickaxe className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-display font-bold text-lg leading-tight">Welcome to FW Mining OS</p>
-              <p className="text-xs text-primary-foreground/70">Let's get your workspace set up</p>
-            </div>
-          </div>
 
-          {/* Step progress */}
-          <div className="flex items-center gap-1">
-            {STEPS.map((s, i) => (
-              <div key={s.id} className="flex items-center gap-1 flex-1">
-                <div className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold shrink-0 transition-colors",
-                  step > s.id
-                    ? "bg-primary-foreground text-primary"
-                    : step === s.id
-                    ? "bg-primary-foreground/30 text-primary-foreground ring-2 ring-primary-foreground"
-                    : "bg-primary-foreground/10 text-primary-foreground/40"
-                )}>
-                  {step > s.id ? <CheckCircle2 className="h-3.5 w-3.5" /> : s.id}
+        {/* ── Welcome screen (step 0) ── */}
+        {step === 0 && (
+          <div
+            key="welcome"
+            className={cn("px-8 py-10 flex flex-col items-center text-center gap-5", slideClass)}
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
+              <Pickaxe className="h-8 w-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h1 className="font-display text-2xl font-bold">
+                Welcome{firstName ? `, ${firstName}` : ""}!
+              </h1>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Let's get your FW Mining OS workspace ready.<br />
+                It only takes a couple of minutes.
+              </p>
+            </div>
+
+            {/* What to expect */}
+            <div className="w-full rounded-xl border border-border bg-muted/40 px-4 py-3 text-left space-y-2">
+              {[
+                "Name your organisation",
+                "Add your first mining site",
+                "Invite a team member (optional)",
+                "Log your first inventory item (optional)",
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                    {i + 1}
+                  </span>
+                  {item}
                 </div>
-                <span className={cn(
-                  "text-[10px] font-medium hidden sm:block",
-                  step === s.id ? "text-primary-foreground" : "text-primary-foreground/40"
-                )}>
-                  {s.label}
-                </span>
-                {i < STEPS.length - 1 && (
-                  <div className={cn("h-px flex-1 mx-1 transition-colors", step > s.id ? "bg-primary-foreground/60" : "bg-primary-foreground/20")} />
+              ))}
+            </div>
+
+            <Button className="w-full" size="lg" onClick={() => advance(1)}>
+              Let's get started
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        )}
+
+        {/* ── Setup steps (1–4) ── */}
+        {step >= 1 && (
+          <>
+            {/* Header with progress */}
+            <div className="bg-primary px-6 py-5 text-primary-foreground">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/20">
+                  <Pickaxe className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-display font-bold text-lg leading-tight">FW Mining OS</p>
+                  <p className="text-xs text-primary-foreground/70">Setting up your workspace</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                {STEPS.map((s, i) => (
+                  <div key={s.id} className="flex items-center gap-1 flex-1">
+                    <div className={cn(
+                      "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold shrink-0 transition-all duration-300",
+                      step > s.id
+                        ? "bg-primary-foreground text-primary"
+                        : step === s.id
+                        ? "bg-primary-foreground/30 text-primary-foreground ring-2 ring-primary-foreground"
+                        : "bg-primary-foreground/10 text-primary-foreground/40"
+                    )}>
+                      {step > s.id ? <CheckCircle2 className="h-3.5 w-3.5" /> : s.id}
+                    </div>
+                    <span className={cn(
+                      "text-[10px] font-medium hidden sm:block transition-colors duration-300",
+                      step === s.id ? "text-primary-foreground" : "text-primary-foreground/40"
+                    )}>
+                      {s.label}
+                    </span>
+                    {i < STEPS.length - 1 && (
+                      <div className={cn(
+                        "h-px flex-1 mx-1 transition-colors duration-500",
+                        step > s.id ? "bg-primary-foreground/60" : "bg-primary-foreground/20"
+                      )} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              <div
+                key={step}
+                className={cn(slideClass)}
+              >
+                <div className="mb-4">
+                  <h2 className="font-semibold text-base">
+                    {step === 1 && "Name your organisation"}
+                    {step === 2 && "Add your first mining site"}
+                    {step === 3 && "Invite a team member"}
+                    {step === 4 && "Add your first inventory item"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {step === 1 && "This is the top-level workspace for your company."}
+                    {step === 2 && "Sites are the individual mine locations you manage."}
+                    {step === 3 && "You can always invite more people later from Management."}
+                    {step === 4 && "Start tracking your supplies. You can import a CSV later."}
+                  </p>
+                </div>
+
+                {step === 1 && (
+                  <StepOrg onNext={(id) => { setOrgId(id); advance(2); }} />
+                )}
+                {step === 2 && (
+                  <StepSite orgId={orgId} onNext={(id) => { setSiteId(id); advance(3); }} />
+                )}
+                {step === 3 && (
+                  <StepInvite siteId={siteId} onNext={() => advance(4)} onSkip={() => advance(4)} />
+                )}
+                {step === 4 && (
+                  <StepInventory siteId={siteId} onDone={markComplete} />
                 )}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Body */}
-        <div className="px-6 py-5">
-          <div className="mb-4">
-            <h2 className="font-semibold text-base">
-              {step === 1 && "Name your organisation"}
-              {step === 2 && "Add your first mining site"}
-              {step === 3 && "Invite a team member"}
-              {step === 4 && "Add your first inventory item"}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {step === 1 && "This is the top-level workspace for your company."}
-              {step === 2 && "Sites are the individual mine locations you manage."}
-              {step === 3 && "You can always invite more people later from Management."}
-              {step === 4 && "Start tracking your supplies. You can import a CSV later."}
-            </p>
-          </div>
-
-          {step === 1 && (
-            <StepOrg onNext={(id) => { setOrgId(id); setStep(2); }} />
-          )}
-          {step === 2 && (
-            <StepSite orgId={orgId} onNext={(id) => { setSiteId(id); setStep(3); }} />
-          )}
-          {step === 3 && (
-            <StepInvite siteId={siteId} onNext={() => setStep(4)} onSkip={() => setStep(4)} />
-          )}
-          {step === 4 && (
-            <StepInventory siteId={siteId} onDone={markComplete} />
-          )}
-        </div>
-
-        {/* Skip all */}
-        {step < 4 && (
-          <div className="px-6 pb-4 text-center">
-            <button
-              onClick={markComplete}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Skip setup — I'll do this later
-            </button>
-          </div>
+            {/* Skip all */}
+            {step < 4 && (
+              <div className="px-6 pb-4 text-center">
+                <button
+                  onClick={markComplete}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Skip setup — I'll do this later
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

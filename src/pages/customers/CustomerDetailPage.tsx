@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Clock,
   Plus,
+  ChevronRight,
 } from "lucide-react";
 import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
@@ -680,9 +681,17 @@ export default function CustomerDetailPage() {
 
         {/* Expense breakdown */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground mb-4">
-            Expense Breakdown
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+              Expense Breakdown
+            </p>
+            <Link
+              to={`/customers/${id}/expenses`}
+              className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View detail <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
           {expenseByCategory.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>

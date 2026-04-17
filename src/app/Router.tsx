@@ -18,8 +18,9 @@ const NotificationsPage    = lazy(() => import("@/pages/notifications/Notificati
 const InventoryPage     = lazy(() => import("@/pages/inventory/InventoryPage"));
 const TransactionsPage  = lazy(() => import("@/pages/transactions/TransactionsPage"));
 const TeamPage          = lazy(() => import("@/pages/team/TeamPage"));
-const ReportsPage           = lazy(() => import("@/pages/reports/ReportsPage"));
-const CustomerReportPage    = lazy(() => import("@/pages/reports/CustomerReportPage"));
+const ReportsPage              = lazy(() => import("@/pages/reports/ReportsPage"));
+const CustomerReportPage       = lazy(() => import("@/pages/reports/CustomerReportPage"));
+const ExpenseBreakdownPage     = lazy(() => import("@/pages/reports/ExpenseBreakdownPage"));
 const MessagesPage      = lazy(() => import("@/pages/messages/MessagesPage"));
 const CampaignsPage     = lazy(() => import("@/pages/campaigns/CampaignsPage"));
 const SuppliersPage     = lazy(() => import("@/pages/supply-chain/SuppliersPage"));
@@ -34,8 +35,9 @@ const AuditLogPage      = lazy(() => import("@/pages/management/AuditLogPage"));
 const AlertRulesPage    = lazy(() => import("@/pages/settings/AlertRulesPage"));
 const KpiTargetsPage      = lazy(() => import("@/pages/settings/KpiTargetsPage"));
 const SyncHistoryPage     = lazy(() => import("@/pages/settings/SyncHistoryPage"));
-const CustomersPage         = lazy(() => import("@/pages/customers/CustomersPage"));
-const CustomerDetailPage    = lazy(() => import("@/pages/customers/CustomerDetailPage"));
+const CustomersPage                  = lazy(() => import("@/pages/customers/CustomersPage"));
+const CustomerDetailPage             = lazy(() => import("@/pages/customers/CustomerDetailPage"));
+const CustomerExpenseBreakdownPage   = lazy(() => import("@/pages/customers/CustomerExpenseBreakdownPage"));
 const ExpenseCategoriesPage = lazy(() => import("@/pages/settings/ExpenseCategoriesPage"));
 const ProductionLogPage   = lazy(() => import("@/pages/production/ProductionLogPage"));
 const TimesheetPage       = lazy(() => import("@/pages/team/TimesheetPage"));
@@ -89,12 +91,14 @@ export default function Router() {
           {/* Phase 2 */}
           <Route path="/inventory"    element={<BoundedRoute element={<InventoryPage />} />} />
           <Route path="/transactions" element={<BoundedRoute element={<TransactionsPage />} />} />
-          <Route path="/customers"     element={<BoundedRoute element={<CustomersPage />} />} />
-          <Route path="/customers/:id" element={<BoundedRoute element={<CustomerDetailPage />} />} />
+          <Route path="/customers"                   element={<BoundedRoute element={<CustomersPage />} />} />
+          <Route path="/customers/:id"              element={<BoundedRoute element={<CustomerDetailPage />} />} />
+          <Route path="/customers/:id/expenses"     element={<BoundedRoute element={<CustomerExpenseBreakdownPage />} />} />
           <Route path="/team"         element={<BoundedRoute element={<TeamPage />} />} />
 
           {/* Phase 4 */}
           <Route path="/reports"                    element={<BoundedRoute element={<ReportsPage />} />} />
+          <Route path="/reports/expenses"           element={<BoundedRoute element={<ExpenseBreakdownPage />} />} />
           <Route path="/reports/customers/:id"  element={<BoundedRoute element={<CustomerReportPage />} />} />
           <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
           <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />

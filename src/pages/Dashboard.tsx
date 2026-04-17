@@ -309,9 +309,12 @@ function ExpenseBreakdown({
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
-          Expenses
-        </p>
+        <Link
+          to="/reports/expenses"
+          className="flex items-center gap-0.5 text-[11px] font-semibold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Expenses <ChevronRight className="h-3 w-3" />
+        </Link>
         {!forceCategory && (
           <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
             <button
