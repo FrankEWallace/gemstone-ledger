@@ -508,7 +508,7 @@ function OrderDetailSheet({
       const next = STATUS_FLOW[o.status];
       if (!next) return;
       if (next === "received") {
-        await receiveOrder(o.id, { userId });
+        await receiveOrder(o.id);
       } else {
         await updateOrderStatus(o.id, next);
       }

@@ -159,23 +159,12 @@ export async function updateOrderStatus(
  * `source: 'order'` expense transactions for each line item.
  * REST: single atomic call — the PHP API handles all side-effects server-side.
  */
-export async function receiveOrder(
-  orderId: string,
-  opts?: { userId?: string }
-): Promise<void> {
+export async function receiveOrder(orderId: string): Promise<void> {
   if (isDemoMode()) return;
   if (isRestActive()) {
     await restPost(`/orders/${orderId}/receive`, {});
     return;
   }
-
-  // Fetch order for site_id and customer_id (needed for transaction creation)
-  const { data: order, error: orderFetchError } = await supabase
-    .from("orders")
-    .select("site_id, customer_id")
-    .eq("id", orderId)
-    .single();
-  if (orderFetchError) throw orderFetchError;
 
   const { data: items, error: fetchError } = await supabase
     .from("order_items")
@@ -204,24 +193,6 @@ export async function receiveOrder(
       .from("inventory_items")
       .update({ quantity: (inv?.quantity ?? 0) + item.quantity })
       .eq("id", item.inventory_item_id);
-
-    // Auto-create expense transaction for this line item
-    if (Number(item.unit_price) > 0) {
-      await supabase.from("transactions").insert({
-        site_id: order.site_id,
-        customer_id: order.customer_id ?? null,
-        inventory_item_id: item.inventory_item_id,
-        description: `PO received — ${inv?.name ?? "item"} × ${item.quantity} ${inv?.unit ?? "units"}`,
-        type: "expense",
-        status: "success",
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        category: inv?.category ?? null,
-        transaction_date: today,
-        source: "order",
-        created_by: opts?.userId ?? null,
-      });
-    }
   }
 }
 
