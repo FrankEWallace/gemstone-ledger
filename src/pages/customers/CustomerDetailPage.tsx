@@ -20,6 +20,7 @@ import {
   Clock,
   Plus,
   ChevronRight,
+  Package,
 } from "lucide-react";
 import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
@@ -66,6 +67,7 @@ import { getCustomers } from "@/services/customers.service";
 import { getCustomerDetail } from "@/services/reports.service";
 import { getTransactions, createTransaction, type TransactionPayload } from "@/services/transactions.service";
 import { getCustomerMonthlyTrend } from "@/services/contract.service";
+import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -317,6 +319,7 @@ export default function CustomerDetailPage() {
   const [dateFrom, setDateFrom] = useState(DEFAULT_FROM);
   const [dateTo,   setDateTo]   = useState(DEFAULT_TO);
   const [addTxType, setAddTxType] = useState<"income" | "expense" | null>(null);
+  const [useInventoryOpen, setUseInventoryOpen] = useState(false);
 
   const opts = { enabled: !!activeSiteId && !!id };
 
@@ -539,6 +542,14 @@ export default function CustomerDetailPage() {
           >
             <Plus className="h-3.5 w-3.5" />
             Add Expense
+          </Button>
+          <Button
+            size="sm" variant="outline"
+            className="h-8 text-xs gap-1.5 text-blue-600 border-blue-200"
+            onClick={() => setUseInventoryOpen(true)}
+          >
+            <Package className="h-3.5 w-3.5" />
+            Use Inventory
           </Button>
         </div>
       </div>
@@ -804,6 +815,16 @@ export default function CustomerDetailPage() {
           customerId={id}
           siteId={activeSiteId!}
           userId={user?.id}
+        />
+      )}
+      {useInventoryOpen && (
+        <UseInventoryModal
+          open={useInventoryOpen}
+          onClose={() => setUseInventoryOpen(false)}
+          siteId={activeSiteId!}
+          userId={user?.id}
+          customers={customers.map((c) => ({ id: c.id, name: c.name }))}
+          defaultCustomerId={id}
         />
       )}
     </div>

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, differenceInDays, parseISO } from "date-fns";
-import { Activity, Plus, CheckCircle2 } from "lucide-react";
+import { Activity, Plus, CheckCircle2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { getCustomers, updateCustomer } from "@/services/customers.service";
+import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
 import { createTransaction } from "@/services/transactions.service";
 import { getExpenseCategories } from "@/services/expense-categories.service";
 import { getCustomerSummaries } from "@/services/reports.service";
@@ -335,9 +336,11 @@ function CloseActivityModal({
 
 export default function ActivityPage() {
   const { activeSiteId } = useSite();
+  const { userProfile } = useAuth();
 
   const [quickTxCustomer, setQuickTxCustomer] = useState<Customer | null>(null);
   const [closeCustomer, setCloseCustomer] = useState<Customer | null>(null);
+  const [useInvCustomer, setUseInvCustomer] = useState<Customer | null>(null);
 
   const { data: activeCustomers = [], isLoading } = useQuery({
     queryKey: ["activity-customers", activeSiteId],
@@ -479,6 +482,15 @@ export default function ActivityPage() {
                   <Button
                     size="sm"
                     variant="outline"
+                    className="text-blue-600 border-blue-200"
+                    onClick={() => setUseInvCustomer(customer)}
+                  >
+                    <Package className="h-3.5 w-3.5 mr-1" />
+                    Use Inventory
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="text-muted-foreground"
                     onClick={() => setCloseCustomer(customer)}
                   >
@@ -504,6 +516,16 @@ export default function ActivityPage() {
           customer={closeCustomer}
           summary={summaryMap[closeCustomer.id]}
           onClose={() => setCloseCustomer(null)}
+        />
+      )}
+      {useInvCustomer && (
+        <UseInventoryModal
+          open
+          onClose={() => setUseInvCustomer(null)}
+          siteId={activeSiteId!}
+          userId={userProfile?.id}
+          customers={activeCustomers.map((c) => ({ id: c.id, name: c.name }))}
+          defaultCustomerId={useInvCustomer.id}
         />
       )}
     </div>

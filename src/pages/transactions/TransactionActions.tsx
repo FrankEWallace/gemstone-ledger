@@ -668,6 +668,7 @@ export interface UseInventoryModalProps {
   siteId: string;
   userId?: string;
   customers: { id: string; name: string }[];
+  defaultCustomerId?: string;
 }
 
 export function UseInventoryModal({
@@ -676,6 +677,7 @@ export function UseInventoryModal({
   siteId,
   userId,
   customers,
+  defaultCustomerId,
 }: UseInventoryModalProps) {
   const queryClient = useQueryClient();
 
@@ -690,7 +692,7 @@ export function UseInventoryModal({
     defaultValues: {
       inventory_item_id: "",
       quantity: 1,
-      customer_id: "",
+      customer_id: defaultCustomerId ?? "",
       notes: "",
       transaction_date: format(new Date(), "yyyy-MM-dd"),
     },
