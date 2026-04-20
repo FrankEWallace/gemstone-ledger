@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -14,12 +14,29 @@ import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Label,
+  Sector,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import type { ChartConfig } from "@/components/ui/chart";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   format,
   startOfWeek,
@@ -111,47 +128,46 @@ function KpiCard({
   return (
     <Link
       to={href}
-      className="group rounded-xl border border-border bg-card p-5 flex flex-col gap-3 hover:border-foreground/30 transition-colors overflow-hidden relative"
+      className="group rounded-xl border border-border/50 bg-card px-4 py-3 flex items-center gap-3 hover:border-foreground/20 hover:bg-muted/10 transition-all overflow-hidden"
     >
       {color && (
         <div
-          className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl"
+          className="shrink-0 self-stretch w-[3px] rounded-full"
           style={{ backgroundColor: color }}
         />
       )}
-      <div className="flex items-start justify-between gap-2 pt-0.5">
-        <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
-          {label}
-        </p>
-        {sparkValues && <SparkBars values={sparkValues} color={color} />}
-      </div>
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">
-          {CURRENCY_SYMBOL}
-        </span>
-        <span className="font-display text-[32px] font-bold leading-none tabular-nums tracking-tight truncate">
-          {fmtCompactNum(rawValue)}
-        </span>
-      </div>
-      {progressPct != null && (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>{progressLabel ?? "vs target"}</span>
-            <span className="font-semibold tabular-nums">{progressPct}%</span>
-          </div>
-          <div className="h-1 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${progressPct}%`, backgroundColor: color ?? "hsl(var(--foreground))" }}
-            />
-          </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2 mb-0.5">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
+            {label}
+          </p>
+          {sub && (
+            <span className="text-[10px] text-muted-foreground shrink-0 truncate max-w-[120px]">
+              {sub}
+            </span>
+          )}
         </div>
-      )}
-      {sub && (
-        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-          <span className="truncate">{sub}</span>
-        </p>
-      )}
+        <div className="flex items-baseline gap-1">
+          <span className="text-[10px] text-muted-foreground">{CURRENCY_SYMBOL}</span>
+          <span className="font-display text-[20px] font-bold leading-none tabular-nums tracking-tight">
+            {fmtCompactNum(rawValue)}
+          </span>
+        </div>
+        {progressPct != null && (
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex-1 h-[3px] rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${progressPct}%`, backgroundColor: color ?? "hsl(var(--foreground))" }}
+              />
+            </div>
+            <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">
+              {progressLabel && `${progressLabel} · `}{progressPct}%
+            </span>
+          </div>
+        )}
+      </div>
+      {sparkValues && <SparkBars values={sparkValues} color={color} />}
     </Link>
   );
 }
@@ -295,82 +311,244 @@ function ExpenseBreakdown({
 }) {
   const [mode, setMode] = useState<"category" | "customer">("category");
   const activeMode = forceCategory ? "category" : mode;
+  const [activeKey, setActiveKey] = useState<string>("");
 
-  const items =
-    activeMode === "category"
-      ? catData.slice(0, 5).map((c) => ({ label: c.category, value: c.total }))
-      : [...customerData]
-          .sort((a, b) => b.totalExpenses - a.totalExpenses)
-          .slice(0, 5)
-          .map((c) => ({ label: c.customerName, value: c.totalExpenses }));
+  const rawItems = useMemo(
+    () =>
+      activeMode === "category"
+        ? catData.slice(0, 5).map((c) => ({ label: c.category, value: c.total }))
+        : [...customerData]
+            .sort((a, b) => b.totalExpenses - a.totalExpenses)
+            .slice(0, 5)
+            .map((c) => ({ label: c.customerName, value: c.totalExpenses })),
+    [activeMode, catData, customerData]
+  );
 
-  const maxVal = Math.max(...items.map((i) => i.value), 1);
+  const chartData = useMemo(
+    () =>
+      rawItems.map((item, idx) => {
+        const key = item.label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        return { key, label: item.label, value: item.value, fill: `var(--color-${key})` };
+      }),
+    [rawItems]
+  );
+
+  const chartConfig = useMemo(
+    () =>
+      ({
+        value: { label: "Expenses" },
+        ...Object.fromEntries(
+          chartData.map((d, idx) => [d.key, { label: d.label, color: C.cat[idx % C.cat.length] }])
+        ),
+      } as ChartConfig),
+    [chartData]
+  );
+
+  const activeIndex = useMemo(() => {
+    const i = chartData.findIndex((d) => d.key === activeKey);
+    return i >= 0 ? i : 0;
+  }, [chartData, activeKey]);
+
+  const activeItem = chartData[activeIndex];
+
+  const renderShape = useCallback(
+    ({ index, outerRadius = 0, ...props }: any) => {
+      if (index === activeIndex) {
+        return (
+          <g>
+            <Sector {...props} outerRadius={outerRadius + 8} />
+            <Sector
+              {...props}
+              outerRadius={outerRadius + 22}
+              innerRadius={outerRadius + 10}
+            />
+          </g>
+        );
+      }
+      return <Sector {...props} outerRadius={outerRadius} />;
+    },
+    [activeIndex]
+  );
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-xl border border-border/50 bg-card p-5 h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-1">
         <Link
           to="/reports/expenses"
           className="flex items-center gap-0.5 text-[11px] font-semibold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
         >
           Expenses <ChevronRight className="h-3 w-3" />
         </Link>
-        {!forceCategory && (
-          <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
-            <button
-              onClick={() => setMode("category")}
-              className={`px-2.5 py-1 transition-colors ${
-                activeMode === "category"
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Category
-            </button>
-            <button
-              onClick={() => setMode("customer")}
-              className={`px-2.5 py-1 transition-colors ${
-                activeMode === "customer"
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Customer
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {!forceCategory && (
+            <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
+              <button
+                onClick={() => setMode("category")}
+                className={`px-2.5 py-1 transition-colors ${
+                  activeMode === "category"
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Category
+              </button>
+              <button
+                onClick={() => setMode("customer")}
+                className={`px-2.5 py-1 transition-colors ${
+                  activeMode === "customer"
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Customer
+              </button>
+            </div>
+          )}
+          {chartData.length > 0 && (
+            <Select value={activeItem?.key ?? ""} onValueChange={setActiveKey}>
+              <SelectTrigger className="h-7 w-[130px] rounded-lg pl-2.5 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end" className="rounded-xl">
+                {chartData.map((d) => (
+                  <SelectItem key={d.key} value={d.key} className="rounded-lg [&_span]:flex">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span
+                        className="flex h-2.5 w-2.5 shrink-0 rounded-sm"
+                        style={{ backgroundColor: chartConfig[d.key]?.color as string }}
+                      />
+                      {d.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
+
+      {/* Chart */}
       {isLoadingCat && activeMode === "category" ? (
         <div className="h-52 animate-pulse bg-muted rounded-lg" />
-      ) : items.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-4">No expense data.</p>
-      ) : (
-        <div className="space-y-3 mt-1">
-          {items.map((item, idx) => {
-            const pct = Math.round((item.value / maxVal) * 100);
-            const barColor = C.cat[idx % C.cat.length];
-            return (
-              <div key={item.label} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 text-muted-foreground truncate">
-                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
-                    {item.label}
-                  </span>
-                  <span className="tabular-nums font-medium text-foreground ml-2">
-                    {fmtCurrency(item.value)}
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${pct}%`, backgroundColor: barColor }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+      ) : chartData.length === 0 ? (
+        <div className="flex items-center justify-center h-52 text-xs text-muted-foreground">
+          No expense data for this period.
         </div>
+      ) : (
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto aspect-square w-full max-w-[280px]"
+        >
+          <PieChart>
+            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+            <Pie
+              data={chartData}
+              dataKey="value"
+              nameKey="label"
+              innerRadius={65}
+              strokeWidth={5}
+              shape={renderShape}
+              onClick={(_, index) => setActiveKey(chartData[index]?.key ?? "")}
+            >
+              <Label
+                content={({ viewBox }) => {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    return (
+                      <text
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        <tspan
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          className="fill-foreground text-xl font-bold"
+                        >
+                          {fmtCurrency(activeItem?.value ?? 0)}
+                        </tspan>
+                        <tspan
+                          x={viewBox.cx}
+                          y={(viewBox.cy || 0) + 22}
+                          className="fill-muted-foreground text-[10px]"
+                        >
+                          {activeItem?.label}
+                        </tspan>
+                      </text>
+                    );
+                  }
+                }}
+              />
+            </Pie>
+          </PieChart>
+        </ChartContainer>
       )}
+    </div>
+  );
+}
+
+// ─── Insight Banner ───────────────────────────────────────────────────────────
+
+function InsightBanner({
+  monthRevenue,
+  totalExpenses,
+  progressPct,
+  progressLabel,
+  topCustomer,
+  txCount,
+  color,
+}: {
+  monthRevenue: number;
+  totalExpenses: number;
+  progressPct: number | null;
+  progressLabel?: string;
+  topCustomer?: CustomerSummary | null;
+  txCount: number;
+  color?: string;
+}) {
+  const margin = monthRevenue - totalExpenses;
+  const marginPct =
+    monthRevenue > 0 ? Math.round((margin / monthRevenue) * 100) : null;
+
+  let headline = "";
+  let sub = "";
+
+  if (progressPct !== null && progressPct >= 100) {
+    headline = `Target smashed — ${progressPct}% of ${progressLabel} achieved!`;
+    sub = topCustomer
+      ? `${topCustomer.customerName} is your top earner at ${fmtCurrency(topCustomer.totalIncome)}.`
+      : `${txCount} transactions confirmed this month.`;
+  } else if (progressPct !== null && progressPct > 0) {
+    headline = `${fmtCurrency(monthRevenue)} revenue tracked — ${progressPct}% toward your ${progressLabel}.`;
+    sub = topCustomer
+      ? `Top contributor: ${topCustomer.customerName} · ${fmtCurrency(topCustomer.totalIncome)} rev.`
+      : `${txCount} transactions this month.`;
+  } else if (topCustomer) {
+    headline = `${fmtCurrency(monthRevenue)} revenue from ${txCount} transaction${txCount !== 1 ? "s" : ""} this month.`;
+    sub = `Top contributor: ${topCustomer.customerName} · ${fmtCurrency(topCustomer.totalIncome)} rev${marginPct !== null ? ` · ${marginPct}% net margin` : ""}.`;
+  } else {
+    headline = `${fmtCurrency(monthRevenue)} revenue recorded across ${txCount} transaction${txCount !== 1 ? "s" : ""} this month.`;
+    sub = marginPct !== null ? `Net margin: ${marginPct}%.` : "";
+  }
+
+  if (!headline) return null;
+
+  return (
+    <div
+      className="rounded-xl border border-border/50 bg-card px-5 py-4 flex items-start gap-3"
+      style={{ borderLeftWidth: 3, borderLeftColor: color ?? "hsl(var(--chart-income))" }}
+    >
+      <CheckCircle2
+        className="h-4 w-4 shrink-0 mt-0.5"
+        style={{ color: color ?? "hsl(var(--chart-income))" }}
+      />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold leading-snug">{headline}</p>
+        {sub && (
+          <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -875,19 +1053,38 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Insight Banner */}
+      {!txsLoading && (
+        <InsightBanner
+          monthRevenue={monthRevenue}
+          totalExpenses={totalExpenses}
+          progressPct={progressPct}
+          progressLabel={`${format(today, "MMM")} target`}
+          topCustomer={
+            customerSummaries.length > 0
+              ? [...customerSummaries].sort((a, b) => b.totalIncome - a.totalIncome)[0]
+              : null
+          }
+          txCount={successTxs.filter(
+            (t) => t.transaction_date >= monthFrom && t.transaction_date <= monthTo
+          ).length}
+          color={C.income}
+        />
+      )}
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <RevenueTrendChart
-            chartData={chartData}
-            isLoading={!selectedCustomerId && trendLoading}
+          <ExpenseBreakdown
+            catData={expenseChartCats}
+            customerData={customerSummaries}
+            isLoadingCat={!selectedCustomerId && catsLoading}
+            forceCategory={!!selectedCustomerId}
           />
         </div>
-        <ExpenseBreakdown
-          catData={expenseChartCats}
-          customerData={customerSummaries}
-          isLoadingCat={!selectedCustomerId && catsLoading}
-          forceCategory={!!selectedCustomerId}
+        <RevenueTrendChart
+          chartData={chartData}
+          isLoading={!selectedCustomerId && trendLoading}
         />
       </div>
 
