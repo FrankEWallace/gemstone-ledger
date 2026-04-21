@@ -1,10 +1,9 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   ChevronRight,
   AlertTriangle,
-  CheckCircle2,
   Users,
   Wrench,
   ShieldAlert,
@@ -14,29 +13,13 @@ import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Label,
-  Sector,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import type { ChartConfig } from "@/components/ui/chart";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   format,
   startOfWeek,
@@ -115,6 +98,8 @@ function KpiCard({
   progressPct,
   progressLabel,
   color,
+  insightHeadline,
+  insightSub,
 }: {
   label: string;
   rawValue: number;
@@ -124,6 +109,8 @@ function KpiCard({
   progressPct?: number | null;
   progressLabel?: string;
   color?: string;
+  insightHeadline?: string;
+  insightSub?: string;
 }) {
   return (
     <Link
@@ -164,6 +151,14 @@ function KpiCard({
             <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">
               {progressLabel && `${progressLabel} · `}{progressPct}%
             </span>
+          </div>
+        )}
+        {insightHeadline && (
+          <div className="mt-2 pt-2 border-t border-border/40">
+            <p className="text-[10px] font-medium leading-snug">{insightHeadline}</p>
+            {insightSub && (
+              <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">{insightSub}</p>
+            )}
           </div>
         )}
       </div>
@@ -311,63 +306,17 @@ function ExpenseBreakdown({
 }) {
   const [mode, setMode] = useState<"category" | "customer">("category");
   const activeMode = forceCategory ? "category" : mode;
-  const [activeKey, setActiveKey] = useState<string>("");
 
-  const rawItems = useMemo(
+  const barData = useMemo(
     () =>
-      activeMode === "category"
-        ? catData.slice(0, 5).map((c) => ({ label: c.category, value: c.total }))
+      (activeMode === "category"
+        ? catData.slice(0, 6).map((c) => ({ label: c.category, value: c.total }))
         : [...customerData]
             .sort((a, b) => b.totalExpenses - a.totalExpenses)
-            .slice(0, 5)
-            .map((c) => ({ label: c.customerName, value: c.totalExpenses })),
+            .slice(0, 6)
+            .map((c) => ({ label: c.customerName, value: c.totalExpenses }))
+      ).map((item, idx) => ({ ...item, fill: C.cat[idx % C.cat.length] })),
     [activeMode, catData, customerData]
-  );
-
-  const chartData = useMemo(
-    () =>
-      rawItems.map((item, idx) => {
-        const key = item.label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-        return { key, label: item.label, value: item.value, fill: `var(--color-${key})` };
-      }),
-    [rawItems]
-  );
-
-  const chartConfig = useMemo(
-    () =>
-      ({
-        value: { label: "Expenses" },
-        ...Object.fromEntries(
-          chartData.map((d, idx) => [d.key, { label: d.label, color: C.cat[idx % C.cat.length] }])
-        ),
-      } as ChartConfig),
-    [chartData]
-  );
-
-  const activeIndex = useMemo(() => {
-    const i = chartData.findIndex((d) => d.key === activeKey);
-    return i >= 0 ? i : 0;
-  }, [chartData, activeKey]);
-
-  const activeItem = chartData[activeIndex];
-
-  const renderShape = useCallback(
-    ({ index, outerRadius = 0, ...props }: any) => {
-      if (index === activeIndex) {
-        return (
-          <g>
-            <Sector {...props} outerRadius={outerRadius + 8} />
-            <Sector
-              {...props}
-              outerRadius={outerRadius + 22}
-              innerRadius={outerRadius + 10}
-            />
-          </g>
-        );
-      }
-      return <Sector {...props} outerRadius={outerRadius} />;
-    },
-    [activeIndex]
   );
 
   return (
@@ -380,175 +329,73 @@ function ExpenseBreakdown({
         >
           Expenses <ChevronRight className="h-3 w-3" />
         </Link>
-        <div className="flex items-center gap-2">
-          {!forceCategory && (
-            <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
-              <button
-                onClick={() => setMode("category")}
-                className={`px-2.5 py-1 transition-colors ${
-                  activeMode === "category"
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Category
-              </button>
-              <button
-                onClick={() => setMode("customer")}
-                className={`px-2.5 py-1 transition-colors ${
-                  activeMode === "customer"
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Customer
-              </button>
-            </div>
-          )}
-          {chartData.length > 0 && (
-            <Select value={activeItem?.key ?? ""} onValueChange={setActiveKey}>
-              <SelectTrigger className="h-7 w-[130px] rounded-lg pl-2.5 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end" className="rounded-xl">
-                {chartData.map((d) => (
-                  <SelectItem key={d.key} value={d.key} className="rounded-lg [&_span]:flex">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span
-                        className="flex h-2.5 w-2.5 shrink-0 rounded-sm"
-                        style={{ backgroundColor: chartConfig[d.key]?.color as string }}
-                      />
-                      {d.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        {!forceCategory && (
+          <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
+            <button
+              onClick={() => setMode("category")}
+              className={`px-2.5 py-1 transition-colors ${
+                activeMode === "category"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Category
+            </button>
+            <button
+              onClick={() => setMode("customer")}
+              className={`px-2.5 py-1 transition-colors ${
+                activeMode === "customer"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Customer
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Chart */}
       {isLoadingCat && activeMode === "category" ? (
-        <div className="h-52 animate-pulse bg-muted rounded-lg" />
-      ) : chartData.length === 0 ? (
+        <div className="h-52 animate-pulse bg-muted rounded-lg mt-4" />
+      ) : barData.length === 0 ? (
         <div className="flex items-center justify-center h-52 text-xs text-muted-foreground">
           No expense data for this period.
         </div>
       ) : (
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square w-full max-w-[280px]"
-        >
-          <PieChart>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="label"
-              innerRadius={65}
-              strokeWidth={5}
-              shape={renderShape}
-              onClick={(_, index) => setActiveKey(chartData[index]?.key ?? "")}
-            >
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-foreground text-xl font-bold"
-                        >
-                          {fmtCurrency(activeItem?.value ?? 0)}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 22}
-                          className="fill-muted-foreground text-[10px]"
-                        >
-                          {activeItem?.label}
-                        </tspan>
-                      </text>
-                    );
-                  }
-                }}
-              />
-            </Pie>
-          </PieChart>
-        </ChartContainer>
+        <ResponsiveContainer width="100%" height={Math.max(160, barData.length * 38)} className="mt-4">
+          <BarChart
+            layout="vertical"
+            data={barData}
+            margin={{ left: 4, right: 24, top: 2, bottom: 2 }}
+          >
+            <XAxis
+              type="number"
+              tickFormatter={(v) => fmtCurrency(v)}
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="label"
+              width={88}
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              content={<ChartTooltip />}
+              cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+            />
+            <Bar dataKey="value" radius={[0, 3, 3, 0]}>
+              {barData.map((entry, idx) => (
+                <Cell key={idx} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       )}
-    </div>
-  );
-}
-
-// ─── Insight Banner ───────────────────────────────────────────────────────────
-
-function InsightBanner({
-  monthRevenue,
-  totalExpenses,
-  progressPct,
-  progressLabel,
-  topCustomer,
-  txCount,
-  color,
-}: {
-  monthRevenue: number;
-  totalExpenses: number;
-  progressPct: number | null;
-  progressLabel?: string;
-  topCustomer?: CustomerSummary | null;
-  txCount: number;
-  color?: string;
-}) {
-  const margin = monthRevenue - totalExpenses;
-  const marginPct =
-    monthRevenue > 0 ? Math.round((margin / monthRevenue) * 100) : null;
-
-  let headline = "";
-  let sub = "";
-
-  if (progressPct !== null && progressPct >= 100) {
-    headline = `Target smashed — ${progressPct}% of ${progressLabel} achieved!`;
-    sub = topCustomer
-      ? `${topCustomer.customerName} is your top earner at ${fmtCurrency(topCustomer.totalIncome)}.`
-      : `${txCount} transactions confirmed this month.`;
-  } else if (progressPct !== null && progressPct > 0) {
-    headline = `${fmtCurrency(monthRevenue)} revenue tracked — ${progressPct}% toward your ${progressLabel}.`;
-    sub = topCustomer
-      ? `Top contributor: ${topCustomer.customerName} · ${fmtCurrency(topCustomer.totalIncome)} rev.`
-      : `${txCount} transactions this month.`;
-  } else if (topCustomer) {
-    headline = `${fmtCurrency(monthRevenue)} revenue from ${txCount} transaction${txCount !== 1 ? "s" : ""} this month.`;
-    sub = `Top contributor: ${topCustomer.customerName} · ${fmtCurrency(topCustomer.totalIncome)} rev${marginPct !== null ? ` · ${marginPct}% net margin` : ""}.`;
-  } else {
-    headline = `${fmtCurrency(monthRevenue)} revenue recorded across ${txCount} transaction${txCount !== 1 ? "s" : ""} this month.`;
-    sub = marginPct !== null ? `Net margin: ${marginPct}%.` : "";
-  }
-
-  if (!headline) return null;
-
-  return (
-    <div
-      className="rounded-xl border border-border/50 bg-card px-5 py-4 flex items-start gap-3"
-      style={{ borderLeftWidth: 3, borderLeftColor: color ?? "hsl(var(--chart-income))" }}
-    >
-      <CheckCircle2
-        className="h-4 w-4 shrink-0 mt-0.5"
-        style={{ color: color ?? "hsl(var(--chart-income))" }}
-      />
-      <div className="min-w-0">
-        <p className="text-sm font-semibold leading-snug">{headline}</p>
-        {sub && (
-          <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
-        )}
-      </div>
     </div>
   );
 }
@@ -945,6 +792,33 @@ export default function Dashboard() {
     ? Math.min(100, Math.round((monthRevenue / (target.revenue_target ?? 1)) * 100))
     : null;
 
+  // ── Insight text for Revenue KPI card
+  const topCustomer =
+    customerSummaries.length > 0
+      ? [...customerSummaries].sort((a, b) => b.totalIncome - a.totalIncome)[0]
+      : null;
+  const txCountMonth = successTxs.filter(
+    (t) => t.transaction_date >= monthFrom && t.transaction_date <= monthTo
+  ).length;
+  let insightHeadline = "";
+  let insightSub = "";
+  if (!txsLoading) {
+    if (progressPct !== null && progressPct >= 100) {
+      insightHeadline = `Target smashed — ${progressPct}% of ${format(today, "MMM")} target!`;
+      insightSub = topCustomer
+        ? `${topCustomer.customerName} is your top earner.`
+        : `${txCountMonth} transactions confirmed.`;
+    } else if (progressPct !== null && progressPct > 0) {
+      insightHeadline = `${progressPct}% toward your ${format(today, "MMM")} target.`;
+      insightSub = topCustomer
+        ? `Top: ${topCustomer.customerName} · ${fmtCurrency(topCustomer.totalIncome)} rev.`
+        : `${txCountMonth} transactions this month.`;
+    } else if (topCustomer) {
+      insightHeadline = `${txCountMonth} transaction${txCountMonth !== 1 ? "s" : ""} this month.`;
+      insightSub = `Top: ${topCustomer.customerName} · ${fmtCurrency(topCustomer.totalIncome)} rev.`;
+    }
+  }
+
   // ── Sparkbars (always site-wide from trend)
   const incomeSpark = trend.map((t) => t.income);
   const expenseSpark = trend.map((t) => t.expenses);
@@ -1030,6 +904,8 @@ export default function Dashboard() {
           progressPct={progressPct}
           progressLabel={`${format(today, "MMM")} target`}
           color={C.income}
+          insightHeadline={insightHeadline || undefined}
+          insightSub={insightSub || undefined}
         />
         <KpiCard
           label="Expenses"
@@ -1052,25 +928,6 @@ export default function Dashboard() {
           color={C.net}
         />
       </div>
-
-      {/* Insight Banner */}
-      {!txsLoading && (
-        <InsightBanner
-          monthRevenue={monthRevenue}
-          totalExpenses={totalExpenses}
-          progressPct={progressPct}
-          progressLabel={`${format(today, "MMM")} target`}
-          topCustomer={
-            customerSummaries.length > 0
-              ? [...customerSummaries].sort((a, b) => b.totalIncome - a.totalIncome)[0]
-              : null
-          }
-          txCount={successTxs.filter(
-            (t) => t.transaction_date >= monthFrom && t.transaction_date <= monthTo
-          ).length}
-          color={C.income}
-        />
-      )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
