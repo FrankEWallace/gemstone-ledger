@@ -56,50 +56,21 @@ export default function Register() {
     }
 
     const userId = authData.user.id;
-
-    // If email confirmation is required Supabase returns no session yet.
-    // We can still write to the DB using the anon key as long as RLS policies
-    // allow it, but we need to signal to the user when confirmation is pending.
     const needsConfirmation = !authData.session;
 
-    // 2. Create organization
-    const slug = slugify(values.orgName);
-    const { data: org, error: orgError } = await supabase
-      .from("organizations")
-      .insert({ name: values.orgName, slug })
-      .select()
-      .single();
-
-    if (orgError || !org) {
-      setServerError(orgError?.message ?? "Could not create organization.");
-      return;
-    }
-
-    // 3. Create user profile linked to org
-    const { error: profileError } = await supabase.from("user_profiles").insert({
-      id: userId,
-      org_id: org.id,
-      full_name: values.fullName,
+    // Set up org + profile + site + role in one atomic SECURITY DEFINER call.
+    // This bypasses RLS so it works even when email confirmation is enabled
+    // and there is no active session yet.
+    const { error: setupError } = await supabase.rpc("handle_new_user_signup", {
+      p_user_id: userId,
+      p_full_name: values.fullName,
+      p_org_name: values.orgName,
+      p_org_slug: slugify(values.orgName),
     });
 
-    if (profileError) {
-      setServerError(profileError.message);
+    if (setupError) {
+      setServerError(setupError.message);
       return;
-    }
-
-    // 4. Create a default site for the org
-    const { data: site, error: siteError } = await supabase
-      .from("sites")
-      .insert({ org_id: org.id, name: "Main Site" })
-      .select()
-      .single();
-
-    if (!siteError && site) {
-      await supabase.from("user_site_roles").insert({
-        user_id: userId,
-        site_id: site.id,
-        role: "admin",
-      });
     }
 
     if (needsConfirmation) {
