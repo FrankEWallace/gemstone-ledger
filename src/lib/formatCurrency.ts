@@ -1,10 +1,10 @@
 /**
  * App-wide currency formatting.
- * Currency is TZS (Tanzanian Shilling, symbol: TSh).
+ * Currency is TZS (Tanzanian Shilling).
  */
 
 export const CURRENCY_CODE   = "TZS";
-export const CURRENCY_SYMBOL = "TSh";
+export const CURRENCY_SYMBOL = "TZS";
 
 /** How many decimal places to show for compact tiers (0 for ≥100, 1 for ≥10, 2 below) */
 function smartDecimals(abs: number, divisor: number): number {

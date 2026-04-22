@@ -48,7 +48,7 @@ import type { InventoryItem } from "@/lib/supabaseTypes";
 // ─── Shared constants ─────────────────────────────────────────────────────────
 
 const CURRENCIES = [
-  { code: "TZS", label: "TSh — Tanzanian Shilling" },
+  { code: "TZS", label: "TZS — Tanzanian Shilling" },
   { code: "USD", label: "USD — US Dollar" },
   { code: "EUR", label: "EUR — Euro" },
   { code: "GBP", label: "GBP — British Pound" },

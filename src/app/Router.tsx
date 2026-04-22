@@ -72,10 +72,12 @@ export default function Router() {
     <Routes>
       {/* Auth routes — eager, no skeleton needed */}
       <Route element={<AuthLayout />}>
-        <Route path="/login"          element={<Login />} />
-        <Route path="/register"       element={<Register />} />
+        <Route path="/login"           element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
+
+      {/* Register has its own full-screen split layout */}
+      <Route path="/register" element={<Register />} />
 
       {/* Protected app routes */}
       <Route element={<ProtectedRoute />}>

@@ -43,7 +43,7 @@ const TIMEZONES = [
 ];
 
 const CURRENCIES = [
-  { code: "TZS", label: "Tanzanian Shilling (TSh)" },
+  { code: "TZS", label: "Tanzanian Shilling (TZS)" },
   { code: "USD", label: "US Dollar (USD)" },
   { code: "EUR", label: "Euro (EUR)" },
   { code: "GBP", label: "British Pound (GBP)" },

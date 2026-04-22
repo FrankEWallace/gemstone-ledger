@@ -8,18 +8,9 @@ import {
   Wrench,
   ShieldAlert,
   CalendarDays,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
-import { TrendArrow } from "@/components/shared/TrendArrow";
-import {
-  BarChart,
-  Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import {
   format,
   startOfWeek,
@@ -28,6 +19,7 @@ import {
   parseISO,
   startOfMonth,
   endOfMonth,
+  subDays,
 } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
@@ -55,34 +47,32 @@ const fmtFull = fmtFull_;
 // ─── Chart color palette ──────────────────────────────────────────────────────
 
 const C = {
-  income:  "hsl(var(--chart-income))",
-  expense: "hsl(var(--chart-expense))",
-  net:     "hsl(var(--chart-net))",
+  income:  "#3b82f6", // blue
+  expense: "#f97316", // orange
+  net:     "#10b981", // emerald
+  loss:    "#ef4444", // red
   cat: [
-    "hsl(var(--chart-cat-1))",
-    "hsl(var(--chart-cat-2))",
-    "hsl(var(--chart-cat-3))",
-    "hsl(var(--chart-cat-4))",
-    "hsl(var(--chart-cat-5))",
+    "#3b82f6", // blue   — matches income
+    "#f97316", // orange — matches expense
+    "#10b981", // emerald— matches net
+    "#8b5cf6", // violet
+    "#f59e0b", // amber
+    "#ef4444", // red    — matches loss
+    "#06b6d4", // cyan
+    "#84cc16", // lime
   ],
 } as const;
 
-// ─── SparkBars ────────────────────────────────────────────────────────────────
+// ─── Trend Badge ─────────────────────────────────────────────────────────────
 
-function SparkBars({ values, color }: { values: number[]; color?: string }) {
-  const max = Math.max(...values, 1);
+function TrendBadge({ pct }: { pct: number }) {
+  const up = pct >= 0;
   return (
-    <div className="flex items-end gap-[2px] h-8 opacity-70">
-      {values.map((v, i) => (
-        <div
-          key={i}
-          className="w-[5px] rounded-[2px]"
-          style={{
-            height: `${Math.max(12, (v / max) * 100)}%`,
-            backgroundColor: color ?? "hsl(var(--foreground))",
-          }}
-        />
-      ))}
+    <div className={`flex flex-col items-center shrink-0 ${up ? "text-emerald-500" : "text-red-500"}`}>
+      <span className="text-base leading-none">{up ? "▲" : "▼"}</span>
+      <span className="text-[10px] font-semibold tabular-nums mt-0.5">
+        {Math.abs(pct).toFixed(1)}%
+      </span>
     </div>
   );
 }
@@ -93,29 +83,31 @@ function KpiCard({
   label,
   rawValue,
   sub,
-  sparkValues,
+  trendPct,
   href,
   progressPct,
   progressLabel,
   color,
+  valueColor,
   insightHeadline,
   insightSub,
 }: {
   label: string;
   rawValue: number;
   sub?: string;
-  sparkValues?: number[];
+  trendPct?: number | null;
   href: string;
   progressPct?: number | null;
   progressLabel?: string;
   color?: string;
+  valueColor?: string;
   insightHeadline?: string;
   insightSub?: string;
 }) {
   return (
     <Link
       to={href}
-      className="group rounded-xl border border-border/50 bg-card px-4 py-3 flex items-center gap-3 hover:border-foreground/20 hover:bg-muted/10 transition-all overflow-hidden"
+      className="group rounded-xl border border-border/50 bg-card px-3 py-2 flex items-center gap-2.5 hover:border-foreground/20 hover:bg-muted/10 transition-all overflow-hidden"
     >
       {color && (
         <div
@@ -136,7 +128,10 @@ function KpiCard({
         </div>
         <div className="flex items-baseline gap-1">
           <span className="text-[10px] text-muted-foreground">{CURRENCY_SYMBOL}</span>
-          <span className="font-display text-[20px] font-bold leading-none tabular-nums tracking-tight">
+          <span
+            className="font-display text-[17px] font-bold leading-none tabular-nums tracking-tight"
+            style={valueColor ? { color: valueColor } : undefined}
+          >
             {fmtCompactNum(rawValue)}
           </span>
         </div>
@@ -162,49 +157,8 @@ function KpiCard({
           </div>
         )}
       </div>
-      {sparkValues && <SparkBars values={sparkValues} color={color} />}
+      {trendPct != null && <TrendBadge pct={trendPct} />}
     </Link>
-  );
-}
-
-// ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title, href }: { title: string; href?: string }) {
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
-        {title}
-      </p>
-      {href && (
-        <Link
-          to={href}
-          className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-        >
-          View all <ChevronRight className="h-3 w-3" />
-        </Link>
-      )}
-    </div>
-  );
-}
-
-// ─── Custom Tooltip ───────────────────────────────────────────────────────────
-
-function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
-      <p className="font-semibold mb-1">{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.dataKey} className="flex items-center gap-2 text-muted-foreground">
-          <span
-            className="inline-block h-2 w-2 rounded-full"
-            style={{ background: p.fill }}
-          />
-          {p.name}:{" "}
-          <span className="font-semibold text-foreground">{fmtFull(p.value)}</span>
-        </p>
-      ))}
-    </div>
   );
 }
 
@@ -235,62 +189,6 @@ function CustomerFilter({
   );
 }
 
-// ─── Revenue Trend Chart ──────────────────────────────────────────────────────
-
-function RevenueTrendChart({
-  chartData,
-  isLoading,
-}: {
-  chartData: { month: string; Income: number; Expenses: number }[];
-  isLoading: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <SectionHeader title="Revenue Trend" href="/reports" />
-      {isLoading ? (
-        <div className="h-52 animate-pulse bg-muted rounded-lg" />
-      ) : (
-        <ResponsiveContainer width="100%" height={210}>
-          <BarChart data={chartData} barGap={3} barCategoryGap="30%">
-            <CartesianGrid
-              vertical={false}
-              stroke="hsl(var(--border))"
-              strokeDasharray="3 3"
-            />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tickFormatter={(v) => `$${v / 1000}k`}
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={false}
-              tickLine={false}
-              width={42}
-            />
-            <Tooltip
-              content={<ChartTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
-            />
-            <Bar dataKey="Income" fill={C.income} radius={[3, 3, 0, 0]} />
-            <Bar dataKey="Expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-      <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: C.income }} /> Income
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: C.expense }} /> Expenses
-        </span>
-      </div>
-    </div>
-  );
-}
-
 // ─── Expense Breakdown ────────────────────────────────────────────────────────
 
 function ExpenseBreakdown({
@@ -298,36 +196,54 @@ function ExpenseBreakdown({
   customerData,
   isLoadingCat,
   forceCategory,
+  todayExpenses,
+  yesterdayExpenses,
 }: {
   catData: { category: string; total: number }[];
   customerData: CustomerSummary[];
   isLoadingCat: boolean;
   forceCategory?: boolean;
+  todayExpenses: number;
+  yesterdayExpenses: number;
 }) {
   const [mode, setMode] = useState<"category" | "customer">("category");
   const activeMode = forceCategory ? "category" : mode;
 
-  const barData = useMemo(
-    () =>
-      (activeMode === "category"
-        ? catData.slice(0, 6).map((c) => ({ label: c.category, value: c.total }))
+  const items = useMemo(() => {
+    const source =
+      activeMode === "category"
+        ? catData.slice(0, 8).map((c) => ({ label: c.category, value: c.total }))
         : [...customerData]
             .sort((a, b) => b.totalExpenses - a.totalExpenses)
-            .slice(0, 6)
-            .map((c) => ({ label: c.customerName, value: c.totalExpenses }))
-      ).map((item, idx) => ({ ...item, fill: C.cat[idx % C.cat.length] })),
-    [activeMode, catData, customerData]
-  );
+            .slice(0, 8)
+            .map((c) => ({ label: c.customerName, value: c.totalExpenses }));
+
+    const grand = source.reduce((s, i) => s + i.value, 0) || 1;
+    return source.map((item, idx) => ({
+      ...item,
+      color: C.cat[idx % C.cat.length],
+      pct: (item.value / grand) * 100,
+      pctDisplay: Math.round((item.value / grand) * 100),
+    }));
+  }, [activeMode, catData, customerData]);
+
+  // Today vs yesterday delta — for expenses, down is good
+  const delta = todayExpenses - yesterdayExpenses;
+  const deltaPct =
+    yesterdayExpenses > 0
+      ? Math.round(Math.abs((delta / yesterdayExpenses) * 100))
+      : null;
+  const deltaDown = delta <= 0;
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card p-5 h-full">
+    <div className="rounded-xl border border-border bg-card p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-5">
         <Link
           to="/reports/expenses"
           className="flex items-center gap-0.5 text-[11px] font-semibold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
         >
-          Expenses <ChevronRight className="h-3 w-3" />
+          Expense Breakdown <ChevronRight className="h-3 w-3" />
         </Link>
         {!forceCategory && (
           <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
@@ -355,46 +271,76 @@ function ExpenseBreakdown({
         )}
       </div>
 
-      {/* Chart */}
-      {isLoadingCat && activeMode === "category" ? (
-        <div className="h-52 animate-pulse bg-muted rounded-lg mt-4" />
-      ) : barData.length === 0 ? (
-        <div className="flex items-center justify-center h-52 text-xs text-muted-foreground">
-          No expense data for this period.
+      {/* Today's expenses */}
+      <div className="mb-5">
+        <p className="text-xs text-muted-foreground mb-1">Today's expenses</p>
+        <div className="flex items-baseline gap-2.5">
+          <span className="font-display text-3xl font-bold tracking-tight tabular-nums">
+            {fmtFull(todayExpenses)}
+          </span>
+          {deltaPct != null && (
+            <span
+              className={`flex items-center gap-1 text-sm font-medium ${
+                deltaDown ? "text-emerald-500" : "text-red-500"
+              }`}
+            >
+              {deltaDown ? (
+                <TrendingDown className="h-3.5 w-3.5" />
+              ) : (
+                <TrendingUp className="h-3.5 w-3.5" />
+              )}
+              {deltaPct}% vs yesterday
+            </span>
+          )}
+          {deltaPct == null && todayExpenses === 0 && (
+            <span className="text-sm text-muted-foreground">No expenses recorded today</span>
+          )}
+        </div>
+      </div>
+
+      {/* Stacked storage bar */}
+      {isLoadingCat ? (
+        <div className="h-8 animate-pulse bg-muted rounded-full mb-5" />
+      ) : items.length === 0 ? (
+        <div className="h-8 rounded-full bg-muted/40 mb-5 flex items-center justify-center">
+          <span className="text-[10px] text-muted-foreground">No expense data</span>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={Math.max(160, barData.length * 38)} className="mt-4">
-          <BarChart
-            layout="vertical"
-            data={barData}
-            margin={{ left: 4, right: 24, top: 2, bottom: 2 }}
-          >
-            <XAxis
-              type="number"
-              tickFormatter={(v) => fmtCurrency(v)}
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={false}
-              tickLine={false}
+        <div className="flex rounded-full overflow-hidden h-8 mb-5 gap-[2px]">
+          {items.map((item) => (
+            <div
+              key={item.label}
+              className="h-full transition-all duration-500"
+              style={{
+                width: `${item.pct}%`,
+                backgroundColor: item.color,
+                minWidth: item.pct > 1 ? "6px" : "0px",
+              }}
+              title={`${item.label}: ${fmtFull(item.value)} (${item.pctDisplay}%)`}
             />
-            <YAxis
-              type="category"
-              dataKey="label"
-              width={88}
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              content={<ChartTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
-            />
-            <Bar dataKey="value" radius={[0, 3, 3, 0]}>
-              {barData.map((entry, idx) => (
-                <Cell key={idx} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+          ))}
+        </div>
+      )}
+
+      {/* Legend rows */}
+      {items.length > 0 && (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div key={item.label} className="flex items-center gap-2.5">
+              <span
+                className="h-3 w-4 rounded-[3px] shrink-0"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="flex-1 text-sm text-foreground truncate">{item.label}</span>
+              <span className="text-sm font-semibold tabular-nums text-foreground">
+                {fmtFull(item.value)}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums w-9 text-right">
+                {item.pctDisplay}%
+              </span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -498,90 +444,84 @@ function RecentTransactions({
         </div>
       ) : (
         <div className="overflow-x-auto">
-        <table className="w-full text-xs min-w-[480px]">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
-                Description
-              </th>
-              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">
-                Category
-              </th>
-              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
-                Status
-              </th>
-              <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">
-                Date
-              </th>
-              <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
-                Amount
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {recent.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-5 py-8 text-center text-muted-foreground"
-                >
-                  No transactions yet.
-                </td>
+          <table className="w-full text-xs min-w-[480px]">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  Description
+                </th>
+                <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">
+                  Category
+                </th>
+                <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  Status
+                </th>
+                <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">
+                  Date
+                </th>
+                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  Amount
+                </th>
               </tr>
-            ) : (
-              recent.map((t) => {
-                const total = t.quantity * t.unit_price;
-                const isIncome = t.type === "income";
-                return (
-                  <tr
-                    key={t.id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="px-5 py-3">
-                      <span className="font-medium text-foreground truncate block max-w-[200px]">
-                        {t.description || "—"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground hidden md:table-cell">
-                      {t.category || "—"}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          t.status === "success"
-                            ? "bg-foreground/8 text-foreground"
-                            : t.status === "pending"
-                            ? "bg-muted text-muted-foreground"
-                            : "bg-muted text-muted-foreground line-through"
-                        }`}
-                      >
+            </thead>
+            <tbody className="divide-y divide-border">
+              {recent.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
+                    No transactions yet.
+                  </td>
+                </tr>
+              ) : (
+                recent.map((t) => {
+                  const total = t.quantity * t.unit_price;
+                  const isIncome = t.type === "income";
+                  return (
+                    <tr key={t.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-5 py-3">
+                        <span className="font-medium text-foreground truncate block max-w-[200px]">
+                          {t.description || "—"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground hidden md:table-cell">
+                        {t.category || "—"}
+                      </td>
+                      <td className="px-3 py-3">
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${
+                          className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                             t.status === "success"
-                              ? "bg-emerald-500"
+                              ? "bg-foreground/8 text-foreground"
                               : t.status === "pending"
-                              ? "bg-yellow-500"
-                              : "bg-muted-foreground"
+                              ? "bg-muted text-muted-foreground"
+                              : "bg-muted text-muted-foreground line-through"
                           }`}
-                        />
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
-                      {format(new Date(t.transaction_date), "d MMM")}
-                    </td>
-                    <td className="px-5 py-3 text-right tabular-nums font-semibold">
-                      <span style={{ color: isIncome ? C.income : C.expense }}>
-                        {isIncome ? "+" : "−"}
-                        {fmtFull(total)}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              t.status === "success"
+                                ? "bg-emerald-500"
+                                : t.status === "pending"
+                                ? "bg-yellow-500"
+                                : "bg-muted-foreground"
+                            }`}
+                          />
+                          {t.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
+                        {format(new Date(t.transaction_date), "d MMM")}
+                      </td>
+                      <td className="px-5 py-3 text-right tabular-nums font-semibold">
+                        <span style={{ color: isIncome ? C.income : C.expense }}>
+                          {isIncome ? "+" : "−"}
+                          {fmtFull(total)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -720,7 +660,7 @@ export default function Dashboard() {
     enabled: !!activeSiteId,
   });
 
-  // ── Monthly trend (6-month, sparkbars + "all customers" chart)
+  // ── Monthly trend (6-month sparkbars)
   const trendFrom = format(
     new Date(today.getFullYear(), today.getMonth() - 5, 1),
     "yyyy-MM-dd"
@@ -732,16 +672,18 @@ export default function Dashboard() {
     enabled: !!activeSiteId,
   });
 
-  // ── Expense categories ("all customers" expense chart)
+  // ── Expense categories
   const { data: expenseCats = [], isLoading: catsLoading } = useQuery({
     queryKey: ["expenses-by-category", activeSiteId, trendFrom, trendTo],
     queryFn: () => getExpensesByCategory(activeSiteId!, trendFrom, trendTo),
     enabled: !!activeSiteId,
   });
 
-  // ── Customer summaries (this month — profitability list + "by customer" chart)
+  // ── Customer summaries (this month)
   const thisMonthStart = format(startOfMonth(today), "yyyy-MM-dd");
   const todayStr = format(today, "yyyy-MM-dd");
+  const yesterdayStr = format(subDays(today, 1), "yyyy-MM-dd");
+
   const { data: customerSummaries = [] } = useQuery({
     queryKey: ["customer-summaries", activeSiteId, thisMonthStart, todayStr],
     queryFn: () => getCustomerSummaries(activeSiteId!, thisMonthStart, todayStr),
@@ -775,7 +717,16 @@ export default function Dashboard() {
     .reduce((s, t) => s + t.quantity * t.unit_price, 0);
   const netRevenue = totalRevenue - totalExpenses;
 
-  // ── KPI target progress (Revenue, this month)
+  // ── Today / yesterday expense totals (site-wide, not filtered by customer)
+  const allSuccessExpenses = txs.filter((t) => t.status === "success" && t.type === "expense");
+  const todayExpenses = allSuccessExpenses
+    .filter((t) => t.transaction_date === todayStr)
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const yesterdayExpenses = allSuccessExpenses
+    .filter((t) => t.transaction_date === yesterdayStr)
+    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
+
+  // ── KPI target progress
   const target = kpiTargets[0];
   const monthFrom = format(startOfMonth(today), "yyyy-MM-dd");
   const monthTo = format(endOfMonth(today), "yyyy-MM-dd");
@@ -819,32 +770,23 @@ export default function Dashboard() {
     }
   }
 
-  // ── Sparkbars (always site-wide from trend)
-  const incomeSpark = trend.map((t) => t.income);
-  const expenseSpark = trend.map((t) => t.expenses);
-  const netSpark = trend.map((t) => Math.max(0, t.income - t.expenses));
-
-  // ── Revenue trend chart data
-  const chartData = useMemo(() => {
-    if (!selectedCustomerId) {
-      return trend.map((t) => ({
-        month: t.month.slice(5),
-        Income: t.income,
-        Expenses: t.expenses,
-      }));
-    }
-    const map: Record<string, { Income: number; Expenses: number }> = {};
-    for (const t of filteredTxs) {
-      const month = t.transaction_date.slice(5, 7);
-      if (!map[month]) map[month] = { Income: 0, Expenses: 0 };
-      const amount = t.quantity * t.unit_price;
-      if (t.type === "income") map[month].Income += amount;
-      else map[month].Expenses += amount;
-    }
-    return Object.entries(map)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, v]) => ({ month, ...v }));
-  }, [trend, filteredTxs, selectedCustomerId]);
+  // ── Month-over-month trend percentages from the last two trend entries
+  const prevMonth = trend[trend.length - 2];
+  const currMonth = trend[trend.length - 1];
+  const revenueTrendPct =
+    prevMonth && prevMonth.income > 0
+      ? Math.round(((currMonth.income - prevMonth.income) / prevMonth.income) * 1000) / 10
+      : null;
+  const expenseTrendPct =
+    prevMonth && prevMonth.expenses > 0
+      ? Math.round(((currMonth.expenses - prevMonth.expenses) / prevMonth.expenses) * 1000) / 10
+      : null;
+  const prevNet = (prevMonth?.income ?? 0) - (prevMonth?.expenses ?? 0);
+  const currNet = (currMonth?.income ?? 0) - (currMonth?.expenses ?? 0);
+  const netTrendPct =
+    prevMonth && prevNet !== 0
+      ? Math.round(((currNet - prevNet) / Math.abs(prevNet)) * 1000) / 10
+      : null;
 
   // ── Expense chart: use selected customer's breakdown when filtered
   const selectedSummary = customerSummaries.find(
@@ -868,9 +810,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">
-            Dashboard
-          </h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {today.toLocaleDateString("en-US", {
               weekday: "long",
@@ -894,12 +834,8 @@ export default function Dashboard() {
         <KpiCard
           label="Revenue"
           rawValue={totalRevenue}
-          sub={
-            selectedCustomerId
-              ? selectedSummary?.customerName
-              : "All confirmed income"
-          }
-          sparkValues={incomeSpark.length ? incomeSpark : [1, 2, 3, 4, 5, 6]}
+          sub={selectedCustomerId ? selectedSummary?.customerName : "All confirmed income"}
+          trendPct={revenueTrendPct}
           href="/transactions"
           progressPct={progressPct}
           progressLabel={`${format(today, "MMM")} target`}
@@ -910,12 +846,8 @@ export default function Dashboard() {
         <KpiCard
           label="Expenses"
           rawValue={totalExpenses}
-          sub={
-            selectedCustomerId
-              ? selectedSummary?.customerName
-              : "All confirmed expenses"
-          }
-          sparkValues={expenseSpark.length ? expenseSpark : [1, 2, 3, 4, 5, 6]}
+          sub={selectedCustomerId ? selectedSummary?.customerName : "All confirmed expenses"}
+          trendPct={expenseTrendPct}
           href="/transactions"
           color={C.expense}
         />
@@ -923,27 +855,22 @@ export default function Dashboard() {
           label="Net Profit"
           rawValue={Math.abs(netRevenue)}
           sub={netRevenue >= 0 ? "Positive cashflow" : "Net loss"}
-          sparkValues={netSpark.length ? netSpark : [1, 2, 3, 4, 5, 6]}
+          trendPct={netTrendPct}
           href="/reports"
           color={C.net}
+          valueColor={netRevenue >= 0 ? C.net : C.loss}
         />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <ExpenseBreakdown
-            catData={expenseChartCats}
-            customerData={customerSummaries}
-            isLoadingCat={!selectedCustomerId && catsLoading}
-            forceCategory={!!selectedCustomerId}
-          />
-        </div>
-        <RevenueTrendChart
-          chartData={chartData}
-          isLoading={!selectedCustomerId && trendLoading}
-        />
-      </div>
+      {/* Expense Breakdown — full width */}
+      <ExpenseBreakdown
+        catData={expenseChartCats}
+        customerData={customerSummaries}
+        isLoadingCat={!selectedCustomerId && catsLoading}
+        forceCategory={!!selectedCustomerId}
+        todayExpenses={todayExpenses}
+        yesterdayExpenses={yesterdayExpenses}
+      />
 
       {/* Customer Insights */}
       <CustomerInsights

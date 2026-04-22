@@ -133,19 +133,19 @@ export default function AppLayout() {
           </div>
         )}
 
+        {showWizard && location.pathname === "/" && (
+          <OnboardingWizard
+            onComplete={async () => {
+              setShowWizard(false);
+              await refreshProfile();
+            }}
+          />
+        )}
+
         <Outlet />
       </main>
 
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
-
-      {showWizard && (
-        <OnboardingWizard
-          onComplete={async () => {
-            setShowWizard(false);
-            await refreshProfile();
-          }}
-        />
-      )}
     </div>
   );
 }
