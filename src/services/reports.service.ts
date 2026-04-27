@@ -6,14 +6,18 @@ import type { CustomerSummary } from "@/lib/supabaseTypes";
 import {
   DEMO_MONTHLY_TREND,
   DEMO_EXPENSES_BY_CATEGORY,
+  DEMO_INCOME_BY_CATEGORY,
   DEMO_REPORT_SUMMARY,
   DEMO_PRODUCTION_BY_DAY,
   DEMO_CUSTOMER_SUMMARIES,
+  DEMO_EXPENSES_BY_CUSTOMER,
+  DEMO_INCOME_BY_CUSTOMER,
 } from "@/lib/demo/data";
 
 export type { CustomerSummary };
 export type MonthlyTrend = { month: string; income: number; expenses: number };
 export type CategoryBreakdown = { category: string; total: number };
+export type CustomerTotal = { customerId: string; customerName: string; total: number };
 export type ReportSummary = {
   totalIncome: number;
   totalExpenses: number;
@@ -65,21 +69,62 @@ export async function getMonthlyTrend(
 export async function getExpensesByCategory(
   siteId: string,
   dateFrom: string,
-  dateTo: string
+  dateTo: string,
+  customerId?: string
 ): Promise<CategoryBreakdown[]> {
   if (isDemoMode()) return DEMO_EXPENSES_BY_CATEGORY;
   if (isRestActive())
     return restGet<CategoryBreakdown[]>(
-      `/reports/expenses-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
+      `/reports/expenses-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`
     );
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("transactions")
     .select("category, unit_price, quantity")
     .eq("site_id", siteId)
     .eq("type", "expense")
     .gte("transaction_date", dateFrom)
     .lte("transaction_date", dateTo);
+
+  if (customerId) query = query.eq("customer_id", customerId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const map: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const cat = row.category ?? "Uncategorised";
+    map[cat] = (map[cat] ?? 0) + row.unit_price * row.quantity;
+  }
+
+  return Object.entries(map)
+    .sort(([, a], [, b]) => b - a)
+    .map(([category, total]) => ({ category, total }));
+}
+
+export async function getIncomeByCategory(
+  siteId: string,
+  dateFrom: string,
+  dateTo: string,
+  customerId?: string
+): Promise<CategoryBreakdown[]> {
+  if (isDemoMode()) return DEMO_INCOME_BY_CATEGORY;
+  if (isRestActive())
+    return restGet<CategoryBreakdown[]>(
+      `/reports/income-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`
+    );
+
+  let query = supabase
+    .from("transactions")
+    .select("category, unit_price, quantity")
+    .eq("site_id", siteId)
+    .eq("type", "income")
+    .gte("transaction_date", dateFrom)
+    .lte("transaction_date", dateTo);
+
+  if (customerId) query = query.eq("customer_id", customerId);
+
+  const { data, error } = await query;
   if (error) throw error;
 
   const map: Record<string, number> = {};
@@ -172,6 +217,76 @@ export async function getProductionByDay(
   }
 
   return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// ─── Per-customer totals (type-specific) ─────────────────────────────────────
+
+export async function getExpensesByCustomer(
+  siteId: string,
+  dateFrom: string,
+  dateTo: string
+): Promise<CustomerTotal[]> {
+  if (isDemoMode()) return DEMO_EXPENSES_BY_CUSTOMER;
+  if (isRestActive())
+    return restGet<CustomerTotal[]>(
+      `/reports/expenses-by-customer?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
+    );
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("unit_price, quantity, customer_id, customers(name)")
+    .eq("site_id", siteId)
+    .eq("type", "expense")
+    .neq("status", "cancelled")
+    .not("customer_id", "is", null)
+    .gte("transaction_date", dateFrom)
+    .lte("transaction_date", dateTo);
+  if (error) throw error;
+
+  const map: Record<string, { customerName: string; total: number }> = {};
+  for (const row of data ?? []) {
+    const cid = row.customer_id as string;
+    if (!map[cid]) map[cid] = { customerName: (row.customers as { name: string } | null)?.name ?? "Unknown", total: 0 };
+    map[cid].total += (row.unit_price as number) * (row.quantity as number);
+  }
+
+  return Object.entries(map)
+    .sort(([, a], [, b]) => b.total - a.total)
+    .map(([customerId, v]) => ({ customerId, customerName: v.customerName, total: Math.round(v.total * 100) / 100 }));
+}
+
+export async function getIncomeByCustomer(
+  siteId: string,
+  dateFrom: string,
+  dateTo: string
+): Promise<CustomerTotal[]> {
+  if (isDemoMode()) return DEMO_INCOME_BY_CUSTOMER;
+  if (isRestActive())
+    return restGet<CustomerTotal[]>(
+      `/reports/income-by-customer?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
+    );
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("unit_price, quantity, customer_id, customers(name)")
+    .eq("site_id", siteId)
+    .eq("type", "income")
+    .neq("status", "cancelled")
+    .not("customer_id", "is", null)
+    .gte("transaction_date", dateFrom)
+    .lte("transaction_date", dateTo);
+  if (error) throw error;
+
+  const map: Record<string, { customerName: string; total: number }> = {};
+  for (const row of data ?? []) {
+    const cid = row.customer_id as string;
+    if (!map[cid]) map[cid] = { customerName: (row.customers as { name: string } | null)?.name ?? "Unknown", total: 0 };
+    map[cid].total += (row.unit_price as number) * (row.quantity as number);
+  }
+
+  return Object.entries(map)
+    .sort(([, a], [, b]) => b.total - a.total)
+    .map(([customerId, v]) => ({ customerId, customerName: v.customerName, total: Math.round(v.total * 100) / 100 }));
 }
 
 // ─── Customer summary mapping helper ─────────────────────────────────────────

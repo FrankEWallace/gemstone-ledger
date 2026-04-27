@@ -8,8 +8,8 @@ import {
   Wrench,
   ShieldAlert,
   CalendarDays,
-  TrendingDown,
-  TrendingUp,
+  Globe,
+  User,
 } from "lucide-react";
 import {
   format,
@@ -34,9 +34,12 @@ import { getKpiTargets } from "@/services/kpi.service";
 import {
   getMonthlyTrend,
   getExpensesByCategory,
+  getIncomeByCategory,
+  getExpensesByCustomer,
+  getIncomeByCustomer,
   getCustomerSummaries,
 } from "@/services/reports.service";
-import type { CustomerSummary } from "@/services/reports.service";
+import type { CustomerSummary, CustomerTotal } from "@/services/reports.service";
 import { getCustomers } from "@/services/customers.service";
 import { fmtCompact, fmtCurrency as fmtFull_, fmtCompactNum, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 import type { Transaction } from "@/lib/supabaseTypes";
@@ -191,158 +194,522 @@ function CustomerFilter({
   );
 }
 
-// ─── Expense Breakdown ────────────────────────────────────────────────────────
+// ─── Breakdown shared helpers ─────────────────────────────────────────────────
 
-function ExpenseBreakdown({
-  catData,
-  customerData,
-  isLoadingCat,
-  forceCategory,
-  todayExpenses,
-  yesterdayExpenses,
+type BreakdownPeriod = "7D" | "1M" | "3M" | "6M" | "12M" | "All";
+type BreakdownMode = "overview" | "customer";
+
+const PERIOD_DAYS: Record<BreakdownPeriod, number> = {
+  "7D": 7, "1M": 30, "3M": 90, "6M": 180, "12M": 365, "All": 1825,
+};
+
+function getPeriodDates(period: BreakdownPeriod) {
+  const today = new Date();
+  return {
+    from: format(subDays(today, PERIOD_DAYS[period] - 1), "yyyy-MM-dd"),
+    to: format(today, "yyyy-MM-dd"),
+  };
+}
+
+function buildItems(source: { label: string; value: number }[]) {
+  const grand = source.reduce((s, i) => s + i.value, 0) || 1;
+  return source.map((item, idx) => ({
+    ...item,
+    color: C.cat[idx % C.cat.length],
+    pct: (item.value / grand) * 100,
+    pctDisplay: Math.round((item.value / grand) * 100),
+  }));
+}
+
+// ─── Period Pills ─────────────────────────────────────────────────────────────
+
+function PeriodPills({ value, onChange }: { value: BreakdownPeriod; onChange: (p: BreakdownPeriod) => void }) {
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {(["7D", "1M", "3M", "6M", "12M", "All"] as BreakdownPeriod[]).map((p) => (
+        <button
+          key={p}
+          onClick={() => onChange(p)}
+          className={`h-6 rounded-md border px-2 text-[10px] font-semibold transition-colors ${
+            value === p
+              ? "border-foreground bg-foreground text-background"
+              : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+          }`}
+        >
+          {p}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Mode Toggle ──────────────────────────────────────────────────────────────
+
+function ModeToggle({ value, onChange }: { value: BreakdownMode; onChange: (m: BreakdownMode) => void }) {
+  return (
+    <div className="flex rounded-lg border border-border overflow-hidden text-[10px] font-semibold shrink-0">
+      <button
+        onClick={() => onChange("overview")}
+        className={`flex items-center gap-1 px-2.5 py-1.5 transition-colors ${
+          value === "overview" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <Globe className="h-3 w-3" /> Overview
+      </button>
+      <button
+        onClick={() => onChange("customer")}
+        className={`flex items-center gap-1 px-2.5 py-1.5 border-l border-border transition-colors ${
+          value === "customer" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <User className="h-3 w-3" /> Per Customer
+      </button>
+    </div>
+  );
+}
+
+// ─── Customer Dropdown ────────────────────────────────────────────────────────
+
+function CustomerDropdown({
+  customers,
+  value,
+  onChange,
 }: {
-  catData: { category: string; total: number }[];
-  customerData: CustomerSummary[];
-  isLoadingCat: boolean;
-  forceCategory?: boolean;
-  todayExpenses: number;
-  yesterdayExpenses: number;
+  customers: { id: string; name: string }[];
+  value: string | null;
+  onChange: (id: string | null) => void;
 }) {
-  const [mode, setMode] = useState<"category" | "customer">("category");
-  const activeMode = forceCategory ? "category" : mode;
+  if (!customers.length) return null;
+  return (
+    <div className="relative flex items-center">
+      <User className="absolute left-2.5 h-3 w-3 text-muted-foreground pointer-events-none shrink-0" />
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        className="rounded-full border border-border bg-card pl-7 pr-7 py-1 text-xs font-semibold appearance-none cursor-pointer hover:border-foreground/30 transition-colors focus:outline-none max-w-[160px] truncate"
+      >
+        <option value="">All customers</option>
+        {customers.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+      <ChevronRight className="absolute right-2 h-3 w-3 text-muted-foreground pointer-events-none rotate-90" />
+    </div>
+  );
+}
 
-  const items = useMemo(() => {
-    const source =
-      activeMode === "category"
-        ? catData.slice(0, 8).map((c) => ({ label: c.category, value: c.total }))
-        : [...customerData]
-            .sort((a, b) => b.totalExpenses - a.totalExpenses)
-            .slice(0, 8)
-            .map((c) => ({ label: c.customerName, value: c.totalExpenses }));
+// ─── Vs Yesterday Badge ───────────────────────────────────────────────────────
 
-    const grand = source.reduce((s, i) => s + i.value, 0) || 1;
-    return source.map((item, idx) => ({
-      ...item,
-      color: C.cat[idx % C.cat.length],
-      pct: (item.value / grand) * 100,
-      pctDisplay: Math.round((item.value / grand) * 100),
-    }));
-  }, [activeMode, catData, customerData]);
+function VsYesterdayBadge({
+  today,
+  yesterday,
+  upIsGood,
+}: {
+  today: number;
+  yesterday: number;
+  upIsGood: boolean;
+}) {
+  if (yesterday <= 0 || today === 0) return null;
+  const delta = today - yesterday;
+  const pct = Math.round(Math.abs((delta / yesterday) * 100));
+  const isUp = delta >= 0;
+  const good = upIsGood ? isUp : !isUp;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+        good
+          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+      }`}
+    >
+      {isUp ? "↑" : "↓"} {pct}% vs yesterday
+    </span>
+  );
+}
 
-  // Today vs yesterday delta — for expenses, down is good
-  const delta = todayExpenses - yesterdayExpenses;
-  const deltaPct =
-    yesterdayExpenses > 0
-      ? Math.round(Math.abs((delta / yesterdayExpenses) * 100))
-      : null;
-  const deltaDown = delta <= 0;
+// ─── Gauge Chart ──────────────────────────────────────────────────────────────
+
+function GaugeChart({
+  items,
+  total,
+}: {
+  items: { label: string; value: number; color: string; pct: number }[];
+  total: number;
+}) {
+  const cx = 150, cy = 145, r = 108, sw = 22, GAP = 4;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const pt = (deg: number) => ({ x: cx + r * Math.cos(toRad(deg)), y: cy + r * Math.sin(toRad(deg)) });
+  const arc = (s: number, e: number) => {
+    const { x: sx, y: sy } = pt(s);
+    const { x: ex, y: ey } = pt(e);
+    return `M ${sx.toFixed(2)} ${sy.toFixed(2)} A ${r} ${r} 0 ${Math.abs(e - s) > 180 ? 1 : 0} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`;
+  };
+
+  // Distribute 180° across segments with GAP° gaps between them
+  const n = items.length;
+  const usable = 180 - (n > 1 ? (n - 1) * GAP : 0);
+  let pos = 180;
+  const segs = items.map((item, i) => {
+    const span = total > 0 ? (item.value / total) * usable : 0;
+    const start = pos;
+    const end = start + span;
+    pos = end + (i < n - 1 ? GAP : 0);
+    return { ...item, start, end };
+  });
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <Link
-          to="/reports/expenses"
-          className="flex items-center gap-0.5 text-[11px] font-semibold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
-        >
+    <svg viewBox="0 0 300 168" className="w-full" aria-hidden="true">
+      {/* Muted track */}
+      <path d={arc(180, 360)} fill="none" stroke="hsl(var(--muted))" strokeWidth={sw} strokeLinecap="round" />
+      {/* Coloured segments with rounded caps */}
+      {segs.map((seg) =>
+        seg.end > seg.start ? (
+          <path key={seg.label} d={arc(seg.start, seg.end)} fill="none" stroke={seg.color} strokeWidth={sw} strokeLinecap="round" />
+        ) : null
+      )}
+      {/* Total */}
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="30" fontWeight="700" fill="currentColor" fontFamily="inherit">
+        {fmtCurrency(total)}
+      </text>
+      <text x={cx} y={cy + 20} textAnchor="middle" fontSize="11" fill="hsl(var(--muted-foreground))" fontFamily="inherit">
+        Total Income
+      </text>
+    </svg>
+  );
+}
+
+// ─── Sparkline Bar ────────────────────────────────────────────────────────────
+
+const SLICES = 60;
+
+function SparklineBar({
+  items,
+  isLoading,
+}: {
+  items: { label: string; color: string; pct: number }[];
+  isLoading: boolean;
+}) {
+  const slices = useMemo(() => {
+    if (!items.length) return [];
+    const out: { color: string; key: string }[] = [];
+    items.forEach((item) => {
+      const count = Math.max(1, Math.round((item.pct / 100) * SLICES));
+      for (let i = 0; i < count; i++) out.push({ color: item.color, key: `${item.label}-${i}` });
+    });
+    return out.slice(0, SLICES);
+  }, [items]);
+
+  if (isLoading) return <div className="h-14 animate-pulse rounded-lg bg-muted" />;
+  if (!slices.length)
+    return (
+      <div className="h-14 rounded-lg bg-muted/30 flex items-center justify-center">
+        <span className="text-[10px] text-muted-foreground">No data</span>
+      </div>
+    );
+
+  return (
+    <div className="flex gap-[3px] h-14">
+      {slices.map((s) => (
+        <div key={s.key} className="flex-1 rounded-[4px]" style={{ backgroundColor: s.color }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Expense Breakdown Card ───────────────────────────────────────────────────
+
+function ExpenseBreakdownCard({ siteId }: { siteId: string }) {
+  const [period, setPeriod] = useState<BreakdownPeriod>("1M");
+  const [mode, setMode] = useState<BreakdownMode>("overview");
+  const [selectedCustId, setSelectedCustId] = useState<string | null>(null);
+
+  const { from, to } = getPeriodDates(period);
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const ystdStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+
+  const { data: catData = [], isLoading: catLoading } = useQuery({
+    queryKey: ["exp-cat", siteId, from, to],
+    queryFn: () => getExpensesByCategory(siteId, from, to),
+    enabled: !!siteId && mode === "overview",
+  });
+
+  const { data: custData = [], isLoading: custLoading } = useQuery({
+    queryKey: ["exp-by-cust", siteId, from, to],
+    queryFn: () => getExpensesByCustomer(siteId, from, to),
+    enabled: !!siteId && mode === "customer",
+  });
+
+  const { data: custCatData = [], isLoading: custCatLoading } = useQuery({
+    queryKey: ["exp-cust-cat", siteId, from, to, selectedCustId],
+    queryFn: () => getExpensesByCategory(siteId, from, to, selectedCustId!),
+    enabled: !!siteId && mode === "customer" && !!selectedCustId,
+  });
+
+  const { data: todayCat = [] } = useQuery({
+    queryKey: ["exp-today", siteId, todayStr],
+    queryFn: () => getExpensesByCategory(siteId, todayStr, todayStr),
+    enabled: !!siteId && mode === "overview",
+  });
+  const { data: ystdCat = [] } = useQuery({
+    queryKey: ["exp-ystd", siteId, ystdStr],
+    queryFn: () => getExpensesByCategory(siteId, ystdStr, ystdStr),
+    enabled: !!siteId && mode === "overview",
+  });
+
+  const { data: todayCustAll = [] } = useQuery({
+    queryKey: ["exp-cust-today", siteId, todayStr],
+    queryFn: () => getExpensesByCustomer(siteId, todayStr, todayStr),
+    enabled: !!siteId && mode === "customer",
+  });
+  const { data: ystdCustAll = [] } = useQuery({
+    queryKey: ["exp-cust-ystd", siteId, ystdStr],
+    queryFn: () => getExpensesByCustomer(siteId, ystdStr, ystdStr),
+    enabled: !!siteId && mode === "customer",
+  });
+
+  const handleModeChange = (m: BreakdownMode) => {
+    setMode(m);
+    if (m === "overview") setSelectedCustId(null);
+  };
+
+  const selectedCust: CustomerTotal | null = custData.find((c) => c.customerId === selectedCustId) ?? null;
+
+  const todayTotal =
+    mode === "overview"
+      ? todayCat.reduce((s, c) => s + c.total, 0)
+      : (todayCustAll.find((c) => c.customerId === selectedCustId)?.total ?? 0);
+
+  const ystdTotal =
+    mode === "overview"
+      ? ystdCat.reduce((s, c) => s + c.total, 0)
+      : (ystdCustAll.find((c) => c.customerId === selectedCustId)?.total ?? 0);
+
+  const periodTotal =
+    mode === "overview"
+      ? catData.reduce((s, c) => s + c.total, 0)
+      : selectedCust?.total ?? custData.reduce((s, c) => s + c.total, 0);
+
+  const items = useMemo(() => {
+    if (mode === "overview") {
+      return buildItems(catData.slice(0, 8).map((c) => ({ label: c.category, value: c.total })));
+    }
+    if (selectedCustId && custCatData.length) {
+      return buildItems(custCatData.slice(0, 8).map((c) => ({ label: c.category, value: c.total })));
+    }
+    return buildItems(
+      [...custData].sort((a, b) => b.total - a.total).slice(0, 8).map((c) => ({ label: c.customerName, value: c.total }))
+    );
+  }, [mode, catData, custData, custCatData, selectedCustId]);
+
+  const isLoading = mode === "overview" ? catLoading : selectedCustId ? custCatLoading : custLoading;
+  const subtitle = selectedCust ? `Today's expenses · ${selectedCust.customerName}` : "Today's expenses";
+  const customers = custData.map((c) => ({ id: c.customerId, name: c.customerName }));
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4 h-full">
+      {/* Header row */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Link to="/reports/expenses" className="flex items-center gap-1 text-[11px] font-semibold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors">
           Expense Breakdown <ChevronRight className="h-3 w-3" />
         </Link>
-        {!forceCategory && (
-          <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-semibold">
-            <button
-              onClick={() => setMode("category")}
-              className={`px-2.5 py-1 transition-colors ${
-                activeMode === "category"
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Category
-            </button>
-            <button
-              onClick={() => setMode("customer")}
-              className={`px-2.5 py-1 transition-colors ${
-                activeMode === "customer"
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Customer
-            </button>
-          </div>
-        )}
+        <div className="flex-1" />
+        {mode === "customer" && <CustomerDropdown customers={customers} value={selectedCustId} onChange={setSelectedCustId} />}
+        <ModeToggle value={mode} onChange={handleModeChange} />
       </div>
 
-      {/* Today's expenses */}
-      <div className="mb-5">
-        <p className="text-xs text-muted-foreground mb-1">Today's expenses</p>
-        <div className="flex items-baseline gap-2.5">
-          <span className="font-display text-3xl font-bold tracking-tight tabular-nums">
-            {fmtFull(todayExpenses)}
-          </span>
-          {deltaPct != null && (
-            <span
-              className={`flex items-center gap-1 text-sm font-medium ${
-                deltaDown ? "text-emerald-500" : "text-red-500"
-              }`}
-            >
-              {deltaDown ? (
-                <TrendingDown className="h-3.5 w-3.5" />
-              ) : (
-                <TrendingUp className="h-3.5 w-3.5" />
-              )}
-              {deltaPct}% vs yesterday
-            </span>
-          )}
-          {deltaPct == null && todayExpenses === 0 && (
-            <span className="text-sm text-muted-foreground">No expenses recorded today</span>
-          )}
+      {/* Today stats */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-1">{subtitle}</p>
+        <div className="flex items-center gap-2.5 flex-wrap mb-3">
+          <span className="font-display text-3xl font-bold tracking-tight tabular-nums">{fmtFull(todayTotal)}</span>
+          <VsYesterdayBadge today={todayTotal} yesterday={ystdTotal} upIsGood={false} />
         </div>
+        <PeriodPills value={period} onChange={setPeriod} />
       </div>
 
-      {/* Stacked storage bar */}
-      {isLoadingCat ? (
-        <div className="h-8 animate-pulse bg-muted rounded-full mb-5" />
-      ) : items.length === 0 ? (
-        <div className="h-8 rounded-full bg-muted/40 mb-5 flex items-center justify-center">
-          <span className="text-[10px] text-muted-foreground">No expense data</span>
-        </div>
-      ) : (
-        <div className="flex rounded-full overflow-hidden h-8 mb-5 gap-[2px]">
+      {/* Period total */}
+      <div className="flex items-baseline gap-2">
+        <span className="font-display text-2xl font-bold tabular-nums">{fmtCurrency(periodTotal)}</span>
+        <span className="text-sm text-muted-foreground">spent over {period}</span>
+      </div>
+
+      {/* Sparkline bar */}
+      <SparklineBar items={items} isLoading={isLoading} />
+
+      {/* Legend */}
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5">
           {items.map((item) => (
-            <div
-              key={item.label}
-              className="h-full transition-all duration-500"
-              style={{
-                width: `${item.pct}%`,
-                backgroundColor: item.color,
-                minWidth: item.pct > 1 ? "6px" : "0px",
-              }}
-              title={`${item.label}: ${fmtFull(item.value)} (${item.pctDisplay}%)`}
-            />
+            <span key={item.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="h-2.5 w-2.5 rounded-[2px] shrink-0" style={{ backgroundColor: item.color }} />
+              {item.label}
+            </span>
           ))}
         </div>
       )}
 
-      {/* Legend rows */}
+      {/* Divider + list */}
       {items.length > 0 && (
-        <div className="space-y-3">
+        <>
+          <div className="border-t border-border -mx-5" />
+          <div className="space-y-3">
+            {items.map((item) => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="flex-1 text-sm text-foreground truncate">{item.label}</span>
+                <span className="text-sm tabular-nums text-foreground">{fmtFull(item.value)}</span>
+                <span className="text-xs tabular-nums text-muted-foreground w-8 text-right">{item.pctDisplay}%</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Income Breakdown Card ────────────────────────────────────────────────────
+
+function IncomeBreakdownCard({ siteId }: { siteId: string }) {
+  const [period, setPeriod] = useState<BreakdownPeriod>("1M");
+  const [mode, setMode] = useState<BreakdownMode>("overview");
+  const [selectedCustId, setSelectedCustId] = useState<string | null>(null);
+
+  const { from, to } = getPeriodDates(period);
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const ystdStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+
+  const { data: catData = [] } = useQuery({
+    queryKey: ["inc-cat", siteId, from, to],
+    queryFn: () => getIncomeByCategory(siteId, from, to),
+    enabled: !!siteId && mode === "overview",
+  });
+
+  const { data: custData = [] } = useQuery({
+    queryKey: ["inc-by-cust", siteId, from, to],
+    queryFn: () => getIncomeByCustomer(siteId, from, to),
+    enabled: !!siteId && mode === "customer",
+  });
+
+  const { data: custCatData = [] } = useQuery({
+    queryKey: ["inc-cust-cat", siteId, from, to, selectedCustId],
+    queryFn: () => getIncomeByCategory(siteId, from, to, selectedCustId!),
+    enabled: !!siteId && mode === "customer" && !!selectedCustId,
+  });
+
+  const { data: todayCat = [] } = useQuery({
+    queryKey: ["inc-today", siteId, todayStr],
+    queryFn: () => getIncomeByCategory(siteId, todayStr, todayStr),
+    enabled: !!siteId && mode === "overview",
+  });
+  const { data: ystdCat = [] } = useQuery({
+    queryKey: ["inc-ystd", siteId, ystdStr],
+    queryFn: () => getIncomeByCategory(siteId, ystdStr, ystdStr),
+    enabled: !!siteId && mode === "overview",
+  });
+
+  const { data: todayCustAll = [] } = useQuery({
+    queryKey: ["inc-cust-today", siteId, todayStr],
+    queryFn: () => getIncomeByCustomer(siteId, todayStr, todayStr),
+    enabled: !!siteId && mode === "customer",
+  });
+  const { data: ystdCustAll = [] } = useQuery({
+    queryKey: ["inc-cust-ystd", siteId, ystdStr],
+    queryFn: () => getIncomeByCustomer(siteId, ystdStr, ystdStr),
+    enabled: !!siteId && mode === "customer",
+  });
+
+  const handleModeChange = (m: BreakdownMode) => {
+    setMode(m);
+    if (m === "overview") setSelectedCustId(null);
+  };
+
+  const selectedCust: CustomerTotal | null = custData.find((c) => c.customerId === selectedCustId) ?? null;
+
+  const todayTotal =
+    mode === "overview"
+      ? todayCat.reduce((s, c) => s + c.total, 0)
+      : (todayCustAll.find((c) => c.customerId === selectedCustId)?.total ?? 0);
+
+  const ystdTotal =
+    mode === "overview"
+      ? ystdCat.reduce((s, c) => s + c.total, 0)
+      : (ystdCustAll.find((c) => c.customerId === selectedCustId)?.total ?? 0);
+
+  const items = useMemo(() => {
+    if (mode === "overview") {
+      return buildItems(catData.slice(0, 6).map((c) => ({ label: c.category, value: c.total })));
+    }
+    if (selectedCustId && custCatData.length) {
+      return buildItems(custCatData.slice(0, 6).map((c) => ({ label: c.category, value: c.total })));
+    }
+    return buildItems(
+      [...custData].sort((a, b) => b.total - a.total).slice(0, 6).map((c) => ({ label: c.customerName, value: c.total }))
+    );
+  }, [mode, catData, custData, custCatData, selectedCustId]);
+
+  const total = items.reduce((s, i) => s + i.value, 0);
+  const subtitle = selectedCust ? `Today's income · ${selectedCust.customerName}` : "Today's income";
+  const customers = custData.map((c) => ({ id: c.customerId, name: c.customerName }));
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4 h-full">
+      {/* Header row */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Link to="/reports/income" className="flex items-center gap-1 text-[11px] font-semibold tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors">
+          Income Breakdown <ChevronRight className="h-3 w-3" />
+        </Link>
+        <div className="flex-1" />
+        {mode === "customer" && <CustomerDropdown customers={customers} value={selectedCustId} onChange={setSelectedCustId} />}
+        <ModeToggle value={mode} onChange={handleModeChange} />
+      </div>
+
+      {/* Today stats */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-1">{subtitle}</p>
+        <div className="flex items-center gap-2.5 flex-wrap mb-3">
+          <span className="font-display text-2xl font-bold tracking-tight tabular-nums">{fmtFull(todayTotal)}</span>
+          <VsYesterdayBadge today={todayTotal} yesterday={ystdTotal} upIsGood={true} />
+        </div>
+        <PeriodPills value={period} onChange={setPeriod} />
+      </div>
+
+      {/* Gauge */}
+      <div className="flex-1 flex items-center justify-center min-h-[148px]">
+        {items.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No income data</p>
+        ) : (
+          <GaugeChart items={items} total={total} />
+        )}
+      </div>
+
+      {/* Legend with percentages */}
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5 justify-center">
           {items.map((item) => (
-            <div key={item.label} className="flex items-center gap-2.5">
-              <span
-                className="h-3 w-4 rounded-[3px] shrink-0"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="flex-1 text-sm text-foreground truncate">{item.label}</span>
-              <span className="text-sm font-semibold tabular-nums text-foreground">
-                {fmtFull(item.value)}
-              </span>
-              <span className="text-xs text-muted-foreground tabular-nums w-9 text-right">
-                {item.pctDisplay}%
-              </span>
-            </div>
+            <span key={item.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+              {item.label} <span className="font-semibold text-foreground">{item.pctDisplay}%</span>
+            </span>
           ))}
         </div>
+      )}
+
+      {/* Divider + list */}
+      {items.length > 0 && (
+        <>
+          <div className="border-t border-border -mx-5" />
+          <div className="space-y-2.5">
+            {items.map((item) => (
+              <div key={item.label} className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="flex-1 text-xs text-foreground truncate">{item.label}</span>
+                <span className="text-xs tabular-nums text-foreground">{fmtFull(item.value)}</span>
+                <span className="text-xs tabular-nums text-muted-foreground w-8 text-right">{item.pctDisplay}%</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -643,7 +1010,7 @@ function SiteStatusStrip({ siteId }: { siteId: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { userProfile } = useAuth();
+  useAuth();
   const { activeSiteId } = useSite();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const today = new Date();
@@ -678,23 +1045,13 @@ export default function Dashboard() {
     "yyyy-MM-dd"
   );
   const trendTo = format(today, "yyyy-MM-dd");
-  const { data: trend = [], isLoading: trendLoading } = useQuery({
+  const { data: trend = [] } = useQuery({
     queryKey: ["monthly-trend", activeSiteId, trendFrom, trendTo],
     queryFn: () => getMonthlyTrend(activeSiteId!, trendFrom, trendTo),
     enabled: !!activeSiteId,
   });
 
-  // ── Expense categories
-  const { data: expenseCats = [], isLoading: catsLoading } = useQuery({
-    queryKey: ["expenses-by-category", activeSiteId, dateFrom, dateTo],
-    queryFn: () => getExpensesByCategory(activeSiteId!, dateFrom, dateTo),
-    enabled: !!activeSiteId,
-  });
-
   // ── Customer summaries
-  const todayStr = format(today, "yyyy-MM-dd");
-  const yesterdayStr = format(subDays(today, 1), "yyyy-MM-dd");
-
   const { data: customerSummaries = [] } = useQuery({
     queryKey: ["customer-summaries", activeSiteId, dateFrom, dateTo],
     queryFn: () => getCustomerSummaries(activeSiteId!, dateFrom, dateTo),
@@ -727,15 +1084,6 @@ export default function Dashboard() {
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.quantity * t.unit_price, 0);
   const netRevenue = totalRevenue - totalExpenses;
-
-  // ── Today / yesterday expense totals (site-wide, not filtered by customer)
-  const allSuccessExpenses = txs.filter((t) => t.status === "success" && t.type === "expense");
-  const todayExpenses = allSuccessExpenses
-    .filter((t) => t.transaction_date === todayStr)
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
-  const yesterdayExpenses = allSuccessExpenses
-    .filter((t) => t.transaction_date === yesterdayStr)
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
 
   // ── KPI target progress
   const target = kpiTargets[0];
@@ -787,14 +1135,9 @@ export default function Dashboard() {
       ? Math.round(((currNet - prevNet) / Math.abs(prevNet)) * 1000) / 10
       : null;
 
-  // ── Expense chart: use selected customer's breakdown when filtered
   const selectedSummary = customerSummaries.find(
     (c) => c.customerId === selectedCustomerId
   );
-  const expenseChartCats =
-    selectedCustomerId && selectedSummary
-      ? selectedSummary.expensesByCategory
-      : expenseCats;
 
   if (!activeSiteId) {
     return (
@@ -896,15 +1239,15 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Expense Breakdown — full width */}
-      <ExpenseBreakdown
-        catData={expenseChartCats}
-        customerData={customerSummaries}
-        isLoadingCat={!selectedCustomerId && catsLoading}
-        forceCategory={!!selectedCustomerId}
-        todayExpenses={todayExpenses}
-        yesterdayExpenses={yesterdayExpenses}
-      />
+      {/* Breakdown — 2/3 expense + 1/3 income */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+        <div className="lg:col-span-2">
+          <ExpenseBreakdownCard siteId={activeSiteId} />
+        </div>
+        <div className="lg:col-span-1">
+          <IncomeBreakdownCard siteId={activeSiteId} />
+        </div>
+      </div>
 
       {/* Customer Insights */}
       <CustomerInsights

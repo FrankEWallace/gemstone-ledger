@@ -408,6 +408,14 @@ export const DEMO_EXPENSES_BY_CATEGORY = [
   { category: "Equipment",   total: 22400  },
 ];
 
+export const DEMO_INCOME_BY_CATEGORY = [
+  { category: "Gold Sales",      total: 980000 },
+  { category: "Silver Sales",    total: 312000 },
+  { category: "Contract Mining", total: 245000 },
+  { category: "Royalties",       total: 112000 },
+  { category: "Consulting",      total:  70500 },
+];
+
 export const DEMO_REPORT_SUMMARY = {
   totalIncome:       1719500,
   totalExpenses:     732360,
@@ -434,6 +442,15 @@ export const DEMO_PRODUCTION_BY_DAY = [
 // Income: ext1 = dt1+dt7+dt13+dt19+dt24 = 156800+9240+148200+138500+135900 = 588640
 //         ext2 = dt4+dt10+dt16+dt20 = 71500+79800+143700+66500 = 361500
 // Expenses (internal): fuel=74330, labor=219200, maint=63700, chemicals=7040, other=10260 → total=374530
+
+export const DEMO_EXPENSES_BY_CUSTOMER = [
+  { customerId: DEMO_CUSTOMER_ID_INTERNAL, customerName: "Internal Operations",          total: 374530 },
+];
+
+export const DEMO_INCOME_BY_CUSTOMER = [
+  { customerId: DEMO_CUSTOMER_ID_EXT1,     customerName: "Goldfield Contractors Pty Ltd", total: 588640 },
+  { customerId: DEMO_CUSTOMER_ID_EXT2,     customerName: "Apex Drilling Services",         total: 361500 },
+];
 
 export const DEMO_CUSTOMER_SUMMARIES = [
   {
