@@ -56,8 +56,8 @@
     --chart-new: 220 13% 18%;
     --chart-existing: 220 8% 62%;
 
-    --chart-income: 217 91% 60%;
-    --chart-expense: 38 92% 50%;
+    --chart-income: 142 71% 40%;
+    --chart-expense: 0 84% 60%;
     --chart-net: 262 83% 58%;
     --chart-cat-1: 217 91% 60%;
     --chart-cat-2: 262 83% 58%;
@@ -119,8 +119,8 @@
   --chart-new: 220 10% 78%;
   --chart-existing: 220 8% 42%;
 
-  --chart-income: 217 91% 65%;
-  --chart-expense: 38 92% 55%;
+  --chart-income: 142 71% 50%;
+  --chart-expense: 0 84% 65%;
   --chart-net: 262 83% 65%;
   --chart-cat-1: 217 91% 65%;
   --chart-cat-2: 262 83% 65%;
@@ -165,4 +165,21 @@
   aside {
     box-shadow: 1px 0 0 0 hsl(var(--sidebar-border));
   }
+}
+
+/* Date input calendar icon — make it visible in both themes */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  border-radius: 2px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+}
+.dark input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }

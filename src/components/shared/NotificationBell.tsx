@@ -40,6 +40,8 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [hasNew, setHasNew] = useState(false);
+  const [fadingIds, setFadingIds] = useState<Set<string>>(new Set());
 
   const { totalCount: systemAlertCount, criticalCount } = useSystemAlerts(activeSiteId ?? null);
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -59,6 +61,8 @@ export default function NotificationBell() {
     if (!user?.id) return;
     const channel = subscribeToNotifications(user.id, (newNotif) => {
       setNotifications((prev) => [newNotif, ...prev]);
+      setHasNew(true);
+      setTimeout(() => setHasNew(false), 3000);
       toast(newNotif.title ?? "New notification", {
         description: newNotif.body ?? undefined,
         icon: newNotif.type === "alert" ? "🚨" : newNotif.type === "warning" ? "⚠️" : "ℹ️",
@@ -68,10 +72,11 @@ export default function NotificationBell() {
   }, [user?.id]);
 
   async function handleMarkRead(id: string) {
+    setFadingIds((prev) => new Set(prev).add(id));
+    await new Promise((r) => setTimeout(r, 200));
     await markAsRead(id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setFadingIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
   }
 
   async function handleMarkAllRead() {
@@ -86,12 +91,20 @@ export default function NotificationBell() {
         <button className="relative rounded-lg p-2 hover:bg-accent transition-colors">
           <Bell className="h-4 w-4" />
           {totalBadge > 0 && (
-            <span className={cn(
-              "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white",
-              criticalCount > 0 ? "bg-red-500" : "bg-destructive"
-            )}>
-              {totalBadge > 9 ? "9+" : totalBadge}
-            </span>
+            <>
+              {hasNew && (
+                <span className={cn(
+                  "absolute top-1 right-1 h-4 w-4 rounded-full animate-ping opacity-60",
+                  criticalCount > 0 ? "bg-red-500" : "bg-destructive"
+                )} />
+              )}
+              <span className={cn(
+                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white",
+                criticalCount > 0 ? "bg-red-500" : "bg-destructive"
+              )}>
+                {totalBadge > 9 ? "9+" : totalBadge}
+              </span>
+            </>
           )}
         </button>
       </PopoverTrigger>
@@ -150,7 +163,7 @@ export default function NotificationBell() {
               ))}
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+            <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground animate-in fade-in duration-300">
               <Bell className="h-8 w-8 mb-2 opacity-30" />
               <p className="text-sm">No notifications yet</p>
             </div>
@@ -158,13 +171,15 @@ export default function NotificationBell() {
             notifications.map((notif, i) => {
               const meta = TYPE_META[notif.type] ?? TYPE_META["info"];
               const Icon = meta.icon;
+              const fading = fadingIds.has(notif.id);
               return (
                 <button
                   key={notif.id}
                   onClick={() => !notif.read && handleMarkRead(notif.id)}
                   className={cn(
-                    "w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50",
+                    "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 hover:bg-muted/50",
                     !notif.read && "bg-primary/5",
+                    fading && "opacity-40 scale-[0.99]",
                     i < notifications.length - 1 && "border-b border-border/50"
                   )}
                 >

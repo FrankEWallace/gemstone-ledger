@@ -20,7 +20,9 @@ import {
   startOfMonth,
   endOfMonth,
   subDays,
+  subMonths,
 } from "date-fns";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
@@ -646,10 +648,20 @@ export default function Dashboard() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const today = new Date();
 
+  const [dateFrom, setDateFrom] = useState(format(startOfMonth(today), "yyyy-MM-dd"));
+  const [dateTo, setDateTo] = useState(format(endOfMonth(today), "yyyy-MM-dd"));
+
+  const DASH_PRESETS = [
+    { label: "Today",         from: format(today, "yyyy-MM-dd"),                                      to: format(today, "yyyy-MM-dd") },
+    { label: "This week",     from: format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd"),   to: format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd") },
+    { label: "This month",    from: format(startOfMonth(today), "yyyy-MM-dd"),                        to: format(endOfMonth(today), "yyyy-MM-dd") },
+    { label: "Last 3 months", from: format(startOfMonth(subMonths(today, 2)), "yyyy-MM-dd"),          to: format(endOfMonth(today), "yyyy-MM-dd") },
+  ];
+
   // ── All transactions (KPIs + recent list)
   const { data: txs = [], isLoading: txsLoading } = useQuery({
-    queryKey: ["transactions", activeSiteId, "all", "all", "all"],
-    queryFn: () => getTransactions(activeSiteId!),
+    queryKey: ["transactions", activeSiteId, dateFrom, dateTo],
+    queryFn: () => getTransactions(activeSiteId!, { dateFrom, dateTo }),
     enabled: !!activeSiteId,
   });
 
@@ -674,19 +686,18 @@ export default function Dashboard() {
 
   // ── Expense categories
   const { data: expenseCats = [], isLoading: catsLoading } = useQuery({
-    queryKey: ["expenses-by-category", activeSiteId, trendFrom, trendTo],
-    queryFn: () => getExpensesByCategory(activeSiteId!, trendFrom, trendTo),
+    queryKey: ["expenses-by-category", activeSiteId, dateFrom, dateTo],
+    queryFn: () => getExpensesByCategory(activeSiteId!, dateFrom, dateTo),
     enabled: !!activeSiteId,
   });
 
-  // ── Customer summaries (this month)
-  const thisMonthStart = format(startOfMonth(today), "yyyy-MM-dd");
+  // ── Customer summaries
   const todayStr = format(today, "yyyy-MM-dd");
   const yesterdayStr = format(subDays(today, 1), "yyyy-MM-dd");
 
   const { data: customerSummaries = [] } = useQuery({
-    queryKey: ["customer-summaries", activeSiteId, thisMonthStart, todayStr],
-    queryFn: () => getCustomerSummaries(activeSiteId!, thisMonthStart, todayStr),
+    queryKey: ["customer-summaries", activeSiteId, dateFrom, dateTo],
+    queryFn: () => getCustomerSummaries(activeSiteId!, dateFrom, dateTo),
     enabled: !!activeSiteId,
   });
 
@@ -728,19 +739,9 @@ export default function Dashboard() {
 
   // ── KPI target progress
   const target = kpiTargets[0];
-  const monthFrom = format(startOfMonth(today), "yyyy-MM-dd");
-  const monthTo = format(endOfMonth(today), "yyyy-MM-dd");
-  const monthRevenue = successTxs
-    .filter(
-      (t) =>
-        t.type === "income" &&
-        t.transaction_date >= monthFrom &&
-        t.transaction_date <= monthTo
-    )
-    .reduce((s, t) => s + t.quantity * t.unit_price, 0);
   const hasTarget = target?.revenue_target != null && target.revenue_target > 0;
   const progressPct = hasTarget
-    ? Math.min(100, Math.round((monthRevenue / (target.revenue_target ?? 1)) * 100))
+    ? Math.min(100, Math.round((totalRevenue / (target.revenue_target ?? 1)) * 100))
     : null;
 
   // ── Insight text for Revenue KPI card
@@ -748,9 +749,7 @@ export default function Dashboard() {
     customerSummaries.length > 0
       ? [...customerSummaries].sort((a, b) => b.totalIncome - a.totalIncome)[0]
       : null;
-  const txCountMonth = successTxs.filter(
-    (t) => t.transaction_date >= monthFrom && t.transaction_date <= monthTo
-  ).length;
+  const txCountMonth = successTxs.length;
   let insightHeadline = "";
   let insightSub = "";
   if (!txsLoading) {
@@ -827,6 +826,41 @@ export default function Dashboard() {
             onChange={setSelectedCustomerId}
           />
         )}
+      </div>
+
+      {/* Date range */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          className="h-8 w-36 text-xs"
+        />
+        <span className="text-xs text-muted-foreground">→</span>
+        <Input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          className="h-8 w-36 text-xs"
+        />
+        <div className="flex gap-1.5 flex-wrap">
+          {DASH_PRESETS.map((p) => {
+            const active = dateFrom === p.from && dateTo === p.to;
+            return (
+              <button
+                key={p.label}
+                onClick={() => { setDateFrom(p.from); setDateTo(p.to); }}
+                className={`h-8 rounded-lg border px-3 text-xs font-medium transition-colors ${
+                  active
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-transparent text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* KPI Cards */}

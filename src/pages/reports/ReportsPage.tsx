@@ -87,11 +87,11 @@ function ChartTooltip({ active, payload, label }: any) {
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-2 min-w-0 overflow-hidden relative">
-      {color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl" style={{ backgroundColor: color }} />}
-      <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">{label}</p>
-      <p className="text-[22px] font-bold tracking-tight leading-none tabular-nums font-display truncate" style={color ? { color } : undefined}>{value}</p>
-      {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
+    <div className="rounded-lg border border-border bg-card px-4 py-3 flex flex-col gap-1 min-w-0 overflow-hidden relative">
+      {color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-lg" style={{ backgroundColor: color }} />}
+      <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">{label}</p>
+      <p className="text-lg font-bold tracking-tight leading-none tabular-nums font-display truncate" style={color ? { color } : undefined}>{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
     </div>
   );
 }
@@ -117,33 +117,38 @@ export default function ReportsPage() {
   const [dateTo,   setDateTo]   = useState(DEFAULT_TO);
   const [isExporting, setIsExporting] = useState(false);
 
-  const opts = { enabled: !!activeSiteId && !!dateFrom && !!dateTo };
+  // staleTime: 0 — reports are date-sensitive; always refetch when the key changes
+  // even if IndexedDB holds a cache entry from a recent prior visit with the same dates.
+  const opts = {
+    enabled: !!activeSiteId && !!dateFrom && !!dateTo,
+    staleTime: 0,
+  };
 
-  const { data: summary } = useQuery({
+  const { data: summary, isFetching: fetchingSummary } = useQuery({
     queryKey: ["report-summary", activeSiteId, dateFrom, dateTo],
     queryFn: () => getReportSummary(activeSiteId!, dateFrom, dateTo),
     ...opts,
   });
 
-  const { data: trend = [], isLoading: loadingTrend } = useQuery({
+  const { data: trend = [], isFetching: loadingTrend } = useQuery({
     queryKey: ["report-trend", activeSiteId, dateFrom, dateTo],
     queryFn: () => getMonthlyTrend(activeSiteId!, dateFrom, dateTo),
     ...opts,
   });
 
-  const { data: categories = [], isLoading: loadingCats } = useQuery({
+  const { data: categories = [], isFetching: loadingCats } = useQuery({
     queryKey: ["report-categories", activeSiteId, dateFrom, dateTo],
     queryFn: () => getExpensesByCategory(activeSiteId!, dateFrom, dateTo),
     ...opts,
   });
 
-  const { data: production = [], isLoading: loadingProd } = useQuery({
+  const { data: production = [], isFetching: loadingProd } = useQuery({
     queryKey: ["report-production", activeSiteId, dateFrom, dateTo],
     queryFn: () => getProductionByDay(activeSiteId!, dateFrom, dateTo),
     ...opts,
   });
 
-  const { data: customerSummaries = [], isLoading: loadingCustomers } = useQuery({
+  const { data: customerSummaries = [], isFetching: loadingCustomers } = useQuery({
     queryKey: ["customer-summaries", activeSiteId, dateFrom, dateTo],
     queryFn: () => getCustomerSummaries(activeSiteId!, dateFrom, dateTo),
     ...opts,
@@ -333,7 +338,7 @@ export default function ReportsPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-38 h-8 text-xs"
+            className="w-36 h-8 text-xs"
           />
         </div>
         <div className="space-y-1.5">
@@ -342,7 +347,7 @@ export default function ReportsPage() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-38 h-8 text-xs"
+            className="w-36 h-8 text-xs"
           />
         </div>
         <div className="flex flex-wrap gap-2 pb-0.5">
@@ -580,13 +585,13 @@ export default function ReportsPage() {
                 const barColor = C.cat[idx % C.cat.length];
                 return (
                   <tr key={c.category} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-5 py-3 font-medium text-foreground">
+                    <td className="px-5 py-3 font-medium" style={{ color: C.expense }}>
                       <span className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
                         {c.category}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right tabular-nums font-semibold">{fmt(c.total)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums font-semibold" style={{ color: C.expense }}>{fmt(c.total)}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground hidden sm:table-cell">
                       {pct.toFixed(1)}%
                     </td>
@@ -641,8 +646,8 @@ export default function ReportsPage() {
                 return (
                   <tr key={row.month} className="hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3 font-medium text-foreground">{row.month}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{fmt(row.income)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{fmt(row.expenses)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums font-medium" style={{ color: C.income }}>{fmt(row.income)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums font-medium" style={{ color: C.expense }}>{fmt(row.expenses)}</td>
                     <td className="px-5 py-3 text-right tabular-nums font-semibold" style={{ color: net >= 0 ? C.income : C.expense }}>
                       {net >= 0 ? "+" : "−"}{fmt(Math.abs(net))}
                     </td>

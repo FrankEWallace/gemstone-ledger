@@ -98,8 +98,10 @@ serve(async (req: Request) => {
       );
     }
 
-    // Send invitation — user_metadata is available in the signup trigger
+    // Send invitation — user_metadata carries org/site/role for handle_invited_user_signup
+    const appUrl = Deno.env.get("APP_URL") ?? "http://localhost:5173";
     const { data, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${appUrl}/accept-invite`,
       data: {
         org_id,
         invited_to_site: site_id,

@@ -18,7 +18,7 @@ export function TrendArrow({
       fill="currentColor"
       aria-hidden
       className={cn(
-        "shrink-0",
+        "shrink-0 transition-transform duration-300",
         direction === "down" && "rotate-180",
         className
       )}

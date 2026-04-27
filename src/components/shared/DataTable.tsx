@@ -192,7 +192,7 @@ export function DataTable<T extends Record<string, unknown>>({
               </TableRow>
             ) : (
               slice.map((row) => (
-                <TableRow key={String(row[keyField])}>
+                <TableRow key={String(row[keyField])} className="transition-transform duration-150 hover:translate-x-0.5">
                   {columns.map((col) => (
                     <TableCell key={col.key} className={col.className}>
                       {col.render

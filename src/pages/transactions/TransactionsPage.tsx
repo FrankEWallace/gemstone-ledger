@@ -4,6 +4,7 @@ import { Plus, Download, Upload, Trash2, ArrowUpCircle, ArrowDownCircle, Refresh
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fmtCurrency, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
+import { Input } from "@/components/ui/input";
 
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
@@ -171,6 +172,8 @@ export default function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
@@ -197,13 +200,15 @@ export default function TransactionsPage() {
   }
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions", activeSiteId, typeFilter, statusFilter, categoryFilter, customerFilter],
+    queryKey: ["transactions", activeSiteId, typeFilter, statusFilter, categoryFilter, customerFilter, dateFrom, dateTo],
     queryFn: () =>
       getTransactions(activeSiteId!, {
         type: typeFilter,
         status: statusFilter,
         category: categoryFilter,
         customerId: customerFilter,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
       }),
     enabled: !!activeSiteId,
   });
@@ -288,14 +293,17 @@ export default function TransactionsPage() {
       key: "description",
       header: "Description",
       sortable: true,
-      render: (_, row) => (
-        <div>
-          <p className="font-medium">{row.description || "—"}</p>
-          {row.category && (
-            <p className="text-xs text-muted-foreground">{row.category}</p>
-          )}
-        </div>
-      ),
+      render: (_, row) => {
+        const typeColor = row.type === "income" ? C.income : row.type === "expense" ? C.expense : undefined;
+        return (
+          <div>
+            <p className="font-medium" style={{ color: typeColor }}>{row.description || "—"}</p>
+            {row.category && (
+              <p className="text-xs text-muted-foreground">{row.category}</p>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "customer_id",
@@ -455,6 +463,28 @@ export default function TransactionsPage() {
         emptyMessage="No transactions match the current filters."
         toolbar={
           <>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-9 w-36 text-xs"
+              title="From date"
+            />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-9 w-36 text-xs"
+              title="To date"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                className="h-9 px-2.5 rounded-md border border-border text-xs text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              >
+                Clear dates
+              </button>
+            )}
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TransactionType | "all")}>
               <SelectTrigger className="w-32 h-9">
                 <SelectValue placeholder="All types" />

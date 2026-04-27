@@ -219,22 +219,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
-  const activeRole = sites.find((s) => s.id === activeSiteId)?.role ?? null;
-  const orgId      = userProfile?.org_id ?? null;
+  const activeRole      = sites.find((s) => s.id === activeSiteId)?.role ?? null;
+  const orgId           = userProfile?.org_id ?? null;
+  // True when an invited user has a session but hasn't completed their profile yet.
+  const isInvitePending = !isLoading && !!user && !userProfile && !!user.user_metadata?.org_id;
 
   // ── Demo mode ─────────────────────────────────────────────────────────────
 
   const demoSiteWithRole: SiteWithRole = { ...DEMO_SITE, role: "admin" as const };
   const demoContextValue: AuthContextValue = {
-    session:      null,
-    user:         { id: DEMO_USER_ID, email: "demo@fwmining.app" } as User,
-    userProfile:  DEMO_USER_PROFILE as UserProfile,
-    orgId:        DEMO_ORG_ID,
-    sites:        [demoSiteWithRole],
-    activeSiteId: DEMO_SITE_ID,
-    activeRole:   "admin",
-    isLoading:    false,
-    setActiveSite: () => {},
+    session:         null,
+    user:            { id: DEMO_USER_ID, email: "demo@fwmining.app" } as User,
+    userProfile:     DEMO_USER_PROFILE as UserProfile,
+    orgId:           DEMO_ORG_ID,
+    sites:           [demoSiteWithRole],
+    activeSiteId:    DEMO_SITE_ID,
+    activeRole:      "admin",
+    isLoading:       false,
+    isInvitePending: false,
+    setActiveSite:   () => {},
     signOut,
     refreshProfile,
   };
@@ -258,6 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         activeSiteId,
         activeRole,
         isLoading,
+        isInvitePending,
         setActiveSite,
         signOut,
         refreshProfile,

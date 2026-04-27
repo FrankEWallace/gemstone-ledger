@@ -14,6 +14,7 @@ export interface AuthContextValue {
   activeSiteId: string | null;
   activeRole: UserRole | null;
   isLoading: boolean;
+  isInvitePending: boolean;
   setActiveSite: (siteId: string) => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;

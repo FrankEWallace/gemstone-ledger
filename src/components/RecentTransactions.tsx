@@ -1,9 +1,15 @@
 import { MoreHorizontal } from "lucide-react";
 
+const C = {
+  income:  "hsl(var(--chart-income))",
+  expense: "hsl(var(--chart-expense))",
+} as const;
+
 interface Transaction {
   id: string;
   description: string;
   category: string;
+  type: "income" | "expense";
   status: "Success" | "Pending" | "Refunded";
   qty: number;
   unitPrice: number;
@@ -11,11 +17,11 @@ interface Transaction {
 }
 
 const transactions: Transaction[] = [
-  { id: "#04910", description: "Ryan Korsgaard", category: "Diesel Fuel", status: "Success", qty: 12, unitPrice: 3450, total: 41400 },
-  { id: "#04911", description: "Madelyn Lubin", category: "Explosives Supply", status: "Success", qty: 20, unitPrice: 2980, total: 89200 },
-  { id: "#04912", description: "Abram Bergson", category: "Safety Equipment", status: "Pending", qty: 22, unitPrice: 1750, total: 75900 },
-  { id: "#04913", description: "Phillip Mango", category: "Excavator Rental", status: "Refunded", qty: 24, unitPrice: 1950, total: 19500 },
-  { id: "#04914", description: "Sarah Chen", category: "Drill Bits", status: "Success", qty: 50, unitPrice: 420, total: 21000 },
+  { id: "#04910", description: "Ryan Korsgaard", category: "Gemstone Sale", type: "income", status: "Success", qty: 12, unitPrice: 3450, total: 41400 },
+  { id: "#04911", description: "Madelyn Lubin", category: "Explosives Supply", type: "expense", status: "Success", qty: 20, unitPrice: 2980, total: 89200 },
+  { id: "#04912", description: "Abram Bergson", category: "Safety Equipment", type: "expense", status: "Pending", qty: 22, unitPrice: 1750, total: 75900 },
+  { id: "#04913", description: "Phillip Mango", category: "Excavator Rental", type: "expense", status: "Refunded", qty: 24, unitPrice: 1950, total: 19500 },
+  { id: "#04914", description: "Sarah Chen", category: "Ruby Export", type: "income", status: "Success", qty: 50, unitPrice: 420, total: 21000 },
 ];
 
 const statusColors: Record<string, string> = {
@@ -56,22 +62,25 @@ export default function RecentTransactions() {
             </tr>
           </thead>
           <tbody>
-            {transactions.map((t) => (
-              <tr key={t.id} className="border-b border-border/50 last:border-0">
-                <td className="py-3 pr-4 font-medium">{t.id}</td>
-                <td className="py-3 pr-4">{t.description}</td>
-                <td className="py-3 pr-4 hidden md:table-cell text-muted-foreground">{t.category}</td>
-                <td className="py-3 pr-4">
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[t.status]}`}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                    {t.status}
-                  </span>
-                </td>
-                <td className="py-3 pr-4 hidden lg:table-cell text-right">{t.qty}</td>
-                <td className="py-3 pr-4 hidden lg:table-cell text-right">${t.unitPrice.toLocaleString()}</td>
-                <td className="py-3 text-right font-medium">${t.total.toLocaleString()}</td>
-              </tr>
-            ))}
+            {transactions.map((t) => {
+              const typeColor = t.type === "income" ? C.income : C.expense;
+              return (
+                <tr key={t.id} className="border-b border-border/50 last:border-0">
+                  <td className="py-3 pr-4 font-medium">{t.id}</td>
+                  <td className="py-3 pr-4 font-medium" style={{ color: typeColor }}>{t.description}</td>
+                  <td className="py-3 pr-4 hidden md:table-cell text-muted-foreground">{t.category}</td>
+                  <td className="py-3 pr-4">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[t.status]}`}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                      {t.status}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4 hidden lg:table-cell text-right">{t.qty}</td>
+                  <td className="py-3 pr-4 hidden lg:table-cell text-right">${t.unitPrice.toLocaleString()}</td>
+                  <td className="py-3 text-right font-medium" style={{ color: typeColor }}>${t.total.toLocaleString()}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

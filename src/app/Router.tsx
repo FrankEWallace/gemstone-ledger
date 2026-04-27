@@ -10,6 +10,7 @@ import PageSkeleton from "@/components/shared/PageSkeleton";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
+import AcceptInvite from "@/pages/auth/AcceptInvite";
 
 // ─── Lazy-loaded pages ────────────────────────────────────────────────────────
 
@@ -78,6 +79,9 @@ export default function Router() {
 
       {/* Register has its own full-screen split layout */}
       <Route path="/register" element={<Register />} />
+
+      {/* Invite acceptance — user is already authenticated but has no profile yet */}
+      <Route path="/accept-invite" element={<AcceptInvite />} />
 
       {/* Protected app routes */}
       <Route element={<ProtectedRoute />}>
