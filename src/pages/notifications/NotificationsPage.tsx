@@ -236,7 +236,7 @@ export default function NotificationsPage() {
 
       {/* System Alerts */}
       <section>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
           System Alerts
         </p>
 
@@ -263,7 +263,7 @@ export default function NotificationsPage() {
 
       {/* Push Notifications */}
       <section>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
           Push Notifications
         </p>
 

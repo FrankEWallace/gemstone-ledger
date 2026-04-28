@@ -639,22 +639,22 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                     Customer
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden sm:table-cell">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden sm:table-cell">
                     Contact
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden md:table-cell">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden md:table-cell">
                     Started
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                     Status
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
                     End Date
                   </th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
+                  <th className="text-right px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
                     Net Revenue
                   </th>
                   <th className="px-4 py-2.5 w-[88px]" />

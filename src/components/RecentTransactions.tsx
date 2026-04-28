@@ -34,7 +34,7 @@ export default function RecentTransactions() {
   return (
     <div className="rounded-xl border border-border bg-card p-4 lg:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <h3 className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
           Recent Transactions
         </h3>
         <div className="flex items-center gap-2">
@@ -52,13 +52,13 @@ export default function RecentTransactions() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="pb-3 pr-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">ID</th>
-              <th className="pb-3 pr-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Description</th>
-              <th className="pb-3 pr-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hidden md:table-cell">Category</th>
-              <th className="pb-3 pr-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Status</th>
-              <th className="pb-3 pr-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hidden lg:table-cell text-right">Qty</th>
-              <th className="pb-3 pr-4 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hidden lg:table-cell text-right">Unit Price</th>
-              <th className="pb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground text-right">Total</th>
+              <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">ID</th>
+              <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Description</th>
+              <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground hidden md:table-cell">Category</th>
+              <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Status</th>
+              <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell text-right">Qty</th>
+              <th className="pb-3 pr-4 text-[11px] font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell text-right">Unit Price</th>
+              <th className="pb-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground text-right">Total</th>
             </tr>
           </thead>
           <tbody>

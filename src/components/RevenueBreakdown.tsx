@@ -11,7 +11,7 @@ const categories = [
 export default function RevenueBreakdown() {
   return (
     <div className="rounded-xl border border-border bg-card p-4 lg:p-6 flex flex-col">
-      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+      <h3 className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
         Expense Breakdown
       </h3>
       <div className="flex items-center justify-between mb-4">

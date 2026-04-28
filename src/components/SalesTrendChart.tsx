@@ -32,7 +32,7 @@ export default function SalesTrendChart() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
               Production Trend
             </h3>
           </div>

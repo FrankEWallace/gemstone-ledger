@@ -102,7 +102,7 @@ function NavSection({
     <div className="mb-5">
       {title && (
         <div className="flex items-center gap-1.5 px-3 mb-1">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
             {title}
           </p>
           {badge}

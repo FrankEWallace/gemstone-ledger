@@ -645,7 +645,7 @@ export default function CustomerDetailPage() {
 
       {/* ── Date range filter ── */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground self-center mr-2">
+        <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground self-center mr-2">
           Period
         </p>
         <div className="space-y-1.5">

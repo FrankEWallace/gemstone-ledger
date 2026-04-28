@@ -87,7 +87,7 @@ export default function StatCard({ title, value, subtitle, change, sparkData }: 
       "rounded-xl border border-border bg-card p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300",
       flash && "ring-1 ring-primary/30 bg-primary/5"
     )}>
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
         {title}
       </p>
       <div className="flex items-end justify-between gap-2">
