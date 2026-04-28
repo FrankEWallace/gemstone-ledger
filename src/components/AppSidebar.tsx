@@ -13,10 +13,6 @@ import {
   Layers,
   ShoppingCart,
   Shield,
-  CreditCard,
-  Plug,
-  Headphones,
-  HelpCircle,
   Settings,
   X,
   Pickaxe,
@@ -26,9 +22,6 @@ import {
   FolderOpen,
   FileText,
   Activity,
-  Zap,
-  Target,
-  Tag,
   Clock,
   SlidersHorizontal,
   Eye,
@@ -85,23 +78,11 @@ const extensionItems: NavItem[] = [
   { label: "Channels",   icon: Layers,        to: "/supply/channels",  module: "supply_chain" },
 ];
 
-const settingsNavItems: NavItem[] = [
-  { label: "Categories",   icon: Tag,       to: "/settings/expense-categories" },
-  { label: "KPI Targets",  icon: Target,    to: "/settings/targets" },
-  { label: "Alert Rules",  icon: Zap,       to: "/settings/alerts" },
-  { label: "Integrations", icon: Plug,      to: "/management/integrations" },
-  { label: "Billing",      icon: CreditCard, to: "/management/billing" },
-  { label: "System",       icon: Settings,  to: "/settings/system" },
-  { label: "Help",         icon: HelpCircle, to: "/settings/help" },
-  { label: "Support",      icon: Headphones, to: "/settings/support" },
-];
-
 // Sections that can be toggled in the customizer (Core is always visible)
 const TOGGLEABLE_SECTIONS: { key: NavSectionKey; label: string; description: string }[] = [
   { key: "operations", label: "Operations",   description: "Suppliers and order management" },
   { key: "team",       label: "Team & System", description: "Team, roles, and audit log" },
   { key: "extensions", label: "Extensions",   description: "Equipment, production, messages…" },
-  { key: "settings",   label: "Settings",     description: "Categories, KPIs, billing, system" },
 ];
 
 // ─── NavSection ───────────────────────────────────────────────────────────────
@@ -325,11 +306,26 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
             />
           )}
 
-          {/* Settings */}
-          {!isSectionHidden("settings") && (
-            <NavSection title="Settings" items={settingsNavItems} onNavigate={onClose} />
-          )}
         </nav>
+
+        {/* Settings — pinned above footer */}
+        <div className="border-t border-sidebar-border px-2 py-2">
+          <NavLink
+            to="/settings"
+            onClick={onClose}
+            className={({ isActive }) =>
+              cn(
+                "flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+              )
+            }
+          >
+            <Settings className="h-[15px] w-[15px] shrink-0 opacity-60" />
+            <span>Settings</span>
+          </NavLink>
+        </div>
 
         {/* Footer */}
         <div className="border-t border-sidebar-border p-3 relative">

@@ -35,17 +35,8 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/messages":       { breadcrumb: "Extensions", title: "Messages" },
   "/campaigns":      { breadcrumb: "Extensions", title: "Campaigns" },
   "/supply/channels": { breadcrumb: "Extensions", title: "Channels" },
-  // Settings
-  "/settings/expense-categories": { breadcrumb: "Settings", title: "Categories" },
-  "/settings/targets":  { breadcrumb: "Settings", title: "KPI Targets" },
-  "/settings/alerts":   { breadcrumb: "Settings", title: "Alert Rules" },
-  "/management/integrations": { breadcrumb: "Settings", title: "Integrations" },
-  "/management/billing":      { breadcrumb: "Settings", title: "Billing" },
-  "/settings/system":   { breadcrumb: "Settings", title: "System" },
-  "/settings/help":     { breadcrumb: "Settings", title: "Help" },
-  "/settings/support":  { breadcrumb: "Settings", title: "Support" },
-  "/settings/sync":     { breadcrumb: "Settings", title: "Offline Sync" },
-  "/settings/profile":  { breadcrumb: "Settings", title: "My Profile" },
+  // Settings — tab bar inside SettingsLayout handles sub-section context
+  "/settings":          { breadcrumb: "Settings", title: "" },
 };
 
 export default function AppLayout() {
@@ -79,7 +70,9 @@ export default function AppLayout() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
   const location = useLocation();
-  const pageInfo = PAGE_TITLES[location.pathname] ?? { breadcrumb: "App", title: "" };
+  const pageInfo =
+    PAGE_TITLES[location.pathname] ??
+    (location.pathname.startsWith("/settings") ? { breadcrumb: "Settings", title: "" } : { breadcrumb: "App", title: "" });
 
   return (
     <div className="flex h-screen overflow-hidden">

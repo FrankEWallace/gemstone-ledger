@@ -1,8 +1,9 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AppLayout from "@/components/layouts/AppLayout";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import ProtectedRoute from "@/components/layouts/ProtectedRoute";
+import SettingsLayout from "@/components/layouts/SettingsLayout";
 import RouteErrorBoundary from "@/components/shared/RouteErrorBoundary";
 import PageSkeleton from "@/components/shared/PageSkeleton";
 
@@ -124,19 +125,25 @@ export default function Router() {
 
           {/* Phase 3 — Management */}
           <Route path="/management/roles"        element={<BoundedRoute element={<RolesPermissionsPage />} />} />
-          <Route path="/management/billing"      element={<BoundedRoute element={<ComingSoon title="Billing & Subscription" description="Subscription management is coming soon. You'll be able to manage your plan and payment methods here." />} />} />
-          <Route path="/management/integrations" element={<BoundedRoute element={<IntegrationsPage />} />} />
           <Route path="/management/audit"        element={<BoundedRoute element={<AuditLogPage />} />} />
+          {/* Legacy redirects — keep old bookmarks working */}
+          <Route path="/management/integrations" element={<Navigate to="/settings/integrations" replace />} />
+          <Route path="/management/billing"      element={<Navigate to="/settings/billing" replace />} />
 
-          {/* Phase 4 — Settings */}
-          <Route path="/settings/system"  element={<BoundedRoute element={<SystemSettingsPage />} />} />
-          <Route path="/settings/help"    element={<BoundedRoute element={<HelpCenterPage />} />} />
-          <Route path="/settings/support" element={<BoundedRoute element={<SupportPage />} />} />
-          <Route path="/settings/alerts"  element={<BoundedRoute element={<AlertRulesPage />} />} />
-          <Route path="/settings/targets" element={<BoundedRoute element={<KpiTargetsPage />} />} />
-          <Route path="/settings/sync"               element={<BoundedRoute element={<SyncHistoryPage />} />} />
-          <Route path="/settings/expense-categories" element={<BoundedRoute element={<ExpenseCategoriesPage />} />} />
-          <Route path="/settings/profile"            element={<BoundedRoute element={<ProfilePage />} />} />
+          {/* Settings — nested under SettingsLayout for the tab bar */}
+          <Route path="/settings" element={<SettingsLayout />}>
+            <Route index element={<Navigate to="/settings/profile" replace />} />
+            <Route path="profile"            element={<BoundedRoute element={<ProfilePage />} />} />
+            <Route path="expense-categories" element={<BoundedRoute element={<ExpenseCategoriesPage />} />} />
+            <Route path="targets"            element={<BoundedRoute element={<KpiTargetsPage />} />} />
+            <Route path="alerts"             element={<BoundedRoute element={<AlertRulesPage />} />} />
+            <Route path="integrations"       element={<BoundedRoute element={<IntegrationsPage />} />} />
+            <Route path="billing"            element={<BoundedRoute element={<ComingSoon title="Billing & Subscription" description="Subscription management is coming soon. You'll be able to manage your plan and payment methods here." />} />} />
+            <Route path="system"             element={<BoundedRoute element={<SystemSettingsPage />} />} />
+            <Route path="help"               element={<BoundedRoute element={<HelpCenterPage />} />} />
+            <Route path="support"            element={<BoundedRoute element={<SupportPage />} />} />
+            <Route path="sync"               element={<BoundedRoute element={<SyncHistoryPage />} />} />
+          </Route>
           <Route path="/production"       element={<BoundedRoute element={<ProductionLogPage />} />} />
           <Route path="/team/timesheet"   element={<BoundedRoute element={<TimesheetPage />} />} />
 
