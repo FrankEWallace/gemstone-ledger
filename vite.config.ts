@@ -55,6 +55,9 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+  build: {
+    sourcemap: false,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

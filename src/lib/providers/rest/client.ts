@@ -158,9 +158,9 @@ function getBaseUrl(): string {
 }
 
 function getAuthToken(): string | null {
-  // When using REST mode, the auth token is stored separately in localStorage
-  // by the REST auth flow (not Supabase session).
-  return localStorage.getItem("fwmining_rest_token");
+  // sessionStorage: cleared on tab close, not accessible cross-tab, safer than localStorage.
+  // Long-term fix: move to HttpOnly cookie set server-side on REST login.
+  return sessionStorage.getItem("fwmining_rest_token");
 }
 
 async function restRequest<T>(

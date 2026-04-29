@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     localStorage.removeItem("activeSiteId");
     localStorage.removeItem("lastUserId");
-    localStorage.removeItem("fwmining_rest_token");
+    sessionStorage.removeItem("fwmining_rest_token");
     sessionStorage.clear();
 
     await clearAllCaches();

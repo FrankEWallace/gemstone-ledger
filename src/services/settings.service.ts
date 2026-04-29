@@ -61,7 +61,7 @@ export async function updateOrganization(
 export async function uploadOrgLogo(orgId: string, file: File): Promise<string> {
   if (isRestActive()) {
     const { restBaseUrl } = getBackendConfig();
-    const token = localStorage.getItem("fwmining_rest_token");
+    const token = sessionStorage.getItem("fwmining_rest_token");
 
     const form = new FormData();
     form.append("file", file);
