@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Globe,
   User,
+  ArrowLeftRight,
 } from "lucide-react";
 import {
   format,
@@ -57,14 +58,14 @@ const C = {
   net:     "#10b981", // emerald
   loss:    "#ef4444", // red
   cat: [
-    "#3b82f6", // blue   — matches income
-    "#f97316", // orange — matches expense
-    "#10b981", // emerald— matches net
-    "#8b5cf6", // violet
-    "#f59e0b", // amber
-    "#ef4444", // red    — matches loss
-    "#06b6d4", // cyan
-    "#84cc16", // lime
+    "#93c5fd", // blue-300
+    "#fdba74", // orange-300
+    "#6ee7b7", // emerald-300
+    "#c4b5fd", // violet-300
+    "#fcd34d", // amber-300
+    "#fca5a5", // red-300
+    "#67e8f9", // cyan-300
+    "#bef264", // lime-300
   ],
 } as const;
 
@@ -203,11 +204,24 @@ const PERIOD_DAYS: Record<BreakdownPeriod, number> = {
   "7D": 7, "1M": 30, "3M": 90, "6M": 180, "12M": 365, "All": 1825,
 };
 
+const PERIOD_LABEL: Record<BreakdownPeriod, string> = {
+  "7D": "7 Days", "1M": "1 Month", "3M": "3 Months", "6M": "6 Months", "12M": "12 Months", "All": "All Time",
+};
+
 function getPeriodDates(period: BreakdownPeriod) {
   const today = new Date();
   return {
     from: format(subDays(today, PERIOD_DAYS[period] - 1), "yyyy-MM-dd"),
     to: format(today, "yyyy-MM-dd"),
+  };
+}
+
+function getPrevPeriodDates(period: BreakdownPeriod) {
+  const days = PERIOD_DAYS[period];
+  const today = new Date();
+  return {
+    from: format(subDays(today, days * 2 - 1), "yyyy-MM-dd"),
+    to: format(subDays(today, days), "yyyy-MM-dd"),
   };
 }
 
@@ -223,22 +237,47 @@ function buildItems(source: { label: string; value: number }[]) {
 
 // ─── Period Pills ─────────────────────────────────────────────────────────────
 
-function PeriodPills({ value, onChange }: { value: BreakdownPeriod; onChange: (p: BreakdownPeriod) => void }) {
+function PeriodPills({
+  value,
+  onChange,
+  comparing,
+  onToggleCompare,
+}: {
+  value: BreakdownPeriod;
+  onChange: (p: BreakdownPeriod) => void;
+  comparing?: boolean;
+  onToggleCompare?: () => void;
+}) {
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      {(["7D", "1M", "3M", "6M", "12M", "All"] as BreakdownPeriod[]).map((p) => (
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center rounded-full bg-muted p-0.5 gap-0.5">
+        {(["7D", "1M", "3M", "6M", "12M", "All"] as BreakdownPeriod[]).map((p) => (
+          <button
+            key={p}
+            onClick={() => onChange(p)}
+            className={`h-6 rounded-full px-2.5 text-[11px] font-semibold transition-colors ${
+              value === p
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+      {onToggleCompare && (
         <button
-          key={p}
-          onClick={() => onChange(p)}
-          className={`h-6 rounded-md border px-2 text-[10px] font-semibold transition-colors ${
-            value === p
-              ? "border-foreground bg-foreground text-background"
-              : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+          onClick={onToggleCompare}
+          className={`flex items-center gap-1 h-6 rounded-full px-2.5 text-[11px] font-semibold border transition-colors ${
+            comparing
+              ? "bg-foreground text-background border-foreground"
+              : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
           }`}
         >
-          {p}
+          <ArrowLeftRight className="h-3 w-3" />
+          Compare
         </button>
-      ))}
+      )}
     </div>
   );
 }
@@ -336,7 +375,7 @@ function GaugeChart({
   items: { label: string; value: number; color: string; pct: number }[];
   total: number;
 }) {
-  const cx = 150, cy = 145, r = 108, sw = 22, GAP = 4;
+  const cx = 150, cy = 145, r = 108, sw = 14, GAP = 5;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const pt = (deg: number) => ({ x: cx + r * Math.cos(toRad(deg)), y: cy + r * Math.sin(toRad(deg)) });
   const arc = (s: number, e: number) => {
@@ -364,14 +403,14 @@ function GaugeChart({
       {/* Coloured segments with rounded caps */}
       {segs.map((seg) =>
         seg.end > seg.start ? (
-          <path key={seg.label} d={arc(seg.start, seg.end)} fill="none" stroke={seg.color} strokeWidth={sw} strokeLinecap="round" />
+          <path key={seg.label} d={arc(seg.start, seg.end)} fill="none" stroke={seg.color} strokeWidth={sw} strokeLinecap="butt" />
         ) : null
       )}
       {/* Total */}
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="30" fontWeight="700" fill="currentColor" fontFamily="inherit">
+      <text x={cx} y={cy - 32} textAnchor="middle" fontSize="26" fontWeight="900" fill="currentColor" fontFamily="inherit">
         {fmtCurrency(total)}
       </text>
-      <text x={cx} y={cy + 20} textAnchor="middle" fontSize="11" fill="hsl(var(--muted-foreground))" fontFamily="inherit">
+      <text x={cx} y={cy - 14} textAnchor="middle" fontSize="11" fill="hsl(var(--muted-foreground))" fontFamily="inherit">
         Total Income
       </text>
     </svg>
@@ -422,8 +461,10 @@ function ExpenseBreakdownCard({ siteId }: { siteId: string }) {
   const [period, setPeriod] = useState<BreakdownPeriod>("1M");
   const [mode, setMode] = useState<BreakdownMode>("overview");
   const [selectedCustId, setSelectedCustId] = useState<string | null>(null);
+  const [comparing, setComparing] = useState(false);
 
   const { from, to } = getPeriodDates(period);
+  const { from: prevFrom, to: prevTo } = getPrevPeriodDates(period);
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const ystdStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
 
@@ -467,6 +508,12 @@ function ExpenseBreakdownCard({ siteId }: { siteId: string }) {
     enabled: !!siteId && mode === "customer",
   });
 
+  const { data: prevCatData = [] } = useQuery({
+    queryKey: ["exp-cat-prev", siteId, prevFrom, prevTo],
+    queryFn: () => getExpensesByCategory(siteId, prevFrom, prevTo),
+    enabled: !!siteId && comparing && mode === "overview",
+  });
+
   const handleModeChange = (m: BreakdownMode) => {
     setMode(m);
     if (m === "overview") setSelectedCustId(null);
@@ -488,6 +535,9 @@ function ExpenseBreakdownCard({ siteId }: { siteId: string }) {
     mode === "overview"
       ? catData.reduce((s, c) => s + c.total, 0)
       : selectedCust?.total ?? custData.reduce((s, c) => s + c.total, 0);
+
+  const prevPeriodTotal = prevCatData.reduce((s, c) => s + c.total, 0);
+  const compareChange = prevPeriodTotal > 0 ? ((periodTotal - prevPeriodTotal) / prevPeriodTotal) * 100 : null;
 
   const items = useMemo(() => {
     if (mode === "overview") {
@@ -524,13 +574,22 @@ function ExpenseBreakdownCard({ siteId }: { siteId: string }) {
           <span className="font-display text-3xl font-bold tracking-tight tabular-nums">{fmtFull(todayTotal)}</span>
           <VsYesterdayBadge today={todayTotal} yesterday={ystdTotal} upIsGood={false} />
         </div>
-        <PeriodPills value={period} onChange={setPeriod} />
+        <PeriodPills value={period} onChange={setPeriod} comparing={comparing} onToggleCompare={() => setComparing((c) => !c)} />
       </div>
 
       {/* Period total */}
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline gap-2 flex-wrap">
         <span className="font-display text-2xl font-bold tabular-nums">{fmtCurrency(periodTotal)}</span>
-        <span className="text-sm text-muted-foreground">spent over {period}</span>
+        <span className="text-sm text-muted-foreground">spent over {PERIOD_LABEL[period]}</span>
+        {comparing && prevPeriodTotal > 0 && (
+          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
+            compareChange! <= 0
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+              : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+          }`}>
+            {compareChange! > 0 ? "+" : ""}{compareChange!.toFixed(1)}% vs prev {PERIOD_LABEL[period]}
+          </span>
+        )}
       </div>
 
       {/* Sparkline bar */}
