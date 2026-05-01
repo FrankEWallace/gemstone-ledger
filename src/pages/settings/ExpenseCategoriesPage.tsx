@@ -203,8 +203,8 @@ function CategoryModal({ open, onClose, orgId, editing, defaultType }: CategoryM
                         className="h-7 w-7 rounded-full border-2 transition-all"
                         style={{
                           background: c,
-                          borderColor: selectedColor === c ? "hsl(var(--foreground))" : "transparent",
-                          boxShadow: selectedColor === c ? "0 0 0 2px hsl(var(--background))" : "none",
+                          borderColor: selectedColor === c ? "var(--foreground)" : "transparent",
+                          boxShadow: selectedColor === c ? "0 0 0 2px var(--background)" : "none",
                         }}
                       />
                     ))}

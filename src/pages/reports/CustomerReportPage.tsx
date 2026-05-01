@@ -41,8 +41,8 @@ import { getCustomerMonthlyTrend } from "@/services/contract.service";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PIE_COLORS = [
-  "#10b981", "#6366f1", "#f59e0b", "#0ea5e9",
-  "#ef4444", "#8b5cf6", "#f97316", "#14b8a6",
+  "var(--chart-1)", "var(--chart-5)", "var(--chart-7)", "var(--chart-10)",
+  "var(--chart-2)", "var(--chart-3)", "var(--chart-8)", "var(--chart-6)",
 ];
 
 const PRESETS = [
@@ -626,10 +626,10 @@ export default function CustomerReportPage() {
             <>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={trendChartData} barGap={3} barCategoryGap="32%">
-                  <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                  <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     tickFormatter={(v) => {
                       try { return format(parseISO(v + "-01"), "MMM yy"); } catch { return v; }
                     }}
@@ -638,14 +638,14 @@ export default function CustomerReportPage() {
                   />
                   <YAxis
                     tickFormatter={(v) => fmtTick(v)}
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     axisLine={false}
                     tickLine={false}
                     width={44}
                   />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
-                  <Bar dataKey="Income"   name="Income"   fill="hsl(var(--foreground))"                  radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="Expenses" name="Expenses" fill="hsl(var(--muted-foreground))" opacity={0.35} radius={[3, 3, 0, 0]} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.5 }} />
+                  <Bar dataKey="Income"   name="Income"   fill="var(--foreground)"                  radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="Expenses" name="Expenses" fill="var(--muted-foreground)" opacity={0.35} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
               <div className="flex items-center gap-5 mt-3 text-[10px] text-muted-foreground">
@@ -688,7 +688,7 @@ export default function CustomerReportPage() {
                 <Legend
                   iconType="circle"
                   iconSize={7}
-                  wrapperStyle={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}
+                  wrapperStyle={{ fontSize: 10, color: "var(--muted-foreground)" }}
                 />
               </PieChart>
             </ResponsiveContainer>

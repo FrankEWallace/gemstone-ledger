@@ -54,9 +54,9 @@ import {
 // ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
 
 const C = {
-  income:  "hsl(var(--chart-income))",
-  expense: "hsl(var(--chart-expense))",
-  net:     "hsl(var(--chart-net))",
+  income:  "var(--chart-income)",
+  expense: "var(--chart-expense)",
+  net:     "var(--chart-net)",
 } as const;
 
 // ─── Constants ────────────────────────────────────────────────────────────────

@@ -71,16 +71,15 @@ import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Palette-aligned (matches chart-cat-1..5 tokens + extras)
 const PIE_COLORS = [
-  "#3b82f6", "#7c3aed", "#0d9488", "#f59e0b",
-  "#ea580c", "#6366f1", "#0ea5e9", "#a855f7",
+  "var(--chart-4)",  "var(--chart-3)",  "var(--chart-6)",  "var(--chart-7)",
+  "var(--chart-8)",  "var(--chart-5)",  "var(--chart-10)", "var(--chart-9)",
 ];
 
 const C = {
-  income:  "hsl(var(--chart-income))",
-  expense: "hsl(var(--chart-expense))",
-  net:     "hsl(var(--chart-net))",
+  income:  "var(--chart-income)",
+  expense: "var(--chart-expense)",
+  net:     "var(--chart-net)",
 } as const;
 
 const DEFAULT_FROM = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
@@ -106,7 +105,7 @@ function SparkBars({ values, color }: { values: number[]; color?: string }) {
         <div
           key={i}
           className="w-[4px] rounded-[2px]"
-          style={{ height: `${Math.max(12, (v / max) * 100)}%`, backgroundColor: color ?? "hsl(var(--foreground))" }}
+          style={{ height: `${Math.max(12, (v / max) * 100)}%`, backgroundColor: color ?? "var(--foreground)" }}
         />
       ))}
     </div>
@@ -528,7 +527,7 @@ export default function CustomerDetailPage() {
           <Button
             size="sm" variant="outline"
             className="h-8 text-xs gap-1.5"
-            style={{ color: C.income, borderColor: "hsl(var(--chart-income) / 0.4)" }}
+            style={{ color: C.income, borderColor: "oklch(from var(--chart-income) l c h / 0.4)" }}
             onClick={() => setAddTxType("income")}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -537,7 +536,7 @@ export default function CustomerDetailPage() {
           <Button
             size="sm" variant="outline"
             className="h-8 text-xs gap-1.5"
-            style={{ color: C.expense, borderColor: "hsl(var(--chart-expense) / 0.4)" }}
+            style={{ color: C.expense, borderColor: "oklch(from var(--chart-expense) l c h / 0.4)" }}
             onClick={() => setAddTxType("expense")}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -724,7 +723,7 @@ export default function CustomerDetailPage() {
                 <Legend
                   iconType="circle"
                   iconSize={7}
-                  wrapperStyle={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}
+                  wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -759,7 +758,7 @@ export default function CustomerDetailPage() {
                 <Legend
                   iconType="circle"
                   iconSize={7}
-                  wrapperStyle={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}
+                  wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -767,22 +766,22 @@ export default function CustomerDetailPage() {
             /* Fall back to monthly trend if income has no categories */
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={monthlyTrend} barGap={3} barCategoryGap="30%">
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                   tickFormatter={(v) => format(parseISO(v + "-01"), "MMM yy")}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                   tickFormatter={(v) => fmtTick(v)}
                   axisLine={false}
                   tickLine={false}
                   width={42}
                 />
-                <Tooltip content={<BarTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
+                <Tooltip content={<BarTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.5 }} />
                 <Bar dataKey="income" fill={C.income} radius={[3, 3, 0, 0]} name="Income" />
                 <Bar dataKey="expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} name="Expenses" />
               </BarChart>

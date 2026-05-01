@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { TrendArrow } from "@/components/shared/TrendArrow";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -8,6 +8,7 @@ interface StatCardProps {
   subtitle?: string;
   change?: string;
   sparkData?: number[];
+  icon?: React.ReactNode;
 }
 
 function MiniSpark({ data }: { data: number[] }) {
@@ -67,7 +68,7 @@ function useCountUp(target: string, duration = 700) {
   return display;
 }
 
-export default function StatCard({ title, value, subtitle, change, sparkData }: StatCardProps) {
+export default function StatCard({ title, value, subtitle, change, sparkData, icon }: StatCardProps) {
   const display = useCountUp(value);
   const [flash, setFlash] = useState(false);
   const hasMounted = useRef(false);
@@ -82,30 +83,44 @@ export default function StatCard({ title, value, subtitle, change, sparkData }: 
     return () => clearTimeout(t);
   }, [value]);
 
+  const isDown = change?.trimStart().startsWith("-") ?? false;
+
   return (
     <div className={cn(
-      "rounded-xl border border-border bg-card p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300",
-      flash && "ring-1 ring-primary/30 bg-primary/5"
+      "rounded-xl ring-1 ring-foreground/10 bg-gradient-to-t from-primary/5 to-card dark:from-card shadow-[var(--card-shadow)] p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300",
+      flash && "ring-primary/40 bg-primary/5"
     )}>
-      <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
-        {title}
-      </p>
-      <div className="flex items-end justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {title}
+        </p>
+        {icon && (
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg border bg-muted text-muted-foreground shrink-0">
+            {icon}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-end justify-between gap-2 mt-2">
         <div>
           <p className="font-display text-2xl font-bold leading-none tabular-nums">{display}</p>
-          {subtitle && <span className="text-sm text-muted-foreground ml-1">{subtitle}</span>}
+          {subtitle && <span className="text-xs text-muted-foreground mt-1 block">{subtitle}</span>}
         </div>
         {sparkData && <MiniSpark data={sparkData} />}
       </div>
-      {change && (() => {
-        const down = change.trimStart().startsWith("-");
-        return (
-          <div className={`mt-2 flex items-center gap-1 text-xs ${down ? "text-red-500" : "text-emerald-500"}`}>
-            <TrendArrow direction={down ? "down" : "up"} className="h-2.5 w-2.5" />
-            <span>{change}</span>
-          </div>
-        );
-      })()}
+
+      {change && (
+        <div className={cn(
+          "mt-2 flex items-center gap-1 text-xs font-semibold",
+          isDown ? "text-destructive" : "text-success"
+        )}>
+          {isDown
+            ? <TrendingDown className="h-3 w-3" />
+            : <TrendingUp className="h-3 w-3" />
+          }
+          <span>{change}</span>
+        </div>
+      )}
     </div>
   );
 }

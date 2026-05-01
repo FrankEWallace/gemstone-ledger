@@ -75,23 +75,23 @@ export default function SalesTrendChart() {
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} barGap={1} barSize={6}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `${v / 1000}k`}
             />
             <Tooltip
               contentStyle={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
+                background: "var(--card)",
+                border: "1px solid var(--border)",
                 borderRadius: "8px",
                 fontSize: "13px",
               }}
@@ -100,8 +100,8 @@ export default function SalesTrendChart() {
                 name === "newUser" ? "Expenses" : "Income",
               ]}
             />
-            <Bar dataKey="newUser" fill="hsl(var(--foreground))" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="existingUser" fill="hsl(var(--foreground)/0.25)" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="newUser" fill="var(--foreground)" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="existingUser" fill="oklch(from var(--foreground) l c h / 0.25)" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

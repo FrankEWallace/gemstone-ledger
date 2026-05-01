@@ -41,15 +41,15 @@ function fmtShort(n: number) {
 // ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
 
 const C = {
-  income:  "hsl(var(--chart-income))",
-  expense: "hsl(var(--chart-expense))",
-  net:     "hsl(var(--chart-net))",
+  income:  "var(--chart-income)",
+  expense: "var(--chart-expense)",
+  net:     "var(--chart-net)",
   cat: [
-    "hsl(var(--chart-cat-1))",
-    "hsl(var(--chart-cat-2))",
-    "hsl(var(--chart-cat-3))",
-    "hsl(var(--chart-cat-4))",
-    "hsl(var(--chart-cat-5))",
+    "var(--chart-cat-1)",
+    "var(--chart-cat-2)",
+    "var(--chart-cat-3)",
+    "var(--chart-cat-4)",
+    "var(--chart-cat-5)",
   ],
 } as const;
 
@@ -434,21 +434,21 @@ export default function ReportsPage() {
           <>
             <ResponsiveContainer width="100%" height={230}>
               <BarChart data={trendChartData} barGap={3} barCategoryGap="32%">
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v) => fmtTick(v)}
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                   axisLine={false}
                   tickLine={false}
                   width={44}
                 />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.5 }} />
                 <Bar dataKey="Income"   name="Income"   fill={C.income}          radius={[3, 3, 0, 0]} />
                 <Bar dataKey="Expenses" name="Expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} />
               </BarChart>
@@ -522,21 +522,21 @@ export default function ReportsPage() {
           ) : (
             <ResponsiveContainer width="100%" height={190}>
               <LineChart data={prodChartData} margin={{ left: -20, right: 8 }}>
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                   axisLine={false}
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v) => `${v}h`}
                 />
-                <Tooltip content={<ChartTooltip />} cursor={{ stroke: "hsl(var(--border))" }} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: "var(--border)" }} />
                 <Line
                   type="monotone"
                   dataKey="Hours"

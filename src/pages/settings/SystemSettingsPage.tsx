@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid } from "lucide-react";
+import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid, Type } from "lucide-react";
+import FontPicker from "@/components/shared/FontPicker";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getBackendConfig } from "@/lib/providers/backendConfig";
@@ -441,6 +442,20 @@ export default function SystemSettingsPage() {
   return (
     <div className="p-4 lg:p-6 space-y-8 max-w-2xl">
       <h1 className="font-display text-2xl font-bold">System Settings</h1>
+
+      {/* Appearance */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Type className="h-4 w-4 text-muted-foreground" />
+          <h2 className="font-semibold text-sm">Appearance</h2>
+        </div>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">Interface font — saved to this browser.</p>
+          <FontPicker />
+        </div>
+      </div>
+
+      <div className="border-t border-border" />
 
       {/* Logo */}
       <div>

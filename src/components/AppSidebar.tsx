@@ -78,11 +78,10 @@ const extensionItems: NavItem[] = [
   { label: "Channels",   icon: Layers,        to: "/supply/channels",  module: "supply_chain" },
 ];
 
-// Sections that can be toggled in the customizer (Core is always visible)
 const TOGGLEABLE_SECTIONS: { key: NavSectionKey; label: string; description: string }[] = [
-  { key: "operations", label: "Operations",   description: "Suppliers and order management" },
+  { key: "operations", label: "Operations",    description: "Suppliers and order management" },
   { key: "team",       label: "Team & System", description: "Team, roles, and audit log" },
-  { key: "extensions", label: "Extensions",   description: "Equipment, production, messages…" },
+  { key: "extensions", label: "Extensions",    description: "Equipment, production, messages…" },
 ];
 
 // ─── NavSection ───────────────────────────────────────────────────────────────
@@ -99,16 +98,16 @@ function NavSection({
   badge?: React.ReactNode;
 }) {
   return (
-    <div className="mb-5">
+    <div className="mb-4">
       {title && (
-        <div className="flex items-center gap-1.5 px-3 mb-1">
-          <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
+        <div className="flex items-center gap-1.5 px-3 mb-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
             {title}
           </p>
           {badge}
         </div>
       )}
-      <ul className="space-y-0.5">
+      <ul className="space-y-px">
         {items.map((item) => (
           <li key={item.to}>
             <NavLink
@@ -117,19 +116,31 @@ function NavSection({
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
-                  "flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                  "relative flex w-full items-center gap-2.5 rounded-md px-3 py-[7px] text-sm transition-all duration-150",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                 )
               }
             >
-              <item.icon className="h-[15px] w-[15px] shrink-0 opacity-60" />
-              <span className="flex-1">{item.label}</span>
-              {item.badge != null && item.badge > 0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
-                  {item.badge > 99 ? "99+" : item.badge}
-                </span>
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-full bg-sidebar-primary" />
+                  )}
+                  <item.icon
+                    className={cn(
+                      "h-[15px] w-[15px] shrink-0 transition-opacity",
+                      isActive ? "opacity-80" : "opacity-45"
+                    )}
+                  />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {item.badge != null && item.badge > 0 && (
+                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-sidebar-primary text-[10px] font-bold text-sidebar-primary-foreground px-1">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  )}
+                </>
               )}
             </NavLink>
           </li>
@@ -147,15 +158,15 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
   return (
     <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-xl border border-sidebar-border bg-sidebar shadow-2xl">
       <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border">
-        <p className="text-sm font-medium">Customize sidebar</p>
+        <p className="text-sm font-semibold">Customize sidebar</p>
         <button
           onClick={onClose}
-          className="rounded-md p-1 hover:bg-sidebar-accent transition-colors"
+          className="rounded-md p-1 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="px-3 py-2 space-y-0.5 max-h-64 overflow-y-auto">
+      <div className="px-3 py-2 space-y-px max-h-64 overflow-y-auto">
         {TOGGLEABLE_SECTIONS.map((section) => {
           const hidden = isSectionHidden(section.key);
           return (
@@ -163,25 +174,25 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
               key={section.key}
               onClick={() => toggleSection(section.key)}
               className={cn(
-                "w-full flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-sidebar-accent/50",
+                "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-sidebar-accent/50",
                 hidden && "opacity-50"
               )}
             >
               <span className={cn(
-                "flex h-7 w-7 items-center justify-center rounded border shrink-0 transition-colors",
+                "flex h-7 w-7 items-center justify-center rounded-md border shrink-0 transition-colors",
                 hidden
-                  ? "border-border bg-card text-muted-foreground"
-                  : "border-primary/30 bg-primary/10 text-primary"
+                  ? "border-sidebar-border bg-sidebar text-sidebar-foreground/40"
+                  : "border-sidebar-primary/30 bg-sidebar-primary/10 text-sidebar-primary"
               )}>
                 {hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium leading-tight">{section.label}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{section.description}</p>
+                <p className="text-[11px] text-sidebar-foreground/50 truncate">{section.description}</p>
               </div>
               <span className={cn(
                 "inline-flex h-5 w-9 shrink-0 rounded-full border-2 transition-colors",
-                hidden ? "border-muted bg-muted" : "border-primary bg-primary"
+                hidden ? "border-sidebar-border bg-sidebar-border" : "border-sidebar-primary bg-sidebar-primary"
               )}>
                 <span className={cn(
                   "h-4 w-4 rounded-full bg-white shadow transition-transform",
@@ -193,7 +204,7 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <div className="px-4 py-2.5 border-t border-sidebar-border">
-        <p className="text-[11px] text-muted-foreground text-center">Saved to this browser</p>
+        <p className="text-[11px] text-sidebar-foreground/40 text-center">Saved to this browser</p>
       </div>
     </div>
   );
@@ -248,34 +259,37 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-40 bg-foreground/20 lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-[1px] lg:hidden" onClick={onClose} />
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-sidebar-border bg-sidebar transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2.5 border-b border-sidebar-border px-4 py-3.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
+        <div className="flex items-center gap-2.5 border-b border-sidebar-border px-4 py-[14px]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shrink-0 shadow-sm">
             <Pickaxe className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm leading-tight truncate">FW Mining OS</p>
-            <p className="text-[11px] text-muted-foreground leading-tight">Mining Co.</p>
+            <p className="font-display font-semibold text-sm leading-tight truncate text-sidebar-foreground">
+              FW Mining OS
+            </p>
+            <p className="text-[11px] text-sidebar-foreground/45 leading-tight">Mining Co.</p>
           </div>
-          <button className="lg:hidden rounded-md p-1 hover:bg-sidebar-accent" onClick={onClose}>
+          <button
+            className="lg:hidden rounded-md p-1 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+            onClick={onClose}
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4">
-          {/* Core — always visible */}
+        <nav className="flex-1 overflow-y-auto px-2 py-3 scrollbar-thin">
           <NavSection title="Core" items={filterByModule(coreItems)} onNavigate={onClose} />
 
-          {/* Operations */}
           {!isSectionHidden("operations") && (() => {
             const items = filterByModule(operationsItems);
             return items.length > 0 ? (
@@ -283,7 +297,6 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
             ) : null;
           })()}
 
-          {/* Team & System */}
           {!isSectionHidden("team") && (() => {
             const items = filterByModule(teamItems);
             return items.length > 0 ? (
@@ -291,21 +304,19 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
             ) : null;
           })()}
 
-          {/* Extensions */}
           {!isSectionHidden("extensions") && visibleExtensions.length > 0 && (
             <NavSection
               title="Extensions"
               items={visibleExtensions}
               onNavigate={onClose}
               badge={
-                <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground uppercase tracking-wide">
+                <span className="inline-flex items-center gap-1 rounded-md bg-sidebar-accent px-1.5 py-0.5 text-[9px] font-semibold text-sidebar-foreground/50 uppercase tracking-wide">
                   <Puzzle className="h-2.5 w-2.5" />
                   optional
                 </span>
               }
             />
           )}
-
         </nav>
 
         {/* Settings — pinned above footer */}
@@ -315,15 +326,22 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
             onClick={onClose}
             className={({ isActive }) =>
               cn(
-                "flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                "relative flex w-full items-center gap-2.5 rounded-md px-3 py-[7px] text-sm transition-all duration-150",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
               )
             }
           >
-            <Settings className="h-[15px] w-[15px] shrink-0 opacity-60" />
-            <span>Settings</span>
+            {({ isActive }: { isActive: boolean }) => (
+              <>
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-full bg-sidebar-primary" />
+                )}
+                <Settings className={cn("h-[15px] w-[15px] shrink-0 transition-opacity", isActive ? "opacity-80" : "opacity-45")} />
+                <span>Settings</span>
+              </>
+            )}
           </NavLink>
         </div>
 
@@ -337,7 +355,7 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
               "absolute top-3 right-3 rounded-md p-1.5 transition-colors",
               customizerOpen
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent/50"
+                : "text-sidebar-foreground/40 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
             )}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />

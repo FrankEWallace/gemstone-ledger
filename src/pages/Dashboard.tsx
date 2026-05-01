@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { Label, Pie, PieChart } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   ChevronRight,
   AlertTriangle,
@@ -11,6 +13,8 @@ import {
   Globe,
   User,
   ArrowLeftRight,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import {
   format,
@@ -53,19 +57,19 @@ const fmtFull = fmtFull_;
 // ─── Chart color palette ──────────────────────────────────────────────────────
 
 const C = {
-  income:  "#3b82f6", // blue
-  expense: "#f97316", // orange
-  net:     "#10b981", // emerald
-  loss:    "#ef4444", // red
+  income:  "var(--chart-1)",
+  expense: "var(--chart-2)",
+  net:     "var(--chart-3)",
+  loss:    "var(--destructive)",
   cat: [
-    "#93c5fd", // blue-300
-    "#fdba74", // orange-300
-    "#6ee7b7", // emerald-300
-    "#c4b5fd", // violet-300
-    "#fcd34d", // amber-300
-    "#fca5a5", // red-300
-    "#67e8f9", // cyan-300
-    "#bef264", // lime-300
+    "var(--chart-4)",
+    "var(--chart-7)",
+    "var(--chart-6)",
+    "var(--chart-3)",
+    "var(--chart-8)",
+    "var(--chart-9)",
+    "var(--chart-10)",
+    "var(--chart-5)",
   ],
 } as const;
 
@@ -74,8 +78,8 @@ const C = {
 function TrendBadge({ pct }: { pct: number }) {
   const up = pct >= 0;
   return (
-    <div className={`flex flex-col items-center shrink-0 ${up ? "text-emerald-500" : "text-red-500"}`}>
-      <span className="text-base leading-none">{up ? "▲" : "▼"}</span>
+    <div className={`flex flex-col items-center shrink-0 ${up ? "text-success" : "text-destructive"}`}>
+      {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
       <span className="text-[10px] font-semibold tabular-nums mt-0.5">
         {Math.abs(pct).toFixed(1)}%
       </span>
@@ -146,7 +150,7 @@ function KpiCard({
             <div className="flex-1 h-[3px] rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
-                style={{ width: `${progressPct}%`, backgroundColor: color ?? "hsl(var(--foreground))" }}
+                style={{ width: `${progressPct}%`, backgroundColor: color ?? "var(--foreground)" }}
               />
             </div>
             <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">
@@ -356,9 +360,7 @@ function VsYesterdayBadge({
   return (
     <span
       className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-        good
-          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+        good ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
       }`}
     >
       {isUp ? "↑" : "↓"} {pct}% vs yesterday
@@ -366,91 +368,86 @@ function VsYesterdayBadge({
   );
 }
 
-// ─── Gauge Chart ──────────────────────────────────────────────────────────────
+// ─── Expense Donut Chart ──────────────────────────────────────────────────────
 
-function GaugeChart({
+function ExpenseDonut({
   items,
-  total,
-}: {
-  items: { label: string; value: number; color: string; pct: number }[];
-  total: number;
-}) {
-  const cx = 150, cy = 145, r = 108, sw = 14, GAP = 5;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const pt = (deg: number) => ({ x: cx + r * Math.cos(toRad(deg)), y: cy + r * Math.sin(toRad(deg)) });
-  const arc = (s: number, e: number) => {
-    const { x: sx, y: sy } = pt(s);
-    const { x: ex, y: ey } = pt(e);
-    return `M ${sx.toFixed(2)} ${sy.toFixed(2)} A ${r} ${r} 0 ${Math.abs(e - s) > 180 ? 1 : 0} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`;
-  };
-
-  // Distribute 180° across segments with GAP° gaps between them
-  const n = items.length;
-  const usable = 180 - (n > 1 ? (n - 1) * GAP : 0);
-  let pos = 180;
-  const segs = items.map((item, i) => {
-    const span = total > 0 ? (item.value / total) * usable : 0;
-    const start = pos;
-    const end = start + span;
-    pos = end + (i < n - 1 ? GAP : 0);
-    return { ...item, start, end };
-  });
-
-  return (
-    <svg viewBox="0 0 300 168" className="w-full" aria-hidden="true">
-      {/* Muted track */}
-      <path d={arc(180, 360)} fill="none" stroke="hsl(var(--muted))" strokeWidth={sw} strokeLinecap="round" />
-      {/* Coloured segments with rounded caps */}
-      {segs.map((seg) =>
-        seg.end > seg.start ? (
-          <path key={seg.label} d={arc(seg.start, seg.end)} fill="none" stroke={seg.color} strokeWidth={sw} strokeLinecap="butt" />
-        ) : null
-      )}
-      {/* Total */}
-      <text x={cx} y={cy - 32} textAnchor="middle" fontSize="26" fontWeight="900" fill="currentColor" fontFamily="inherit">
-        {fmtCurrency(total)}
-      </text>
-      <text x={cx} y={cy - 14} textAnchor="middle" fontSize="11" fill="hsl(var(--muted-foreground))" fontFamily="inherit">
-        Total Income
-      </text>
-    </svg>
-  );
-}
-
-// ─── Sparkline Bar ────────────────────────────────────────────────────────────
-
-const SLICES = 60;
-
-function SparklineBar({
-  items,
+  periodTotal,
   isLoading,
 }: {
-  items: { label: string; color: string; pct: number }[];
+  items: { label: string; value: number; color: string; pctDisplay: number }[];
+  periodTotal: number;
   isLoading: boolean;
 }) {
-  const slices = useMemo(() => {
-    if (!items.length) return [];
-    const out: { color: string; key: string }[] = [];
-    items.forEach((item) => {
-      const count = Math.max(1, Math.round((item.pct / 100) * SLICES));
-      for (let i = 0; i < count; i++) out.push({ color: item.color, key: `${item.label}-${i}` });
-    });
-    return out.slice(0, SLICES);
-  }, [items]);
+  const chartConfig = Object.fromEntries(
+    items.map((item) => [item.label, { label: item.label, color: item.color }])
+  );
 
-  if (isLoading) return <div className="h-14 animate-pulse rounded-lg bg-muted" />;
-  if (!slices.length)
+  if (isLoading) {
+    return <div className="h-48 animate-pulse rounded-lg bg-muted" />;
+  }
+
+  if (!items.length) {
     return (
-      <div className="h-14 rounded-lg bg-muted/30 flex items-center justify-center">
+      <div className="h-48 rounded-lg bg-muted/30 flex items-center justify-center">
         <span className="text-[10px] text-muted-foreground">No data</span>
       </div>
     );
+  }
+
+  const chartData = items.map((item) => ({ ...item, fill: item.color }));
 
   return (
-    <div className="flex gap-[3px] h-14">
-      {slices.map((s) => (
-        <div key={s.key} className="flex-1 rounded-[4px]" style={{ backgroundColor: s.color }} />
-      ))}
+    <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
+      <ChartContainer config={chartConfig} className="mx-auto aspect-square h-44">
+        <PieChart>
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent hideLabel className="w-44" nameKey="label" />}
+          />
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="label"
+            innerRadius={55}
+            outerRadius={80}
+            cornerRadius={4}
+            paddingAngle={2}
+            strokeWidth={4}
+          >
+            <Label
+              content={({ viewBox }) => {
+                if (!(viewBox && "cx" in viewBox && "cy" in viewBox)) return null;
+                return (
+                  <text dominantBaseline="middle" textAnchor="middle" x={viewBox.cx} y={viewBox.cy}>
+                    <tspan className="fill-muted-foreground text-[10px]" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>
+                      Total
+                    </tspan>
+                    <tspan className="fill-foreground font-bold text-sm tabular-nums" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
+                      {fmtCurrency(periodTotal)}
+                    </tspan>
+                  </text>
+                );
+              }}
+            />
+          </Pie>
+        </PieChart>
+      </ChartContainer>
+
+      <div className="flex flex-col gap-3 min-w-0">
+        {chartData.map((item) => (
+          <div className="grid grid-cols-[1fr_auto] items-end gap-3" key={item.label}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="h-2 w-1 rounded-full shrink-0" style={{ backgroundColor: item.fill }} />
+                <p className="truncate text-muted-foreground text-xs">{item.label}</p>
+              </div>
+              <p className="font-medium tabular-nums text-sm">{fmtFull(item.value)}</p>
+            </div>
+            <div className="font-medium tabular-nums text-sm">{item.pctDisplay}%</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -583,46 +580,15 @@ function ExpenseBreakdownCard({ siteId }: { siteId: string }) {
         <span className="text-sm text-muted-foreground">spent over {PERIOD_LABEL[period]}</span>
         {comparing && prevPeriodTotal > 0 && (
           <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
-            compareChange! <= 0
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-              : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+            compareChange! <= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
           }`}>
             {compareChange! > 0 ? "+" : ""}{compareChange!.toFixed(1)}% vs prev {PERIOD_LABEL[period]}
           </span>
         )}
       </div>
 
-      {/* Sparkline bar */}
-      <SparklineBar items={items} isLoading={isLoading} />
-
-      {/* Legend */}
-      {items.length > 0 && (
-        <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-          {items.map((item) => (
-            <span key={item.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span className="h-2.5 w-2.5 rounded-[2px] shrink-0" style={{ backgroundColor: item.color }} />
-              {item.label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Divider + list */}
-      {items.length > 0 && (
-        <>
-          <div className="border-t border-border -mx-5" />
-          <div className="space-y-3">
-            {items.map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="flex-1 text-sm text-foreground truncate">{item.label}</span>
-                <span className="text-sm tabular-nums text-foreground">{fmtFull(item.value)}</span>
-                <span className="text-xs tabular-nums text-muted-foreground w-8 text-right">{item.pctDisplay}%</span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      {/* Donut chart + side legend */}
+      <ExpenseDonut items={items} periodTotal={periodTotal} isLoading={isLoading} />
     </div>
   );
 }
@@ -733,42 +699,28 @@ function IncomeBreakdownCard({ siteId }: { siteId: string }) {
         <PeriodPills value={period} onChange={setPeriod} />
       </div>
 
-      {/* Gauge */}
-      <div className="flex-1 flex items-center justify-center min-h-[148px]">
-        {items.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No income data</p>
-        ) : (
-          <GaugeChart items={items} total={total} />
-        )}
-      </div>
-
-      {/* Legend with percentages */}
-      {items.length > 0 && (
-        <div className="flex flex-wrap gap-x-3 gap-y-1.5 justify-center">
+      {/* Income source sections */}
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No income data</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-1 md:grid-cols-3">
           {items.map((item) => (
-            <span key={item.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-              {item.label} <span className="font-semibold text-foreground">{item.pctDisplay}%</span>
-            </span>
+            <section key={item.label} className="isolate flex gap-[0.5px]">
+              <div className="mb-1 w-px self-stretch border-l border-dashed border-muted-foreground/50" />
+              <div className="flex min-h-24 flex-1 flex-col justify-between">
+                <div className="flex flex-col gap-1 px-1">
+                  <p className="text-muted-foreground text-xs leading-none truncate">
+                    {item.label} · {item.pctDisplay}%
+                  </p>
+                  <div className="font-semibold text-base leading-none tracking-tight tabular-nums">
+                    {fmtFull(item.value)}
+                  </div>
+                </div>
+                <div className="-ml-0.5 h-5 rounded-sm" style={{ backgroundColor: item.color }} />
+              </div>
+            </section>
           ))}
         </div>
-      )}
-
-      {/* Divider + list */}
-      {items.length > 0 && (
-        <>
-          <div className="border-t border-border -mx-5" />
-          <div className="space-y-2.5">
-            {items.map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="flex-1 text-xs text-foreground truncate">{item.label}</span>
-                <span className="text-xs tabular-nums text-foreground">{fmtFull(item.value)}</span>
-                <span className="text-xs tabular-nums text-muted-foreground w-8 text-right">{item.pctDisplay}%</span>
-              </div>
-            ))}
-          </div>
-        </>
       )}
     </div>
   );

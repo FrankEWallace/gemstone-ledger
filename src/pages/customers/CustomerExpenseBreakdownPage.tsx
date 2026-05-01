@@ -17,11 +17,11 @@ import { Button } from "@/components/ui/button";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CAT_COLORS = [
-  "hsl(var(--chart-cat-1))",
-  "hsl(var(--chart-cat-2))",
-  "hsl(var(--chart-cat-3))",
-  "hsl(var(--chart-cat-4))",
-  "hsl(var(--chart-cat-5))",
+  "var(--chart-cat-1)",
+  "var(--chart-cat-2)",
+  "var(--chart-cat-3)",
+  "var(--chart-cat-4)",
+  "var(--chart-cat-5)",
 ];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -425,9 +425,9 @@ export default function CustomerExpenseBreakdownPage() {
                   contentStyle={{
                     fontSize: "11px",
                     borderRadius: "8px",
-                    border: "1px solid hsl(var(--border))",
-                    background: "hsl(var(--card))",
-                    color: "hsl(var(--foreground))",
+                    border: "1px solid var(--border)",
+                    background: "var(--card)",
+                    color: "var(--foreground)",
                   }}
                 />
               </PieChart>

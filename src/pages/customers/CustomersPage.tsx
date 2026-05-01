@@ -70,8 +70,8 @@ import { getCustomerSummaries } from "@/services/reports.service";
 // ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
 
 const C = {
-  income:  "hsl(var(--chart-income))",
-  expense: "hsl(var(--chart-expense))",
+  income:  "var(--chart-income)",
+  expense: "var(--chart-expense)",
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

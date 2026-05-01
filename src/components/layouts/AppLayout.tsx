@@ -79,26 +79,31 @@ export default function AppLayout() {
       <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className="flex-1 overflow-y-auto bg-background">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card px-4 lg:px-6 py-3">
-          <div className="flex items-center gap-3">
-            <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
-              <Menu className="h-5 w-5" />
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-sm px-4 lg:px-6 py-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              className="lg:hidden rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
             </button>
-            <span className="text-sm text-muted-foreground">{pageInfo.breadcrumb}</span>
-            {pageInfo.title && (
-              <>
-                <span className="text-muted-foreground text-sm">&gt;</span>
-                <span className="text-sm font-semibold">{pageInfo.title}</span>
-              </>
-            )}
+            <nav className="flex items-center gap-1.5 text-sm min-w-0">
+              <span className="text-muted-foreground/60 truncate">{pageInfo.breadcrumb}</span>
+              {pageInfo.title && (
+                <>
+                  <span className="text-muted-foreground/30 select-none">/</span>
+                  <span className="font-medium text-foreground truncate">{pageInfo.title}</span>
+                </>
+              )}
+            </nav>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setCmdOpen(true)}
-              className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:border-primary/40 transition-colors"
+              className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-border/80 hover:bg-accent/50 transition-colors"
             >
-              <span>Search…</span>
-              <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="text-xs">Search…</span>
+              <kbd className="hidden lg:inline-flex h-4.5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground/70">
                 ⌘K
               </kbd>
             </button>
