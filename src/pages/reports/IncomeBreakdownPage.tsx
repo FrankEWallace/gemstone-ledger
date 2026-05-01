@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ChevronRight, ChevronDown, ArrowLeft, Download, ChevronsUpDown } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip } from "recharts";
 
 import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
@@ -381,52 +380,31 @@ export default function IncomeBreakdownPage() {
         </div>
       </div>
 
-      {/* Donut chart — only when there's data */}
+      {/* Income source sections */}
       {!isLoading && grouped.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-6 items-center">
-            <div className="flex justify-center">
-              <PieChart width={160} height={160}>
-                <Pie
-                  data={grouped.map((g) => ({ name: g.category, value: g.total }))}
-                  cx={80}
-                  cy={80}
-                  innerRadius={48}
-                  outerRadius={72}
-                  paddingAngle={2}
-                  dataKey="value"
-                  strokeWidth={0}
-                >
-                  {grouped.map((g, idx) => (
-                    <Cell key={g.category} fill={CAT_COLORS[idx % CAT_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(v: number) => [fmtCurrency(v), "Amount"]}
-                  contentStyle={{
-                    fontSize: "11px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--card)",
-                    color: "var(--foreground)",
-                  }}
-                />
-              </PieChart>
-            </div>
-            <div className="grid grid-cols-1 xs:grid-cols-2 gap-x-6 gap-y-2">
-              {grouped.map((g, idx) => (
-                <div key={g.category} className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: CAT_COLORS[idx % CAT_COLORS.length] }}
-                  />
-                  <span className="text-xs truncate flex-1 text-foreground">{g.category}</span>
-                  <span className="text-xs font-semibold tabular-nums text-muted-foreground shrink-0">
-                    {fmtCurrency(g.total)}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Income sources</p>
+          <div className="grid grid-cols-2 gap-1 md:grid-cols-3">
+            {grouped.map((g, idx) => {
+              const color = CAT_COLORS[idx % CAT_COLORS.length];
+              const pct = grandTotal > 0 ? Math.round((g.total / grandTotal) * 100) : 0;
+              return (
+                <section key={g.category} className="isolate flex gap-[0.5px]">
+                  <div className="mb-1 w-px self-stretch border-l border-dashed border-muted-foreground/50" />
+                  <div className="flex min-h-24 flex-1 flex-col justify-between">
+                    <div className="flex flex-col gap-1 px-1">
+                      <p className="text-muted-foreground text-xs leading-none truncate">
+                        {g.category} · {pct}%
+                      </p>
+                      <div className="font-semibold text-base leading-none tracking-tight tabular-nums">
+                        {fmtCurrency(g.total)}
+                      </div>
+                    </div>
+                    <div className="-ml-0.5 h-5 rounded-sm" style={{ backgroundColor: color }} />
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </div>
       )}

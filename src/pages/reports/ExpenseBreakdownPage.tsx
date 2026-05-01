@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ChevronRight, ChevronDown, ArrowLeft, Download, ChevronsUpDown } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import { Label as ChartLabel, Pie, PieChart } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
@@ -381,55 +382,58 @@ export default function ExpenseBreakdownPage() {
         </div>
       </div>
 
-      {/* Donut chart — only when there's data */}
-      {!isLoading && grouped.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-6 items-center">
-            <div className="flex justify-center">
-              <PieChart width={160} height={160}>
-                <Pie
-                  data={grouped.map((g) => ({ name: g.category, value: g.total }))}
-                  cx={80}
-                  cy={80}
-                  innerRadius={48}
-                  outerRadius={72}
-                  paddingAngle={2}
-                  dataKey="value"
-                  strokeWidth={0}
-                >
-                  {grouped.map((g, idx) => (
-                    <Cell key={g.category} fill={CAT_COLORS[idx % CAT_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(v: number) => [fmtCurrency(v), "Amount"]}
-                  contentStyle={{
-                    fontSize: "11px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--card)",
-                    color: "var(--foreground)",
-                  }}
-                />
-              </PieChart>
-            </div>
-            <div className="grid grid-cols-1 xs:grid-cols-2 gap-x-6 gap-y-2">
-              {grouped.map((g, idx) => (
-                <div key={g.category} className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: CAT_COLORS[idx % CAT_COLORS.length] }}
-                  />
-                  <span className="text-xs truncate flex-1 text-foreground">{g.category}</span>
-                  <span className="text-xs font-semibold tabular-nums text-muted-foreground shrink-0">
-                    {fmtCurrency(g.total)}
-                  </span>
-                </div>
-              ))}
+      {/* Styled donut chart */}
+      {!isLoading && grouped.length > 0 && (() => {
+        const chartConfig = Object.fromEntries(
+          grouped.map((g, idx) => [g.category, { label: g.category, color: CAT_COLORS[idx % CAT_COLORS.length] }])
+        );
+        const chartData = grouped.map((g, idx) => ({
+          name: g.category,
+          value: g.total,
+          fill: CAT_COLORS[idx % CAT_COLORS.length],
+          pct: grandTotal > 0 ? Math.round((g.total / grandTotal) * 100) : 0,
+        }));
+        return (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
+              <ChartContainer config={chartConfig} className="mx-auto aspect-square h-44">
+                <PieChart>
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel className="w-44" nameKey="name" />} />
+                  <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={80} cornerRadius={4} paddingAngle={2} strokeWidth={4}>
+                    <ChartLabel
+                      content={({ viewBox }) => {
+                        if (!(viewBox && "cx" in viewBox && "cy" in viewBox)) return null;
+                        return (
+                          <text dominantBaseline="middle" textAnchor="middle" x={viewBox.cx} y={viewBox.cy}>
+                            <tspan className="fill-muted-foreground text-[10px]" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>Total</tspan>
+                            <tspan className="fill-foreground font-bold text-sm tabular-nums" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
+                              {fmtCurrency(grandTotal)}
+                            </tspan>
+                          </text>
+                        );
+                      }}
+                    />
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+              <div className="flex flex-col gap-3 min-w-0">
+                {chartData.map((item) => (
+                  <div className="grid grid-cols-[1fr_auto] items-end gap-3" key={item.name}>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="h-2 w-1 rounded-full shrink-0" style={{ backgroundColor: item.fill }} />
+                        <p className="truncate text-muted-foreground text-xs">{item.name}</p>
+                      </div>
+                      <p className="font-medium tabular-nums text-sm">{fmtCurrency(item.value)}</p>
+                    </div>
+                    <div className="font-medium tabular-nums text-sm">{item.pct}%</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Controls bar */}
       <div className="flex flex-wrap items-center gap-2">

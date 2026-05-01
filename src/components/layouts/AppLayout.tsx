@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Menu, FlaskConical, X } from "lucide-react";
+import { Menu, FlaskConical, X, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
 import ThemeToggle from "@/components/shared/ThemeToggle";
@@ -43,6 +43,9 @@ export default function AppLayout() {
   const { userProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(
+    () => localStorage.getItem("desktopSidebarOpen") !== "false"
+  );
   const [cmdOpen, setCmdOpen] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const demoActive = isDemoMode();
@@ -76,7 +79,7 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} desktopOpen={desktopSidebarOpen} />
 
       <main className="flex-1 overflow-y-auto bg-background">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-sm px-4 lg:px-6 py-2.5">
@@ -86,6 +89,18 @@ export default function AppLayout() {
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="h-4 w-4" />
+            </button>
+            <button
+              className="hidden lg:flex rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              onClick={() => {
+                setDesktopSidebarOpen((o) => {
+                  localStorage.setItem("desktopSidebarOpen", String(!o));
+                  return !o;
+                });
+              }}
+              title={desktopSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            >
+              {desktopSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
             </button>
             <nav className="flex items-center gap-1.5 text-sm min-w-0">
               <span className="text-muted-foreground/60 truncate">{pageInfo.breadcrumb}</span>

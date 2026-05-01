@@ -214,7 +214,7 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
 
 const MESSAGES_SEEN_KEY = "messagesLastSeen";
 
-export default function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function AppSidebar({ open, onClose, desktopOpen = true }: { open: boolean; onClose: () => void; desktopOpen?: boolean }) {
   const { activeSiteId } = useSite();
   const location = useLocation();
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -264,7 +264,8 @@ export default function AppSidebar({ open, onClose }: { open: boolean; onClose: 
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full"
+          open ? "translate-x-0" : "-translate-x-full",
+          !desktopOpen && "lg:hidden"
         )}
       >
         {/* Logo */}
