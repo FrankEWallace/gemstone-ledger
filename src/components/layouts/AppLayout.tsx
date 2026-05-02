@@ -17,7 +17,8 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/customers":    { breadcrumb: "Core",       title: "Customers" },
   "/transactions": { breadcrumb: "Core",       title: "Transactions" },
   "/inventory":    { breadcrumb: "Core",       title: "Inventory" },
-  "/reports":      { breadcrumb: "Core",       title: "Reports" },
+  "/reports":            { breadcrumb: "Core",       title: "Reports" },
+  "/reports/inventory":  { breadcrumb: "Reports",    title: "Inventory Report" },
   // Operations
   "/supply/suppliers": { breadcrumb: "Operations", title: "Suppliers" },
   "/supply/orders":    { breadcrumb: "Operations", title: "Orders" },

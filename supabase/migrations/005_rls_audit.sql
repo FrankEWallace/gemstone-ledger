@@ -10,7 +10,7 @@
 ALTER TABLE public.organizations       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sites               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.org_members         ENABLE ROW LEVEL SECURITY;
+-- org_members table does not exist; membership is tracked via user_profiles.org_id
 ALTER TABLE public.site_roles          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inventory_items     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions        ENABLE ROW LEVEL SECURITY;
@@ -37,9 +37,9 @@ SECURITY DEFINER
 AS $$
   SELECT EXISTS (
     SELECT 1
-    FROM public.org_members
-    WHERE org_members.org_id = $1
-      AND org_members.user_id = auth.uid()
+    FROM public.user_profiles
+    WHERE user_profiles.org_id = $1
+      AND user_profiles.id = auth.uid()
   );
 $$;
 

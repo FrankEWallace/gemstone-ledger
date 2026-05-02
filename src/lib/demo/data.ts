@@ -490,3 +490,28 @@ export const DEMO_CUSTOMER_SUMMARIES = [
     ],
   },
 ];
+
+// ─── Inventory Write-offs ─────────────────────────────────────────────────────
+
+export const DEMO_INVENTORY_WRITE_OFFS = [
+  { id: "dwo1", site_id: DEMO_SITE_ID, inventory_item_id: "di1", quantity: 3, reason: "damaged",    notes: "Cracked shells from equipment drop",    written_off_at: daysAgo(5),  written_off_by: DEMO_USER_ID, created_at: tsAgo(120) },
+  { id: "dwo2", site_id: DEMO_SITE_ID, inventory_item_id: "di6", quantity: 2, reason: "expired",    notes: "Past shelf life, manufacturer advisory", written_off_at: daysAgo(12), written_off_by: DEMO_USER_ID, created_at: tsAgo(288) },
+  { id: "dwo3", site_id: DEMO_SITE_ID, inventory_item_id: "di9", quantity: 15, reason: "stocktake", notes: "Stocktake adjustment — Q2 count",         written_off_at: daysAgo(20), written_off_by: DEMO_USER_ID, created_at: tsAgo(480) },
+  { id: "dwo4", site_id: DEMO_SITE_ID, inventory_item_id: "di7", quantity: 12, reason: "theft",     notes: "Missing after site access incident",      written_off_at: daysAgo(28), written_off_by: DEMO_USER_ID, created_at: tsAgo(672) },
+  { id: "dwo5", site_id: DEMO_SITE_ID, inventory_item_id: "di3", quantity: 1,  reason: "damaged",   notes: "Boot sole separation — unfit for use",   written_off_at: daysAgo(35), written_off_by: DEMO_USER_ID, created_at: tsAgo(840) },
+];
+
+// ─── Inventory Usage (for report demo) ───────────────────────────────────────
+
+export const DEMO_INVENTORY_USAGE = [
+  { id: "diu1",  inventoryItemId: "di5",  itemName: "Diesel (Bulk)",              category: "Fuel",        unit: "L",    quantityConsumed: 800,  valueConsumed: 1480,  customerId: DEMO_CUSTOMER_ID_INTERNAL, customerName: "Internal Operations",      transactionDate: daysAgo(3)  },
+  { id: "diu2",  inventoryItemId: "di4",  itemName: "Hydraulic Fluid 46W",        category: "Lubricants",  unit: "L",    quantityConsumed: 6,    valueConsumed: 72,    customerId: DEMO_CUSTOMER_ID_INTERNAL, customerName: "Internal Operations",      transactionDate: daysAgo(6)  },
+  { id: "diu3",  inventoryItemId: "di9",  itemName: "Cyanide Solution 10%",       category: "Reagents",    unit: "L",    quantityConsumed: 40,   valueConsumed: 880,   customerId: DEMO_CUSTOMER_ID_EXT1,     customerName: "Goldfield Contractors",    transactionDate: daysAgo(8)  },
+  { id: "diu4",  inventoryItemId: "di8",  itemName: "ANFO Bulk",                  category: "Explosives",  unit: "kg",   quantityConsumed: 400,  valueConsumed: 380,   customerId: DEMO_CUSTOMER_ID_EXT2,     customerName: "Apex Drilling Services",  transactionDate: daysAgo(11) },
+  { id: "diu5",  inventoryItemId: "di1",  itemName: "Safety Helmets",             category: "PPE",         unit: "pcs",  quantityConsumed: 5,    valueConsumed: 225,   customerId: DEMO_CUSTOMER_ID_INTERNAL, customerName: "Internal Operations",      transactionDate: daysAgo(14) },
+  { id: "diu6",  inventoryItemId: "di5",  itemName: "Diesel (Bulk)",              category: "Fuel",        unit: "L",    quantityConsumed: 600,  valueConsumed: 1110,  customerId: DEMO_CUSTOMER_ID_EXT2,     customerName: "Apex Drilling Services",  transactionDate: daysAgo(16) },
+  { id: "diu7",  inventoryItemId: "di11", itemName: "Oil Filters (CAT 390)",      category: "Maintenance", unit: "pcs",  quantityConsumed: 4,    valueConsumed: 260,   customerId: DEMO_CUSTOMER_ID_INTERNAL, customerName: "Internal Operations",      transactionDate: daysAgo(19) },
+  { id: "diu8",  inventoryItemId: "di10", itemName: "Hydrated Lime",              category: "Reagents",    unit: "kg",   quantityConsumed: 200,  valueConsumed: 90,    customerId: DEMO_CUSTOMER_ID_EXT1,     customerName: "Goldfield Contractors",    transactionDate: daysAgo(22) },
+  { id: "diu9",  inventoryItemId: "di16", itemName: "Grease Cartridges (Molycote)",category:"Lubricants",  unit: "pcs",  quantityConsumed: 8,    valueConsumed: 112,   customerId: DEMO_CUSTOMER_ID_INTERNAL, customerName: "Internal Operations",      transactionDate: daysAgo(24) },
+  { id: "diu10", inventoryItemId: "di17", itemName: "Activated Carbon",           category: "Reagents",    unit: "kg",   quantityConsumed: 100,  valueConsumed: 380,   customerId: DEMO_CUSTOMER_ID_EXT1,     customerName: "Goldfield Contractors",    transactionDate: daysAgo(27) },
+];

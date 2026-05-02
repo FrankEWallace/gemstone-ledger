@@ -458,6 +458,57 @@ export type Database = {
           },
         ]
       }
+      inventory_write_offs: {
+        Row: {
+          id: string
+          site_id: string
+          inventory_item_id: string
+          quantity: number
+          reason: string
+          notes: string | null
+          written_off_at: string
+          written_off_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          site_id: string
+          inventory_item_id: string
+          quantity: number
+          reason: string
+          notes?: string | null
+          written_off_at?: string
+          written_off_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          site_id?: string
+          inventory_item_id?: string
+          quantity?: number
+          reason?: string
+          notes?: string | null
+          written_off_at?: string
+          written_off_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_write_offs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_write_offs_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kpi_targets: {
         Row: {
           created_at: string
@@ -1454,5 +1505,13 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+// Convenience row-type aliases
+export type InventoryItem      = Database["public"]["Tables"]["inventory_items"]["Row"]
+export type InventoryWriteOff  = Database["public"]["Tables"]["inventory_write_offs"]["Row"]
+export type Transaction        = Database["public"]["Tables"]["transactions"]["Row"]
+export type TransactionType    = Transaction["type"]
+export type TransactionStatus  = Transaction["status"]
+export type Customer           = Database["public"]["Tables"]["customers"]["Row"]
 A new version of Supabase CLI is available: v2.95.4 (currently installed v2.90.0)
 We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

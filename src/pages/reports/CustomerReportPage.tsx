@@ -15,18 +15,17 @@ import {
 } from "lucide-react";
 import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  Legend,
+  Label as PieLabel,
 } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 import { useSite } from "@/hooks/useSite";
 import { Input } from "@/components/ui/input";
@@ -127,31 +126,6 @@ function PlainKpiCard({
   );
 }
 
-function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
-      <p className="font-semibold mb-1.5">{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.dataKey} className="flex items-center gap-2 text-muted-foreground">
-          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: p.fill ?? p.stroke }} />
-          {p.name}:&nbsp;
-          <span className="font-semibold text-foreground">{fmt(p.value)}</span>
-        </p>
-      ))}
-    </div>
-  );
-}
-
-function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
-      <p className="font-semibold text-foreground mb-0.5">{payload[0].name}</p>
-      <p className="tabular-nums text-muted-foreground">{fmt(payload[0].value)}</p>
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -242,57 +216,85 @@ export default function CustomerReportPage() {
       const { pdf, Document, Page, Text, View, StyleSheet } =
         await import("@react-pdf/renderer");
 
+      const NAVY  = "#1a2035";
+      const GREEN = "#2a9d50";
+      const RED   = "#ef4444";
+
       const s = StyleSheet.create({
-        page:                { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
-        title:               { fontSize: 18, fontWeight: "bold", marginBottom: 3 },
-        subtitle:            { fontSize: 9, color: "#666", marginBottom: 24 },
-        section:             { marginBottom: 20 },
-        sectionTitle:        { fontSize: 7, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#888", borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 4, marginBottom: 8 },
-        row:                 { flexDirection: "row", marginBottom: 6 },
-        statBox:             { flex: 1, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4, marginRight: 8 },
-        statLabel:           { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
-        statValue:           { fontSize: 14, fontWeight: "bold" },
-        tableHeader:         { flexDirection: "row", backgroundColor: "#f3f4f6", padding: "5 8", borderRadius: 3, marginBottom: 2 },
-        tableRow:            { flexDirection: "row", padding: "4 8", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-        tableCell:           { flex: 1, fontSize: 9, color: "#555" },
-        tableCellBold:       { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111" },
-        tableCellRight:      { flex: 1, fontSize: 9, textAlign: "right", color: "#555" },
-        tableCellRightBold:  { flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: "#111" },
-        tableCellNarrow:     { flex: 0.6, fontSize: 9, color: "#555" },
-        tableCellNarrowRight:{ flex: 0.6, fontSize: 9, textAlign: "right", color: "#555" },
+        page:         { paddingTop: 60, paddingBottom: 48, paddingLeft: 40, paddingRight: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
+        // Fixed header band
+        header:       { position: "absolute", top: 0, left: 0, right: 0, height: 40, backgroundColor: NAVY, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
+        headerLeft:   { color: "#ffffff", fontSize: 8, fontWeight: "bold", letterSpacing: 1 },
+        headerRight:  { color: "#8a9dbe", fontSize: 7 },
+        // Fixed footer band
+        footer:       { position: "absolute", bottom: 0, left: 0, right: 0, height: 28, backgroundColor: NAVY, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
+        footerText:   { color: "#7b8ea8", fontSize: 7 },
+        // Title block
+        titleBlock:   { marginBottom: 20 },
+        title:        { fontSize: 22, fontWeight: "bold", color: NAVY, marginBottom: 4 },
+        subtitle:     { fontSize: 9, color: "#888" },
+        // Sections
+        section:      { marginBottom: 22 },
+        sectionTitle: { fontSize: 7, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: NAVY, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10 },
+        // KPI row
+        row:          { flexDirection: "row", marginBottom: 6 },
+        statBox:      { flex: 1, marginRight: 8, borderRadius: 3, borderWidth: 1, borderColor: "#e5e7eb", borderLeftWidth: 3, borderLeftColor: NAVY, padding: 10 },
+        statLabel:    { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+        statValue:    { fontSize: 14, fontWeight: "bold", color: "#111" },
+        // Table
+        tableHeader:  { flexDirection: "row", backgroundColor: NAVY, padding: "6 8", borderRadius: 3, marginBottom: 0 },
+        trOdd:        { flexDirection: "row", padding: "5 8", backgroundColor: "#ffffff" },
+        trEven:       { flexDirection: "row", padding: "5 8", backgroundColor: "#f4f6f9" },
+        thCell:       { flex: 1, fontSize: 8, fontWeight: "bold", color: "#ffffff" },
+        thCellRight:  { flex: 1, fontSize: 8, fontWeight: "bold", color: "#ffffff", textAlign: "right" },
+        tdCell:       { flex: 1, fontSize: 9, color: "#444" },
+        tdCellRight:  { flex: 1, fontSize: 9, color: "#444", textAlign: "right" },
+        tdCellBold:   { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111", textAlign: "right" },
       });
 
       const blob = await pdf(
         <Document>
           <Page size="A4" style={s.page}>
-            {/* Header */}
-            <Text style={s.title}>{customerName} — Financial Report</Text>
-            <Text style={s.subtitle}>
-              {siteName} · {periodLabel} · Generated {format(new Date(), "d MMM yyyy")}
-            </Text>
+            {/* Fixed navy header — repeats on every page */}
+            <View fixed style={s.header}>
+              <Text style={s.headerLeft}>FW MINING OS  ·  {siteName.toUpperCase()}</Text>
+              <Text style={s.headerRight}>{customerName}  ·  {periodLabel}</Text>
+            </View>
+
+            {/* Fixed navy footer with page numbers */}
+            <View fixed style={s.footer}>
+              <Text style={s.footerText}>Confidential  ·  Generated {format(new Date(), "d MMM yyyy")}</Text>
+              <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} style={s.footerText} />
+            </View>
+
+            {/* Report title */}
+            <View style={s.titleBlock}>
+              <Text style={s.title}>{customerName}</Text>
+              <Text style={s.subtitle}>Financial Report  ·  {periodLabel}</Text>
+            </View>
 
             {/* KPI summary */}
             <View style={s.section}>
               <Text style={s.sectionTitle}>Summary</Text>
               <View style={s.row}>
                 {[
-                  { label: "Total Income",   val: fmt(summary.totalIncome) },
-                  { label: "Total Expenses", val: fmt(summary.totalExpenses) },
-                  { label: "Net Profit",     val: fmt(summary.netProfit) },
+                  { label: "Total Income",   val: fmt(summary.totalIncome),   accent: GREEN },
+                  { label: "Total Expenses", val: fmt(summary.totalExpenses), accent: RED },
+                  { label: "Net Profit",     val: fmt(summary.netProfit),     accent: summary.netProfit >= 0 ? GREEN : RED },
                 ].map((item) => (
-                  <View key={item.label} style={s.statBox}>
+                  <View key={item.label} style={[s.statBox, { borderLeftColor: item.accent }]}>
                     <Text style={s.statLabel}>{item.label}</Text>
                     <Text style={s.statValue}>{item.val}</Text>
                   </View>
                 ))}
               </View>
-              <View style={{ ...s.row, marginTop: 4 }}>
+              <View style={[s.row, { marginTop: 6 }]}>
                 {[
                   { label: "Margin",       val: `${margin}%` },
                   { label: "Transactions", val: String(summary.transactionCount) },
                   { label: "Days Worked",  val: String(daysWorked) },
                 ].map((item) => (
-                  <View key={item.label} style={s.statBox}>
+                  <View key={item.label} style={[s.statBox, { borderLeftColor: NAVY }]}>
                     <Text style={s.statLabel}>{item.label}</Text>
                     <Text style={s.statValue}>{item.val}</Text>
                   </View>
@@ -305,17 +307,17 @@ export default function CustomerReportPage() {
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Monthly Revenue vs Expenses</Text>
                 <View style={s.tableHeader}>
-                  <Text style={s.tableCellBold}>Month</Text>
-                  <Text style={s.tableCellRight}>Income</Text>
-                  <Text style={s.tableCellRight}>Expenses</Text>
-                  <Text style={s.tableCellRightBold}>Net</Text>
+                  <Text style={s.thCell}>Month</Text>
+                  <Text style={s.thCellRight}>Income</Text>
+                  <Text style={s.thCellRight}>Expenses</Text>
+                  <Text style={s.thCellRight}>Net</Text>
                 </View>
-                {monthlyTrend.map((row) => (
-                  <View key={row.month} style={s.tableRow}>
-                    <Text style={s.tableCell}>{row.month}</Text>
-                    <Text style={s.tableCellRight}>{fmt(row.income)}</Text>
-                    <Text style={s.tableCellRight}>{fmt(row.expenses)}</Text>
-                    <Text style={s.tableCellRightBold}>{fmt(row.income - row.expenses)}</Text>
+                {monthlyTrend.map((row, idx) => (
+                  <View key={row.month} style={idx % 2 === 0 ? s.trOdd : s.trEven}>
+                    <Text style={s.tdCell}>{row.month}</Text>
+                    <Text style={s.tdCellRight}>{fmt(row.income)}</Text>
+                    <Text style={s.tdCellRight}>{fmt(row.expenses)}</Text>
+                    <Text style={s.tdCellBold}>{fmt(row.income - row.expenses)}</Text>
                   </View>
                 ))}
               </View>
@@ -326,19 +328,19 @@ export default function CustomerReportPage() {
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Expenses by Category</Text>
                 <View style={s.tableHeader}>
-                  <Text style={s.tableCellBold}>Category</Text>
-                  <Text style={s.tableCellRight}>Total</Text>
-                  <Text style={s.tableCellNarrowRight}>% of Expenses</Text>
+                  <Text style={s.thCell}>Category</Text>
+                  <Text style={s.thCellRight}>Total</Text>
+                  <Text style={[s.thCellRight, { flex: 0.7 }]}>% of Expenses</Text>
                 </View>
-                {expenseByCategory.map((row) => {
+                {expenseByCategory.map((row, idx) => {
                   const pct = summary.totalExpenses > 0
                     ? ((row.total / summary.totalExpenses) * 100).toFixed(1)
                     : "0.0";
                   return (
-                    <View key={row.category} style={s.tableRow}>
-                      <Text style={s.tableCell}>{row.category}</Text>
-                      <Text style={s.tableCellRight}>{fmt(row.total)}</Text>
-                      <Text style={s.tableCellNarrowRight}>{pct}%</Text>
+                    <View key={row.category} style={idx % 2 === 0 ? s.trOdd : s.trEven}>
+                      <Text style={s.tdCell}>{row.category}</Text>
+                      <Text style={s.tdCellRight}>{fmt(row.total)}</Text>
+                      <Text style={[s.tdCellRight, { flex: 0.7 }]}>{pct}%</Text>
                     </View>
                   );
                 })}
@@ -350,21 +352,21 @@ export default function CustomerReportPage() {
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Transactions ({sortedTx.length})</Text>
                 <View style={s.tableHeader}>
-                  <Text style={s.tableCellNarrow}>Date</Text>
-                  <Text style={s.tableCellBold}>Description</Text>
-                  <Text style={s.tableCellNarrow}>Type</Text>
-                  <Text style={s.tableCellNarrow}>Status</Text>
-                  <Text style={s.tableCellNarrowRight}>Amount</Text>
+                  <Text style={[s.thCell, { flex: 0.7 }]}>Date</Text>
+                  <Text style={s.thCell}>Description</Text>
+                  <Text style={[s.thCell, { flex: 0.6 }]}>Type</Text>
+                  <Text style={[s.thCell, { flex: 0.6 }]}>Status</Text>
+                  <Text style={[s.thCellRight, { flex: 0.8 }]}>Amount</Text>
                 </View>
-                {sortedTx.map((t) => {
+                {sortedTx.map((t, idx) => {
                   const amount = (t.quantity as number) * (t.unit_price as number);
                   return (
-                    <View key={t.id} style={s.tableRow}>
-                      <Text style={s.tableCellNarrow}>{format(new Date(t.transaction_date), "d MMM yy")}</Text>
-                      <Text style={s.tableCell}>{t.description || "—"}</Text>
-                      <Text style={s.tableCellNarrow}>{t.type}</Text>
-                      <Text style={s.tableCellNarrow}>{t.status}</Text>
-                      <Text style={s.tableCellNarrowRight}>{fmt(amount)}</Text>
+                    <View key={t.id} style={idx % 2 === 0 ? s.trOdd : s.trEven}>
+                      <Text style={[s.tdCell, { flex: 0.7 }]}>{format(new Date(t.transaction_date), "d MMM yy")}</Text>
+                      <Text style={s.tdCell}>{t.description || "—"}</Text>
+                      <Text style={[s.tdCell, { flex: 0.6 }]}>{t.type}</Text>
+                      <Text style={[s.tdCell, { flex: 0.6 }]}>{t.status}</Text>
+                      <Text style={[s.tdCellBold, { flex: 0.8 }]}>{fmt(amount)}</Text>
                     </View>
                   );
                 })}
@@ -624,8 +626,14 @@ export default function CustomerReportPage() {
             </div>
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={trendChartData} barGap={3} barCategoryGap="32%">
+              <ChartContainer
+                config={{
+                  Income:   { label: "Income",   color: "var(--chart-1)" },
+                  Expenses: { label: "Expenses", color: "var(--chart-2)" },
+                }}
+                className="h-[220px] w-full"
+              >
+                <AreaChart data={trendChartData} margin={{ left: 0, right: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="month"
@@ -643,17 +651,17 @@ export default function CustomerReportPage() {
                     tickLine={false}
                     width={44}
                   />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.5 }} />
-                  <Bar dataKey="Income"   name="Income"   fill="var(--foreground)"                  radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="Expenses" name="Expenses" fill="var(--muted-foreground)" opacity={0.35} radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area type="monotone" dataKey="Income"   stroke="var(--chart-1)" fill="var(--chart-1)" fillOpacity={0.15} strokeWidth={2} />
+                  <Area type="monotone" dataKey="Expenses" stroke="var(--chart-2)" fill="var(--chart-2)" fillOpacity={0.15} strokeWidth={2} />
+                </AreaChart>
+              </ChartContainer>
               <div className="flex items-center gap-5 mt-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-foreground" /> Income
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--chart-1)" }} /> Income
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground opacity-60" /> Expenses
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--chart-2)" }} /> Expenses
                 </span>
               </div>
             </>
@@ -668,30 +676,42 @@ export default function CustomerReportPage() {
               No expense data for this period.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ChartContainer
+              config={Object.fromEntries(
+                expenseByCategory.map((c, i) => [c.category, { label: c.category, color: PIE_COLORS[i % PIE_COLORS.length] }])
+              )}
+              className="mx-auto aspect-square h-[220px]"
+            >
               <PieChart>
+                <ChartTooltip content={<ChartTooltipContent hideLabel className="w-44" nameKey="category" />} />
                 <Pie
-                  data={expenseByCategory}
+                  data={expenseByCategory.map((c, i) => ({ ...c, fill: PIE_COLORS[i % PIE_COLORS.length] }))}
                   dataKey="total"
                   nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={82}
-                  innerRadius={40}
+                  innerRadius={65}
+                  outerRadius={95}
+                  cornerRadius={4}
                   paddingAngle={2}
+                  strokeWidth={4}
                 >
-                  {expenseByCategory.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
+                  <PieLabel
+                    content={({ viewBox }) => {
+                      if (!(viewBox && "cx" in viewBox && "cy" in viewBox)) return null;
+                      return (
+                        <text dominantBaseline="middle" textAnchor="middle" x={viewBox.cx} y={viewBox.cy}>
+                          <tspan className="fill-muted-foreground text-[10px]" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>
+                            Total
+                          </tspan>
+                          <tspan className="fill-foreground font-bold text-sm tabular-nums" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
+                            {fmt(summary?.totalExpenses ?? 0)}
+                          </tspan>
+                        </text>
+                      );
+                    }}
+                  />
                 </Pie>
-                <Tooltip content={<PieTooltip />} />
-                <Legend
-                  iconType="circle"
-                  iconSize={7}
-                  wrapperStyle={{ fontSize: 10, color: "var(--muted-foreground)" }}
-                />
               </PieChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           )}
         </div>
       </div>

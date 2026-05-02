@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, PackageSearch } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, PackageSearch, Archive } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSite } from "@/hooks/useSite";
@@ -54,6 +54,8 @@ import {
   deleteInventoryItem,
   getInventoryConsumptionRates,
   consumeInventoryItem,
+  writeOffInventoryItem,
+  type WriteOffReason,
 } from "@/services/inventory.service";
 import { getCustomers } from "@/services/customers.service";
 import { getExpenseCategories } from "@/services/expense-categories.service";
@@ -485,6 +487,107 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
   );
 }
 
+// ─── Write-Off Modal ──────────────────────────────────────────────────────────
+
+const WRITE_OFF_REASONS: { value: WriteOffReason; label: string }[] = [
+  { value: "damaged",    label: "Damaged" },
+  { value: "expired",    label: "Expired" },
+  { value: "theft",      label: "Theft" },
+  { value: "stocktake",  label: "Stocktake Adjustment" },
+];
+
+interface WriteOffModalProps {
+  open: boolean;
+  onClose: () => void;
+  item: InventoryItem;
+  siteId: string;
+  userId?: string;
+}
+
+function WriteOffModal({ open, onClose, item, siteId, userId }: WriteOffModalProps) {
+  const queryClient = useQueryClient();
+  const [qty, setQty]         = useState(1);
+  const [reason, setReason]   = useState<WriteOffReason>("damaged");
+  const [notes, setNotes]     = useState("");
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => writeOffInventoryItem(siteId, item, qty, reason, notes, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory", siteId] });
+      toast.success(`Wrote off ${qty} ${item.unit ?? "unit(s)"} of ${item.name}.`);
+      onClose();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Write Off Inventory</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="rounded-lg bg-muted/40 p-3 space-y-0.5">
+            <p className="text-sm font-semibold">{item.name}</p>
+            <p className="text-xs text-muted-foreground">
+              In stock: <span className="font-medium">{item.quantity} {item.unit ?? "units"}</span>
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Quantity to Write Off *</Label>
+            <Input
+              type="number"
+              min={1}
+              max={item.quantity}
+              value={qty}
+              onChange={(e) => setQty(Math.min(item.quantity, Math.max(1, Number(e.target.value))))}
+              className="h-8 text-xs"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Reason *</Label>
+            <Select value={reason} onValueChange={(v) => setReason(v as WriteOffReason)}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {WRITE_OFF_REASONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Notes (optional)</Label>
+            <Textarea
+              placeholder="e.g. Found during weekly stocktake"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button
+            variant="destructive"
+            onClick={() => mutate()}
+            disabled={isPending || qty < 1 || qty > item.quantity}
+          >
+            {isPending ? "Writing off…" : "Write Off"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InventoryPage() {
@@ -498,6 +601,7 @@ export default function InventoryPage() {
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [logUsageTarget, setLogUsageTarget] = useState<InventoryItem | null>(null);
+  const [writeOffTarget, setWriteOffTarget] = useState<InventoryItem | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory", activeSiteId],
@@ -656,6 +760,16 @@ export default function InventoryPage() {
           </Button>
           <Button
             variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 px-2 gap-1"
+            title="Write off — record a loss"
+            onClick={() => setWriteOffTarget(row as unknown as InventoryItem)}
+          >
+            <Archive className="h-3.5 w-3.5" />
+            Write Off
+          </Button>
+          <Button
+            variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
             onClick={() => { setEditing(row); setModalOpen(true); }}
@@ -809,6 +923,16 @@ export default function InventoryPage() {
           item={logUsageTarget}
           siteId={activeSiteId!}
           orgId={orgId!}
+          userId={user?.id}
+        />
+      )}
+
+      {writeOffTarget && (
+        <WriteOffModal
+          open={!!writeOffTarget}
+          onClose={() => setWriteOffTarget(null)}
+          item={writeOffTarget}
+          siteId={activeSiteId!}
           userId={user?.id}
         />
       )}

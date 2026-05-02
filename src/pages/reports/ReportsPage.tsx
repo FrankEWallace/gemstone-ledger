@@ -13,9 +13,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import { subMonths, format, startOfMonth, endOfMonth } from "date-fns";
-import { Download } from "lucide-react";
+import { Download, Package, AlertTriangle, ArrowRight } from "lucide-react";
 
 import { useSite } from "@/hooks/useSite";
+import { getInventoryItems } from "@/services/inventory.service";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -154,6 +155,13 @@ export default function ReportsPage() {
     ...opts,
   });
 
+  const { data: inventoryItems = [] } = useQuery({
+    queryKey: ["inventory", activeSiteId],
+    queryFn: () => getInventoryItems(activeSiteId!),
+    enabled: !!activeSiteId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   async function handleExportPDF() {
     if (!summary) return;
     setIsExporting(true);
@@ -162,54 +170,81 @@ export default function ReportsPage() {
       const { pdf, Document, Page, Text, View, StyleSheet } =
         await import("@react-pdf/renderer");
 
+      const NAVY  = "#1a2035";
+      const GREEN = "#2a9d50";
+      const RED   = "#ef4444";
+
       const s = StyleSheet.create({
-        page:             { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
-        title:            { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-        subtitle:         { fontSize: 10, color: "#666", marginBottom: 28 },
-        section:          { marginBottom: 22 },
-        sectionTitle:     { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#888", borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10 },
-        row:              { flexDirection: "row", marginBottom: 6 },
-        statBox:          { flex: 1, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4, marginRight: 8 },
-        statLabel:        { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
-        statValue:        { fontSize: 15, fontWeight: "bold" },
-        tableHeader:      { flexDirection: "row", backgroundColor: "#f3f4f6", padding: "6 8", borderRadius: 3, marginBottom: 2 },
-        tableRow:         { flexDirection: "row", padding: "5 8", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-        tableCell:        { flex: 1, fontSize: 9, color: "#555" },
-        tableCellBold:    { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111" },
-        tableCellRight:   { flex: 1, fontSize: 9, textAlign: "right", color: "#555" },
-        tableCellRightBold: { flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: "#111" },
+        page:         { paddingTop: 60, paddingBottom: 48, paddingLeft: 40, paddingRight: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
+        header:       { position: "absolute", top: 0, left: 0, right: 0, height: 40, backgroundColor: NAVY, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
+        headerLeft:   { color: "#ffffff", fontSize: 8, fontWeight: "bold", letterSpacing: 1 },
+        headerRight:  { color: "#8a9dbe", fontSize: 7 },
+        footer:       { position: "absolute", bottom: 0, left: 0, right: 0, height: 28, backgroundColor: NAVY, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
+        footerText:   { color: "#7b8ea8", fontSize: 7 },
+        titleBlock:   { marginBottom: 20 },
+        title:        { fontSize: 22, fontWeight: "bold", color: NAVY, marginBottom: 4 },
+        subtitle:     { fontSize: 9, color: "#888" },
+        section:      { marginBottom: 22 },
+        sectionTitle: { fontSize: 7, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: NAVY, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10 },
+        row:          { flexDirection: "row", marginBottom: 6 },
+        statBox:      { flex: 1, marginRight: 8, borderRadius: 3, borderWidth: 1, borderColor: "#e5e7eb", borderLeftWidth: 3, borderLeftColor: NAVY, padding: 10 },
+        statLabel:    { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+        statValue:    { fontSize: 14, fontWeight: "bold", color: "#111" },
+        tableHeader:  { flexDirection: "row", backgroundColor: NAVY, padding: "6 8", borderRadius: 3, marginBottom: 0 },
+        trOdd:        { flexDirection: "row", padding: "5 8", backgroundColor: "#ffffff" },
+        trEven:       { flexDirection: "row", padding: "5 8", backgroundColor: "#f4f6f9" },
+        thCell:       { flex: 1, fontSize: 8, fontWeight: "bold", color: "#ffffff" },
+        thCellRight:  { flex: 1, fontSize: 8, fontWeight: "bold", color: "#ffffff", textAlign: "right" },
+        tdCell:       { flex: 1, fontSize: 9, color: "#444" },
+        tdCellRight:  { flex: 1, fontSize: 9, color: "#444", textAlign: "right" },
+        tdCellBold:   { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111", textAlign: "right" },
       });
 
       const siteName = activeSite?.name ?? "Site";
+      const periodLabel = `${dateFrom} → ${dateTo}`;
       const blob = await pdf(
         <Document>
           <Page size="A4" style={s.page}>
-            <Text style={s.title}>Financial Report</Text>
-            <Text style={s.subtitle}>
-              {siteName} · {dateFrom} → {dateTo} · Generated {format(new Date(), "d MMM yyyy")}
-            </Text>
+            {/* Fixed navy header */}
+            <View fixed style={s.header}>
+              <Text style={s.headerLeft}>FW MINING OS  ·  {siteName.toUpperCase()}</Text>
+              <Text style={s.headerRight}>Financial Report  ·  {periodLabel}</Text>
+            </View>
 
+            {/* Fixed navy footer */}
+            <View fixed style={s.footer}>
+              <Text style={s.footerText}>Confidential  ·  Generated {format(new Date(), "d MMM yyyy")}</Text>
+              <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} style={s.footerText} />
+            </View>
+
+            {/* Title */}
+            <View style={s.titleBlock}>
+              <Text style={s.title}>Financial Report</Text>
+              <Text style={s.subtitle}>{siteName}  ·  {periodLabel}</Text>
+            </View>
+
+            {/* KPI Summary */}
             <View style={s.section}>
               <Text style={s.sectionTitle}>Summary</Text>
               <View style={s.row}>
                 {[
-                  { label: "Total Income",   val: fmt(summary.totalIncome) },
-                  { label: "Total Expenses", val: fmt(summary.totalExpenses) },
-                  { label: "Net Revenue",    val: fmt(summary.netRevenue) },
+                  { label: "Total Income",   val: fmt(summary.totalIncome),   accent: GREEN },
+                  { label: "Total Expenses", val: fmt(summary.totalExpenses), accent: RED },
+                  { label: "Net Revenue",    val: fmt(summary.netRevenue),    accent: summary.netRevenue >= 0 ? GREEN : RED },
                 ].map((item) => (
-                  <View key={item.label} style={s.statBox}>
+                  <View key={item.label} style={[s.statBox, { borderLeftColor: item.accent }]}>
                     <Text style={s.statLabel}>{item.label}</Text>
                     <Text style={s.statValue}>{item.val}</Text>
                   </View>
                 ))}
               </View>
-              <View style={{ ...s.row, marginTop: 4 }}>
+              <View style={[s.row, { marginTop: 6 }]}>
                 {[
                   { label: "Transactions",  val: String(summary.transactionCount) },
                   { label: "Shifts Logged", val: String(summary.totalShiftsLogged) },
                   { label: "Profit Margin", val: summary.totalIncome > 0 ? `${((summary.netRevenue / summary.totalIncome) * 100).toFixed(1)}%` : "—" },
                 ].map((item) => (
-                  <View key={item.label} style={s.statBox}>
+                  <View key={item.label} style={[s.statBox, { borderLeftColor: NAVY }]}>
                     <Text style={s.statLabel}>{item.label}</Text>
                     <Text style={s.statValue}>{item.val}</Text>
                   </View>
@@ -221,17 +256,17 @@ export default function ReportsPage() {
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Monthly Revenue vs Expenses</Text>
                 <View style={s.tableHeader}>
-                  <Text style={s.tableCellBold}>Month</Text>
-                  <Text style={s.tableCellRight}>Income</Text>
-                  <Text style={s.tableCellRight}>Expenses</Text>
-                  <Text style={s.tableCellRightBold}>Net</Text>
+                  <Text style={s.thCell}>Month</Text>
+                  <Text style={s.thCellRight}>Income</Text>
+                  <Text style={s.thCellRight}>Expenses</Text>
+                  <Text style={s.thCellRight}>Net</Text>
                 </View>
-                {trend.map((row) => (
-                  <View key={row.month} style={s.tableRow}>
-                    <Text style={s.tableCell}>{row.month}</Text>
-                    <Text style={s.tableCellRight}>{fmt(row.income)}</Text>
-                    <Text style={s.tableCellRight}>{fmt(row.expenses)}</Text>
-                    <Text style={s.tableCellRightBold}>{fmt(row.income - row.expenses)}</Text>
+                {trend.map((row, idx) => (
+                  <View key={row.month} style={idx % 2 === 0 ? s.trOdd : s.trEven}>
+                    <Text style={s.tdCell}>{row.month}</Text>
+                    <Text style={s.tdCellRight}>{fmt(row.income)}</Text>
+                    <Text style={s.tdCellRight}>{fmt(row.expenses)}</Text>
+                    <Text style={s.tdCellBold}>{fmt(row.income - row.expenses)}</Text>
                   </View>
                 ))}
               </View>
@@ -241,19 +276,19 @@ export default function ReportsPage() {
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Expenses by Category</Text>
                 <View style={s.tableHeader}>
-                  <Text style={s.tableCellBold}>Category</Text>
-                  <Text style={s.tableCellRight}>Total</Text>
-                  <Text style={s.tableCellRight}>% of Expenses</Text>
+                  <Text style={s.thCell}>Category</Text>
+                  <Text style={s.thCellRight}>Total</Text>
+                  <Text style={s.thCellRight}>% of Expenses</Text>
                 </View>
-                {categories.map((row) => {
+                {categories.map((row, idx) => {
                   const pct = summary.totalExpenses > 0
                     ? ((row.total / summary.totalExpenses) * 100).toFixed(1)
                     : "0.0";
                   return (
-                    <View key={row.category} style={s.tableRow}>
-                      <Text style={s.tableCell}>{row.category}</Text>
-                      <Text style={s.tableCellRight}>{fmt(row.total)}</Text>
-                      <Text style={s.tableCellRight}>{pct}%</Text>
+                    <View key={row.category} style={idx % 2 === 0 ? s.trOdd : s.trEven}>
+                      <Text style={s.tdCell}>{row.category}</Text>
+                      <Text style={s.tdCellRight}>{fmt(row.total)}</Text>
+                      <Text style={s.tdCellRight}>{pct}%</Text>
                     </View>
                   );
                 })}
@@ -264,24 +299,22 @@ export default function ReportsPage() {
               <View style={s.section}>
                 <Text style={s.sectionTitle}>Customer Profitability</Text>
                 <View style={s.tableHeader}>
-                  <Text style={s.tableCellBold}>Customer</Text>
-                  <Text style={{ ...s.tableCellRight, flex: 0.6 }}>Type</Text>
-                  <Text style={s.tableCellRight}>Income</Text>
-                  <Text style={s.tableCellRight}>Expenses</Text>
-                  <Text style={s.tableCellRightBold}>Net Profit</Text>
+                  <Text style={s.thCell}>Customer</Text>
+                  <Text style={[s.thCell, { flex: 0.6 }]}>Type</Text>
+                  <Text style={s.thCellRight}>Income</Text>
+                  <Text style={s.thCellRight}>Expenses</Text>
+                  <Text style={s.thCellRight}>Net Profit</Text>
                 </View>
                 {customerSummaries
                   .slice()
                   .sort((a, b) => b.netProfit - a.netProfit)
-                  .map((cs) => (
-                    <View key={cs.customerId} style={s.tableRow}>
-                      <Text style={s.tableCell}>{cs.customerName}</Text>
-                      <Text style={{ ...s.tableCell, flex: 0.6, textTransform: "capitalize" }}>
-                        {cs.customerType}
-                      </Text>
-                      <Text style={s.tableCellRight}>{fmt(cs.totalIncome)}</Text>
-                      <Text style={s.tableCellRight}>{fmt(cs.totalExpenses)}</Text>
-                      <Text style={s.tableCellRightBold}>{fmt(cs.netProfit)}</Text>
+                  .map((cs, idx) => (
+                    <View key={cs.customerId} style={idx % 2 === 0 ? s.trOdd : s.trEven}>
+                      <Text style={s.tdCell}>{cs.customerName}</Text>
+                      <Text style={[s.tdCell, { flex: 0.6 }]}>{cs.customerType}</Text>
+                      <Text style={s.tdCellRight}>{fmt(cs.totalIncome)}</Text>
+                      <Text style={s.tdCellRight}>{fmt(cs.totalExpenses)}</Text>
+                      <Text style={s.tdCellBold}>{fmt(cs.netProfit)}</Text>
                     </View>
                   ))}
               </View>
@@ -658,6 +691,59 @@ export default function ReportsPage() {
           </table>
         </div>
       )}
+
+      {/* ── Inventory snapshot ────────────────────────────────────────────── */}
+      {inventoryItems.length > 0 && (() => {
+        const totalItems   = inventoryItems.length;
+        const stockValue   = inventoryItems.reduce((s, i) => s + (i.quantity * (i.unit_cost ?? 0)), 0);
+        const lowOutCount  = inventoryItems.filter(i => i.reorder_level != null && i.quantity <= i.reorder_level).length;
+        return (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+                Inventory Snapshot
+              </p>
+              <Link
+                to="/reports/inventory"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Full inventory report <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border bg-muted text-muted-foreground shrink-0">
+                  <Package className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Items</p>
+                  <p className="text-lg font-bold tabular-nums leading-tight">{totalItems}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border bg-muted text-muted-foreground shrink-0">
+                  <span className="text-[10px] font-bold">{CURRENCY_SYMBOL}</span>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Stock Value</p>
+                  <p className="text-lg font-bold tabular-nums leading-tight">{fmtShort(stockValue)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${lowOutCount > 0 ? "bg-red-50 border-red-200 text-red-600 dark:bg-red-900/20" : "bg-muted text-muted-foreground"}`}>
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Low / Out of Stock</p>
+                  <p className={`text-lg font-bold tabular-nums leading-tight ${lowOutCount > 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                    {lowOutCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
         </TabsContent>
 
