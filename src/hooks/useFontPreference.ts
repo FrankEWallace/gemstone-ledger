@@ -10,7 +10,7 @@ export const FONT_OPTIONS: { key: FontKey; label: string; sample: string }[] = [
 ];
 
 const STORAGE_KEY = "gemstone-font";
-const DEFAULT_FONT: FontKey = "nunito-sans";
+const DEFAULT_FONT: FontKey = "geist";
 
 function applyFont(key: FontKey) {
   document.documentElement.setAttribute("data-font", key);
