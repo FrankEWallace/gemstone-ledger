@@ -34,7 +34,20 @@ import { useSite } from "@/hooks/useSite";
 import { getChannelMessageCounts } from "@/services/messages.service";
 import { useNav, type NavSectionKey } from "@/context/NavContext";
 import { useOrgModules, type ModuleKey } from "@/hooks/useOrgModules";
-import { useSystemAlerts } from "@/hooks/useSystemAlerts";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 interface NavItem {
   label: string;
@@ -61,9 +74,9 @@ const operationsItems: NavItem[] = [
 ];
 
 const teamItems: NavItem[] = [
-  { label: "Team",        icon: TrendingUp, to: "/team",              module: "team" },
-  { label: "Roles",       icon: Shield,     to: "/management/roles" },
-  { label: "Audit Log",   icon: FileText,   to: "/management/audit" },
+  { label: "Team",      icon: TrendingUp, to: "/team",            module: "team" },
+  { label: "Roles",     icon: Shield,     to: "/management/roles" },
+  { label: "Audit Log", icon: FileText,   to: "/management/audit" },
 ];
 
 const extensionItems: NavItem[] = [
@@ -84,79 +97,13 @@ const TOGGLEABLE_SECTIONS: { key: NavSectionKey; label: string; description: str
   { key: "extensions", label: "Extensions",    description: "Equipment, production, messages…" },
 ];
 
-// ─── NavSection ───────────────────────────────────────────────────────────────
-
-function NavSection({
-  title,
-  items,
-  onNavigate,
-  badge,
-}: {
-  title?: string;
-  items: NavItem[];
-  onNavigate: () => void;
-  badge?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-4">
-      {title && (
-        <div className="flex items-center gap-1.5 px-3 mb-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
-            {title}
-          </p>
-          {badge}
-        </div>
-      )}
-      <ul className="space-y-px">
-        {items.map((item) => (
-          <li key={item.to}>
-            <NavLink
-              to={item.to}
-              end={item.to === "/"}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                cn(
-                  "relative flex w-full items-center gap-2.5 rounded-md px-3 py-[7px] text-sm transition-all duration-150",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )
-              }
-            >
-              {({ isActive }: { isActive: boolean }) => (
-                <>
-                  {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-full bg-sidebar-primary" />
-                  )}
-                  <item.icon
-                    className={cn(
-                      "h-[15px] w-[15px] shrink-0 transition-opacity",
-                      isActive ? "opacity-80" : "opacity-45"
-                    )}
-                  />
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {item.badge != null && item.badge > 0 && (
-                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-sidebar-primary text-[10px] font-bold text-sidebar-primary-foreground px-1">
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </span>
-                  )}
-                </>
-              )}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 // ─── NavCustomizer ────────────────────────────────────────────────────────────
 
 function NavCustomizer({ onClose }: { onClose: () => void }) {
   const { isSectionHidden, toggleSection } = useNav();
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-10 rounded-t-xl border border-sidebar-border bg-sidebar shadow-2xl">
+    <div className="absolute inset-x-0 bottom-full z-10 rounded-t-xl border border-sidebar-border bg-sidebar shadow-2xl">
       <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border">
         <p className="text-sm font-semibold">Customize sidebar</p>
         <button
@@ -210,18 +157,78 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── NavItemRow ───────────────────────────────────────────────────────────────
+
+function NavItemRow({ item }: { item: NavItem }) {
+  const location = useLocation();
+  const isActive =
+    item.to === "/"
+      ? location.pathname === "/"
+      : location.pathname === item.to || location.pathname.startsWith(item.to + "/");
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+        <NavLink to={item.to} end={item.to === "/"}>
+          <item.icon />
+          <span>{item.label}</span>
+        </NavLink>
+      </SidebarMenuButton>
+      {item.badge != null && item.badge > 0 && (
+        <SidebarMenuBadge>{item.badge > 99 ? "99+" : item.badge}</SidebarMenuBadge>
+      )}
+    </SidebarMenuItem>
+  );
+}
+
+// ─── NavSection ───────────────────────────────────────────────────────────────
+
+function NavSection({
+  title,
+  items,
+  badge,
+}: {
+  title?: string;
+  items: NavItem[];
+  badge?: React.ReactNode;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <SidebarGroup>
+      {title && (
+        <SidebarGroupLabel className="flex items-center gap-1.5">
+          {title}
+          {badge}
+        </SidebarGroupLabel>
+      )}
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <NavItemRow key={item.to} item={item} />
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 // ─── AppSidebar ───────────────────────────────────────────────────────────────
 
 const MESSAGES_SEEN_KEY = "messagesLastSeen";
 
-export default function AppSidebar({ open, onClose, desktopOpen = true }: { open: boolean; onClose: () => void; desktopOpen?: boolean }) {
+export default function AppSidebar({
+  variant = "sidebar",
+}: {
+  variant?: "sidebar" | "inset" | "floating";
+}) {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
   const { activeSiteId } = useSite();
   const location = useLocation();
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const { isSectionHidden } = useNav();
   const { isModuleEnabled } = useOrgModules();
-  const { totalCount: alertCount } = useSystemAlerts(activeSiteId ?? null);
 
   const filterByModule = (items: NavItem[]) =>
     items.filter((item) => !item.module || isModuleEnabled(item.module));
@@ -253,120 +260,85 @@ export default function AppSidebar({ open, onClose, desktopOpen = true }: { open
   const extensionsWithBadge: NavItem[] = extensionItems.map((item) =>
     item.to === "/messages" ? { ...item, badge: unreadMessages } : item
   );
-
   const visibleExtensions = filterByModule(extensionsWithBadge);
 
   return (
-    <>
-      {open && (
-        <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-[1px] lg:hidden" onClick={onClose} />
-      )}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:static lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full",
-          !desktopOpen && "lg:hidden"
-        )}
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 border-b border-sidebar-border px-4 py-[14px]">
+    <Sidebar variant={variant} collapsible="icon">
+      {/* Logo */}
+      <SidebarHeader className="border-b border-sidebar-border py-[14px] px-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-2">
+        <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shrink-0 shadow-sm">
             <Pickaxe className="h-4 w-4" />
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="font-display font-semibold text-sm leading-tight truncate text-sidebar-foreground">
               FW Mining OS
             </p>
             <p className="text-[11px] text-sidebar-foreground/45 leading-tight">Mining Co.</p>
           </div>
-          <button
-            className="lg:hidden rounded-md p-1 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
+      </SidebarHeader>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3 scrollbar-thin">
-          <NavSection title="Core" items={filterByModule(coreItems)} onNavigate={onClose} />
+      {/* Navigation */}
+      <SidebarContent>
+        <NavSection title="Core" items={filterByModule(coreItems)} />
 
-          {!isSectionHidden("operations") && (() => {
-            const items = filterByModule(operationsItems);
-            return items.length > 0 ? (
-              <NavSection title="Operations" items={items} onNavigate={onClose} />
-            ) : null;
-          })()}
+        {!isSectionHidden("operations") && (
+          <NavSection title="Operations" items={filterByModule(operationsItems)} />
+        )}
 
-          {!isSectionHidden("team") && (() => {
-            const items = filterByModule(teamItems);
-            return items.length > 0 ? (
-              <NavSection title="Team & System" items={items} onNavigate={onClose} />
-            ) : null;
-          })()}
+        {!isSectionHidden("team") && (
+          <NavSection title="Team & System" items={filterByModule(teamItems)} />
+        )}
 
-          {!isSectionHidden("extensions") && visibleExtensions.length > 0 && (
-            <NavSection
-              title="Extensions"
-              items={visibleExtensions}
-              onNavigate={onClose}
-              badge={
-                <span className="inline-flex items-center gap-1 rounded-md bg-sidebar-accent px-1.5 py-0.5 text-[9px] font-semibold text-sidebar-foreground/50 uppercase tracking-wide">
-                  <Puzzle className="h-2.5 w-2.5" />
-                  optional
-                </span>
-              }
-            />
-          )}
-        </nav>
-
-        {/* Settings — pinned above footer */}
-        <div className="border-t border-sidebar-border px-2 py-2">
-          <NavLink
-            to="/settings"
-            onClick={onClose}
-            className={({ isActive }) =>
-              cn(
-                "relative flex w-full items-center gap-2.5 rounded-md px-3 py-[7px] text-sm transition-all duration-150",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )
+        {!isSectionHidden("extensions") && visibleExtensions.length > 0 && (
+          <NavSection
+            title="Extensions"
+            items={visibleExtensions}
+            badge={
+              <span className="inline-flex items-center gap-1 rounded-md bg-sidebar-accent px-1.5 py-0.5 text-[9px] font-semibold text-sidebar-foreground/50 uppercase tracking-wide group-data-[collapsible=icon]:hidden">
+                <Puzzle className="h-2.5 w-2.5" />
+                optional
+              </span>
             }
-          >
-            {({ isActive }: { isActive: boolean }) => (
-              <>
-                {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-full bg-sidebar-primary" />
-                )}
-                <Settings className={cn("h-[15px] w-[15px] shrink-0 transition-opacity", isActive ? "opacity-80" : "opacity-45")} />
-                <span>Settings</span>
-              </>
-            )}
-          </NavLink>
-        </div>
+          />
+        )}
 
-        {/* Footer */}
-        <div className="border-t border-sidebar-border p-3 relative">
-          <SitePicker />
-          <button
-            onClick={() => setCustomizerOpen((o) => !o)}
-            title="Customize sidebar"
-            className={cn(
-              "absolute top-3 right-3 rounded-md p-1.5 transition-colors",
-              customizerOpen
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-foreground/40 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-            )}
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-          </button>
+        {/* Settings pinned to bottom of nav */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <NavItemRow item={{ label: "Settings", icon: Settings, to: "/settings" }} />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-          {customizerOpen && (
-            <NavCustomizer onClose={() => setCustomizerOpen(false)} />
-          )}
-        </div>
-      </aside>
-    </>
+      {/* Footer: SitePicker + customizer (hidden when icon-only) */}
+      <SidebarFooter className="border-t border-sidebar-border relative">
+        {!isCollapsed && (
+          <>
+            <div className="px-1">
+              <SitePicker />
+            </div>
+            <button
+              onClick={() => setCustomizerOpen((o) => !o)}
+              title="Customize sidebar"
+              className={cn(
+                "absolute top-3 right-3 rounded-md p-1.5 transition-colors",
+                customizerOpen
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/40 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              )}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+            </button>
+            {customizerOpen && (
+              <NavCustomizer onClose={() => setCustomizerOpen(false)} />
+            )}
+          </>
+        )}
+      </SidebarFooter>
+    </Sidebar>
   );
 }
