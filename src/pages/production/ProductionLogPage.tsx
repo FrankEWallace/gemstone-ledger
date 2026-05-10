@@ -159,14 +159,14 @@ function LogModal({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Customer (optional)</FormLabel>
-                    <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <Select value={field.value || "none"} onValueChange={(v) => field.onChange(v === "none" ? "" : v)}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="No customer" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No customer</SelectItem>
+                        <SelectItem value="none">No customer</SelectItem>
                         {customers.map((c) => (
                           <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                         ))}

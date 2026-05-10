@@ -425,12 +425,12 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
           {customers.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs">Customer (optional)</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
+              <Select value={customerId || "none"} onValueChange={(v) => setCustomerId(v === "none" ? "" : v)}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="No customer" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No customer</SelectItem>
+                  <SelectItem value="none">No customer</SelectItem>
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -442,12 +442,12 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
           {expenseCategories.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs">Expense Category (optional)</Label>
-              <Select value={expenseCategoryId} onValueChange={setExpenseCategoryId}>
+              <Select value={expenseCategoryId || "none"} onValueChange={(v) => setExpenseCategoryId(v === "none" ? "" : v)}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Uncategorised" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Uncategorised</SelectItem>
+                  <SelectItem value="none">Uncategorised</SelectItem>
                   {expenseCategories.map((ec) => (
                     <SelectItem key={ec.id} value={ec.id}>{ec.name}</SelectItem>
                   ))}

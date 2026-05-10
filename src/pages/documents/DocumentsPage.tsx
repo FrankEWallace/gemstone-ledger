@@ -156,12 +156,12 @@ export default function DocumentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={uploadCategory} onValueChange={setUploadCategory}>
+          <Select value={uploadCategory || "none"} onValueChange={(v) => setUploadCategory(v === "none" ? "" : v)}>
             <SelectTrigger className="w-36 h-9">
               <SelectValue placeholder="Category…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No category</SelectItem>
+              <SelectItem value="none">No category</SelectItem>
               {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
