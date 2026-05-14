@@ -604,19 +604,19 @@ function IncomeBreakdownCard({ siteId }: { siteId: string }) {
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const ystdStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
 
-  const { data: catData = [] } = useQuery({
+  const { data: catData = [], isLoading: catLoading } = useQuery({
     queryKey: ["inc-cat", siteId, from, to],
     queryFn: () => getIncomeByCategory(siteId, from, to),
     enabled: !!siteId && mode === "overview",
   });
 
-  const { data: custData = [] } = useQuery({
+  const { data: custData = [], isLoading: custLoading } = useQuery({
     queryKey: ["inc-by-cust", siteId, from, to],
     queryFn: () => getIncomeByCustomer(siteId, from, to),
     enabled: !!siteId && mode === "customer",
   });
 
-  const { data: custCatData = [] } = useQuery({
+  const { data: custCatData = [], isLoading: custCatLoading } = useQuery({
     queryKey: ["inc-cust-cat", siteId, from, to, selectedCustId],
     queryFn: () => getIncomeByCategory(siteId, from, to, selectedCustId!),
     enabled: !!siteId && mode === "customer" && !!selectedCustId,
@@ -674,6 +674,7 @@ function IncomeBreakdownCard({ siteId }: { siteId: string }) {
   }, [mode, catData, custData, custCatData, selectedCustId]);
 
   const total = items.reduce((s, i) => s + i.value, 0);
+  const isLoading = mode === "overview" ? catLoading : selectedCustId ? custCatLoading : custLoading;
   const subtitle = selectedCust ? `Today's income · ${selectedCust.customerName}` : "Today's income";
   const customers = custData.map((c) => ({ id: c.customerId, name: c.customerName }));
 
@@ -699,29 +700,8 @@ function IncomeBreakdownCard({ siteId }: { siteId: string }) {
         <PeriodPills value={period} onChange={setPeriod} />
       </div>
 
-      {/* Income source sections */}
-      {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No income data</p>
-      ) : (
-        <div className="grid grid-cols-2 gap-1 md:grid-cols-3">
-          {items.map((item) => (
-            <section key={item.label} className="isolate flex gap-[0.5px]">
-              <div className="mb-1 w-px self-stretch border-l border-dashed border-muted-foreground/50" />
-              <div className="flex min-h-24 flex-1 flex-col justify-between">
-                <div className="flex flex-col gap-1 px-1">
-                  <p className="text-muted-foreground text-xs leading-none truncate">
-                    {item.label} · {item.pctDisplay}%
-                  </p>
-                  <div className="font-semibold text-base leading-none tracking-tight tabular-nums">
-                    {fmtFull(item.value)}
-                  </div>
-                </div>
-                <div className="-ml-0.5 h-5 rounded-sm" style={{ backgroundColor: item.color }} />
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+      {/* Donut chart + side legend */}
+      <ExpenseDonut items={items} periodTotal={total} isLoading={isLoading} />
     </div>
   );
 }

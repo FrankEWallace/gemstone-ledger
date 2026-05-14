@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ChevronRight, ChevronDown, ArrowLeft, Download, ChevronsUpDown } from "lucide-react";
+import { Label as ChartLabel, Pie, PieChart } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
@@ -380,34 +382,58 @@ export default function IncomeBreakdownPage() {
         </div>
       </div>
 
-      {/* Income source sections */}
-      {!isLoading && grouped.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Income sources</p>
-          <div className="grid grid-cols-2 gap-1 md:grid-cols-3">
-            {grouped.map((g, idx) => {
-              const color = CAT_COLORS[idx % CAT_COLORS.length];
-              const pct = grandTotal > 0 ? Math.round((g.total / grandTotal) * 100) : 0;
-              return (
-                <section key={g.category} className="isolate flex gap-[0.5px]">
-                  <div className="mb-1 w-px self-stretch border-l border-dashed border-muted-foreground/50" />
-                  <div className="flex min-h-24 flex-1 flex-col justify-between">
-                    <div className="flex flex-col gap-1 px-1">
-                      <p className="text-muted-foreground text-xs leading-none truncate">
-                        {g.category} · {pct}%
-                      </p>
-                      <div className="font-semibold text-base leading-none tracking-tight tabular-nums">
-                        {fmtCurrency(g.total)}
+      {/* Donut chart */}
+      {!isLoading && grouped.length > 0 && (() => {
+        const chartConfig = Object.fromEntries(
+          grouped.map((g, idx) => [g.category, { label: g.category, color: CAT_COLORS[idx % CAT_COLORS.length] }])
+        );
+        const chartData = grouped.map((g, idx) => ({
+          name: g.category,
+          value: g.total,
+          fill: CAT_COLORS[idx % CAT_COLORS.length],
+          pct: grandTotal > 0 ? Math.round((g.total / grandTotal) * 100) : 0,
+        }));
+        return (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
+              <ChartContainer config={chartConfig} className="mx-auto aspect-square h-44">
+                <PieChart>
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel className="w-44" nameKey="name" />} />
+                  <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={80} cornerRadius={4} paddingAngle={2} strokeWidth={4}>
+                    <ChartLabel
+                      content={({ viewBox }) => {
+                        if (!(viewBox && "cx" in viewBox && "cy" in viewBox)) return null;
+                        return (
+                          <text dominantBaseline="middle" textAnchor="middle" x={viewBox.cx} y={viewBox.cy}>
+                            <tspan className="fill-muted-foreground text-[10px]" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>Total</tspan>
+                            <tspan className="fill-foreground font-bold text-sm tabular-nums" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
+                              {fmtCurrency(grandTotal)}
+                            </tspan>
+                          </text>
+                        );
+                      }}
+                    />
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+              <div className="flex flex-col gap-3 min-w-0">
+                {chartData.map((item) => (
+                  <div className="grid grid-cols-[1fr_auto] items-end gap-3" key={item.name}>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="h-2 w-1 rounded-full shrink-0" style={{ backgroundColor: item.fill }} />
+                        <p className="truncate text-muted-foreground text-xs">{item.name}</p>
                       </div>
+                      <p className="font-medium tabular-nums text-sm">{fmtCurrency(item.value)}</p>
                     </div>
-                    <div className="-ml-0.5 h-5 rounded-sm" style={{ backgroundColor: color }} />
+                    <div className="font-medium tabular-nums text-sm">{item.pct}%</div>
                   </div>
-                </section>
-              );
-            })}
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Controls bar */}
       <div className="flex flex-wrap items-center gap-2">
