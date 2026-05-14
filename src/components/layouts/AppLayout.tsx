@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, X, LayoutTemplate } from "lucide-react";
+import { FlaskConical, X, ChevronDown, Pickaxe, Search } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import CommandPalette from "@/components/shared/CommandPalette";
 import OnboardingWizard from "@/components/shared/OnboardingWizard";
 import { useAuth } from "@/hooks/useAuth";
+import { useSite } from "@/hooks/useSite";
 import { isDemoMode, exitDemoMode } from "@/lib/demo";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import {
@@ -22,31 +23,30 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-type SidebarVariant = "sidebar" | "inset" | "floating";
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
-  "/":                   { breadcrumb: "Core",           title: "Dashboard" },
-  "/notifications":      { breadcrumb: "Core",           title: "Notifications" },
-  "/customers":          { breadcrumb: "Core",           title: "Customers" },
-  "/transactions":       { breadcrumb: "Core",           title: "Transactions" },
-  "/inventory":          { breadcrumb: "Core",           title: "Inventory" },
-  "/reports":            { breadcrumb: "Core",           title: "Reports" },
-  "/reports/inventory":  { breadcrumb: "Reports",        title: "Inventory Report" },
-  "/supply/suppliers":   { breadcrumb: "Operations",     title: "Suppliers" },
-  "/supply/orders":      { breadcrumb: "Operations",     title: "Orders" },
-  "/team":               { breadcrumb: "Team & System",  title: "Team" },
-  "/management/roles":   { breadcrumb: "Team & System",  title: "Roles" },
-  "/management/audit":   { breadcrumb: "Team & System",  title: "Audit Log" },
-  "/equipment":          { breadcrumb: "Extensions",     title: "Equipment" },
-  "/safety":             { breadcrumb: "Extensions",     title: "Safety" },
-  "/team/schedule":      { breadcrumb: "Extensions",     title: "Schedules" },
-  "/team/timesheet":     { breadcrumb: "Extensions",     title: "Timesheets" },
-  "/production":         { breadcrumb: "Extensions",     title: "Production" },
-  "/documents":          { breadcrumb: "Extensions",     title: "Documents" },
-  "/messages":           { breadcrumb: "Extensions",     title: "Messages" },
-  "/campaigns":          { breadcrumb: "Extensions",     title: "Campaigns" },
-  "/supply/channels":    { breadcrumb: "Extensions",     title: "Channels" },
-  "/settings":           { breadcrumb: "Settings",       title: "" },
+  "/":                   { breadcrumb: "",          title: "Dashboard" },
+  "/notifications":      { breadcrumb: "",          title: "Notifications" },
+  "/customers":          { breadcrumb: "",          title: "Customers" },
+  "/transactions":       { breadcrumb: "",          title: "Transactions" },
+  "/inventory":          { breadcrumb: "",          title: "Inventory" },
+  "/reports":            { breadcrumb: "",          title: "Reports" },
+  "/reports/inventory":  { breadcrumb: "Reports",   title: "Inventory Report" },
+  "/supply/suppliers":   { breadcrumb: "Operations", title: "Suppliers" },
+  "/supply/orders":      { breadcrumb: "Operations", title: "Orders" },
+  "/team":               { breadcrumb: "",          title: "Team" },
+  "/management/roles":   { breadcrumb: "Team",      title: "Roles" },
+  "/management/audit":   { breadcrumb: "Team",      title: "Audit Log" },
+  "/equipment":          { breadcrumb: "Field",     title: "Equipment" },
+  "/safety":             { breadcrumb: "Field",     title: "Safety" },
+  "/team/schedule":      { breadcrumb: "Team",      title: "Schedules" },
+  "/team/timesheet":     { breadcrumb: "Team",      title: "Timesheets" },
+  "/production":         { breadcrumb: "Field",     title: "Production" },
+  "/documents":          { breadcrumb: "Field",     title: "Documents" },
+  "/messages":           { breadcrumb: "",          title: "Messages" },
+  "/campaigns":          { breadcrumb: "",          title: "Campaigns" },
+  "/supply/channels":    { breadcrumb: "Operations", title: "Channels" },
+  "/settings":           { breadcrumb: "",          title: "Settings" },
 };
 
 function getSidebarDefaultOpen(): boolean {
@@ -56,25 +56,62 @@ function getSidebarDefaultOpen(): boolean {
   return !match || match.trim().split("=")[1]?.trim() !== "false";
 }
 
+// ─── Site Switcher ────────────────────────────────────────────────────────────
+
+function SiteSwitcher() {
+  const { activeSite, sites, setActiveSite } = useSite();
+
+  if (!activeSite) return null;
+
+  if (sites.length <= 1) {
+    return (
+      <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground">
+        <Pickaxe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span className="truncate max-w-32">{activeSite.name}</span>
+      </div>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors">
+          <Pickaxe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate max-w-32">{activeSite.name}</span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        {sites.map((s) => (
+          <DropdownMenuItem
+            key={s.id}
+            onClick={() => setActiveSite(s.id)}
+            className={cn("gap-2", s.id === activeSite.id && "font-medium text-primary")}
+          >
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-primary text-[10px] font-bold">
+              {s.name.slice(0, 2).toUpperCase()}
+            </div>
+            <span className="truncate">{s.name}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
 export default function AppLayout() {
   const { userProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
-  const [variant, setVariant] = useState<SidebarVariant>(
-    () => (localStorage.getItem("sidebarVariant") as SidebarVariant) ?? "sidebar"
-  );
   const demoActive = isDemoMode();
   const location = useLocation();
 
   function handleExitDemo() {
     exitDemoMode();
     navigate("/login", { replace: true });
-  }
-
-  function handleVariantChange(v: SidebarVariant) {
-    setVariant(v);
-    localStorage.setItem("sidebarVariant", v);
   }
 
   useEffect(() => {
@@ -98,28 +135,42 @@ export default function AppLayout() {
     PAGE_TITLES[location.pathname] ??
     (location.pathname.startsWith("/settings")
       ? { breadcrumb: "Settings", title: "" }
-      : { breadcrumb: "App", title: "" });
+      : { breadcrumb: "", title: "" });
 
   return (
     <SidebarProvider defaultOpen={getSidebarDefaultOpen()}>
-      <AppSidebar variant={variant} />
+      <AppSidebar />
 
       <SidebarInset className="h-svh overflow-y-auto">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-sm px-4 lg:px-6 py-2.5">
           <div className="flex items-center gap-2.5 min-w-0">
             <SidebarTrigger className="text-muted-foreground hover:bg-accent hover:text-foreground -ml-1" />
-            <nav className="flex items-center gap-1.5 text-sm min-w-0">
-              <span className="text-muted-foreground/60 truncate">{pageInfo.breadcrumb}</span>
-              {pageInfo.title && (
+            <SiteSwitcher />
+            <span className="text-border select-none hidden sm:block">·</span>
+            <nav className="hidden sm:flex items-center gap-1.5 text-sm min-w-0">
+              {pageInfo.breadcrumb && (
                 <>
-                  <span className="text-muted-foreground/30 select-none">/</span>
-                  <span className="font-medium text-foreground truncate">{pageInfo.title}</span>
+                  <span className="text-muted-foreground/60 truncate">{pageInfo.breadcrumb}</span>
+                  {pageInfo.title && <span className="text-muted-foreground/30 select-none">/</span>}
                 </>
+              )}
+              {pageInfo.title && (
+                <span className="font-medium text-foreground truncate">{pageInfo.title}</span>
               )}
             </nav>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Mobile search icon */}
+            <button
+              onClick={() => setCmdOpen(true)}
+              className="flex md:hidden rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            {/* Desktop search bar */}
             <button
               onClick={() => setCmdOpen(true)}
               className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-border/80 hover:bg-accent/50 transition-colors"
@@ -129,29 +180,6 @@ export default function AppLayout() {
                 ⌘K
               </kbd>
             </button>
-
-            {/* Sidebar layout variant picker */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  title="Sidebar layout"
-                  className="hidden lg:flex rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                >
-                  <LayoutTemplate className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36">
-                {(["sidebar", "inset", "floating"] as SidebarVariant[]).map((v) => (
-                  <DropdownMenuItem
-                    key={v}
-                    onClick={() => handleVariantChange(v)}
-                    className={cn("capitalize", variant === v && "font-medium text-primary")}
-                  >
-                    {v}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             <ThemeToggle />
             <NotificationBell />

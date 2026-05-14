@@ -292,7 +292,6 @@ export default function AppSidebar({
 
         {!isSectionHidden("extensions") && visibleExtensions.length > 0 && (
           <NavSection
-            title="Extensions"
             items={visibleExtensions}
             badge={
               <span className="inline-flex items-center gap-1 rounded-md bg-sidebar-accent px-1.5 py-0.5 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wide group-data-[collapsible=icon]:hidden">

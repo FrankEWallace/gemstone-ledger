@@ -42,6 +42,7 @@ interface DataTableProps<T extends Record<string, unknown>> {
   isLoading?: boolean;
   emptyMessage?: string;
   toolbar?: React.ReactNode;
+  onRowClick?: (row: T) => void;
 }
 
 type SortDir = "asc" | "desc" | null;
@@ -60,6 +61,7 @@ export function DataTable<T extends Record<string, unknown>>({
   isLoading = false,
   emptyMessage = "No records found.",
   toolbar,
+  onRowClick,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -216,7 +218,11 @@ export function DataTable<T extends Record<string, unknown>>({
               </TableRow>
             ) : (
               slice.map((row) => (
-                <TableRow key={String(row[keyField])}>
+                <TableRow
+                  key={String(row[keyField])}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={onRowClick ? "cursor-pointer" : undefined}
+                >
                   {columns.map((col) => (
                     <TableCell key={col.key} className={col.className}>
                       {col.render

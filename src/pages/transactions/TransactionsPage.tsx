@@ -4,7 +4,6 @@ import { Plus, Download, Upload, Trash2, ArrowUpCircle, ArrowDownCircle, Refresh
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fmtCurrency, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
-import { Input } from "@/components/ui/input";
 
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import TransactionFiltersPopover, { type TransactionFilters } from "./TransactionFiltersPopover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +50,7 @@ import {
   RecordExpenseModal,
   UseInventoryModal,
 } from "./TransactionActions";
+import TransactionEditSheet from "./TransactionEditSheet";
 
 // ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
 
@@ -61,7 +62,6 @@ const C = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TYPES: TransactionType[] = ["income", "expense", "refund"];
 const STATUSES: TransactionStatus[] = ["success", "pending", "refunded", "cancelled"];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -168,17 +168,24 @@ export default function TransactionsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const [typeFilter, setTypeFilter] = useState<TransactionType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<TransactionStatus | "all">("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [customerFilter, setCustomerFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [filters, setFilters] = useState<TransactionFilters>({
+    typeFilter:     "all",
+    statusFilter:   "all",
+    categoryFilter: "all",
+    customerFilter: "all",
+    dateFrom:       "",
+    dateTo:         "",
+  });
+
+  function updateFilters(patch: Partial<TransactionFilters>) {
+    setFilters((f) => ({ ...f, ...patch }));
+  }
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+  const [editTarget, setEditTarget] = useState<Transaction | null>(null);
 
   const txCsvColumns: CsvColumn<TransactionPayload>[] = [
     { header: "Description",      key: "description" },
@@ -200,15 +207,15 @@ export default function TransactionsPage() {
   }
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ["transactions", activeSiteId, typeFilter, statusFilter, categoryFilter, customerFilter, dateFrom, dateTo],
+    queryKey: ["transactions", activeSiteId, filters],
     queryFn: () =>
       getTransactions(activeSiteId!, {
-        type: typeFilter,
-        status: statusFilter,
-        category: categoryFilter,
-        customerId: customerFilter,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
+        type:       filters.typeFilter,
+        status:     filters.statusFilter,
+        category:   filters.categoryFilter,
+        customerId: filters.customerFilter,
+        dateFrom:   filters.dateFrom || undefined,
+        dateTo:     filters.dateTo   || undefined,
       }),
     enabled: !!activeSiteId,
   });
@@ -263,7 +270,7 @@ export default function TransactionsPage() {
     .filter((t) => t.type === "expense" && t.status === "success")
     .reduce((sum, t) => sum + t.quantity * t.unit_price, 0);
 
-  // Running balance: sort oldest-first, accumulate, then reverse for display
+  // Running balance: sort oldest-first, accumulate (success only), then reverse for display
   const sortedAsc = [...transactions].sort(
     (a, b) => a.transaction_date.localeCompare(b.transaction_date)
   );
@@ -271,8 +278,8 @@ export default function TransactionsPage() {
   const txWithBalance = sortedAsc
     .map((t) => {
       const amount = t.quantity * t.unit_price;
-      if (t.type === "income" && t.status !== "cancelled") runningBalance += amount;
-      else if (t.type === "expense" && t.status !== "cancelled") runningBalance -= amount;
+      if (t.type === "income" && t.status === "success") runningBalance += amount;
+      else if (t.type === "expense" && t.status === "success") runningBalance -= amount;
       return { ...t, _balance: runningBalance };
     })
     .reverse();
@@ -327,7 +334,11 @@ export default function TransactionsPage() {
     {
       key: "status",
       header: "Status",
-      render: (_, row) => <StatusSelect tx={row as unknown as Transaction} />,
+      render: (_, row) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <StatusSelect tx={row as unknown as Transaction} />
+        </div>
+      ),
     },
     {
       key: "unit_price",
@@ -366,7 +377,7 @@ export default function TransactionsPage() {
           variant="ghost"
           size="icon"
           className="h-7 w-7 text-destructive hover:text-destructive"
-          onClick={() => setDeleteTarget(row as unknown as Transaction)}
+          onClick={(e) => { e.stopPropagation(); setDeleteTarget(row as unknown as Transaction); }}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -442,11 +453,11 @@ export default function TransactionsPage() {
         </div>
         <div className="rounded-lg border border-border p-4 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-foreground/20" />
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Running Balance</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Net Balance</p>
           <p className="text-xl font-bold mt-1 tabular-nums" style={{ color: (txWithBalance[0]?._balance ?? 0) >= 0 ? C.income : C.expense }}>
             {fmtCurrency(Math.abs(txWithBalance[0]?._balance ?? 0))}
           </p>
-          <p className="text-xs text-muted-foreground">all transactions incl. pending</p>
+          <p className="text-xs text-muted-foreground">success status only</p>
         </div>
       </div>
 
@@ -461,82 +472,14 @@ export default function TransactionsPage() {
         pageSize={15}
         isLoading={isLoading}
         emptyMessage="No transactions match the current filters."
+        onRowClick={(row) => setEditTarget(row as unknown as Transaction)}
         toolbar={
-          <>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="h-9 w-36 text-xs"
-              title="From date"
-            />
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="h-9 w-36 text-xs"
-              title="To date"
-            />
-            {(dateFrom || dateTo) && (
-              <button
-                onClick={() => { setDateFrom(""); setDateTo(""); }}
-                className="h-9 px-2.5 rounded-md border border-border text-xs text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
-              >
-                Clear dates
-              </button>
-            )}
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TransactionType | "all")}>
-              <SelectTrigger className="w-32 h-9">
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                {TYPES.map((t) => (
-                  <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as TransactionStatus | "all")}>
-              <SelectTrigger className="w-32 h-9">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                {STATUSES.map((s) => (
-                  <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {categories.length > 0 && (
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-36 h-9">
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            {customers.length > 0 && (
-              <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                <SelectTrigger className="w-40 h-9">
-                  <SelectValue placeholder="All customers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All customers</SelectItem>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </>
+          <TransactionFiltersPopover
+            filters={filters}
+            onChange={updateFilters}
+            categories={categories}
+            customers={customers}
+          />
         }
       />
 
@@ -573,6 +516,15 @@ export default function TransactionsPage() {
         siteId={activeSiteId!}
         userId={user?.id}
         customers={customers}
+      />
+
+      {/* Edit Sheet */}
+      <TransactionEditSheet
+        transaction={editTarget}
+        open={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        customers={customers}
+        categories={categories}
       />
 
       {/* Delete Confirmation */}

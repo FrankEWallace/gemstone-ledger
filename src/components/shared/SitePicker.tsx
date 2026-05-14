@@ -1,10 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useSite } from "@/hooks/useSite";
 
 export default function SitePicker() {
   const { userProfile } = useAuth();
-  const { activeSite } = useSite();
   const navigate = useNavigate();
 
   const initials = userProfile?.full_name
@@ -26,11 +24,9 @@ export default function SitePicker() {
       </div>
       <div className="flex-1 text-left min-w-0">
         <p className="text-sm font-medium truncate">
-          {userProfile?.full_name ?? "Loading..."}
+          {userProfile?.full_name ?? "Profile"}
         </p>
-        <p className="text-xs text-muted-foreground truncate">
-          {activeSite?.name ?? "No site selected"}
-        </p>
+        <p className="text-xs text-muted-foreground truncate">View profile & settings</p>
       </div>
     </button>
   );

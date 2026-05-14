@@ -17,8 +17,7 @@ import { Download, Package, AlertTriangle, ArrowRight } from "lucide-react";
 
 import { useSite } from "@/hooks/useSite";
 import { getInventoryItems } from "@/services/inventory.service";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import DateRangePicker from "@/components/shared/DateRangePicker";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -364,26 +363,15 @@ export default function ReportsPage() {
       </div>
 
       {/* ── Date range ────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="w-36 h-8 text-xs"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="w-36 h-8 text-xs"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2 pb-0.5">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
+        <DateRangePicker
+          from={dateFrom}
+          to={dateTo}
+          onFromChange={setDateFrom}
+          onToChange={setDateTo}
+          placeholder="Select date range"
+        />
+        <div className="flex flex-wrap gap-2">
           {PRESETS.map((p) => {
             const from = format(startOfMonth(subMonths(new Date(), p.months)), "yyyy-MM-dd");
             const to   = format(endOfMonth(new Date()), "yyyy-MM-dd");

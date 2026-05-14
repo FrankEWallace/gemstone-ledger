@@ -116,6 +116,26 @@ export async function updateTransactionStatus(
   return data;
 }
 
+export async function updateTransaction(
+  id: string,
+  payload: Partial<TransactionPayload>
+): Promise<Transaction> {
+  if (!navigator.onLine) {
+    await enqueue({ entity: "transactions", operation: "update", payload: { id, ...payload }, siteId: "", timestamp: Date.now() });
+    return { id, ...payload } as unknown as Transaction;
+  }
+  if (isRestActive()) return restPut<Transaction>(`/transactions/${id}`, payload);
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function deleteTransaction(id: string): Promise<void> {
   if (!navigator.onLine) {
     await enqueue({ entity: "transactions", operation: "delete", payload: { id }, siteId: "", timestamp: Date.now() });
