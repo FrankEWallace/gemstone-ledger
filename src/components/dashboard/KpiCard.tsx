@@ -9,20 +9,21 @@ interface KpiCardProps {
   vsLabel?: string;
   href: string;
   valueColor?: string;
+  prominent?: boolean;
 }
 
-export default function KpiCard({ label, rawValue, trendPct, vsLabel, href, valueColor }: KpiCardProps) {
+export default function KpiCard({ label, rawValue, trendPct, vsLabel, href, valueColor, prominent }: KpiCardProps) {
   const up = (trendPct ?? 0) >= 0;
   const hasTrend = trendPct != null;
 
   return (
     <Link
       to={href}
-      className="group rounded-xl border border-border bg-card p-5 flex flex-col gap-3 hover:border-foreground/20 transition-colors"
+      className="group rounded-xl border border-border bg-card p-4 flex flex-col gap-2 hover:border-foreground/20 transition-colors"
     >
       <p className="text-sm text-muted-foreground">{label}</p>
       <p
-        className="font-display text-3xl font-semibold tracking-tight tabular-nums leading-none"
+        className={`font-display ${prominent ? "text-3xl" : "text-2xl"} font-semibold tracking-tight tabular-nums leading-none`}
         style={valueColor ? { color: valueColor } : undefined}
       >
         {fmtCompact(rawValue)}

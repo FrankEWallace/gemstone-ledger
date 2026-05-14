@@ -36,7 +36,7 @@ export default function BreakdownCard({ type, siteId, period, selectedCustomerId
   );
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-5 h-full">
+    <div className={`rounded-xl border border-border bg-card p-5 flex flex-col gap-5 h-full${isExpense ? " border-t-2 border-t-foreground/20" : ""}`}>
       {/* Header */}
       <Link
         to={href}

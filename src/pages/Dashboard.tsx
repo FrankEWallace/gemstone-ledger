@@ -240,11 +240,12 @@ export default function Dashboard() {
           vsLabel={curr.net >= 0 ? "positive cashflow" : "net loss"}
           href="/reports"
           valueColor={curr.net >= 0 ? C.net : C.loss}
+          prominent
         />
       </div>
 
       {/* Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 items-stretch">
         <BreakdownCard
           type="expense"
           siteId={activeSiteId}
