@@ -474,7 +474,7 @@ export default function CustomerReportPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-[1200px] mx-auto">
+    <div className="p-4 lg:p-6 space-y-6">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">

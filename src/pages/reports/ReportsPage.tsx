@@ -348,7 +348,7 @@ export default function ReportsPage() {
   const maxCat = Math.max(...categories.map((c) => c.total), 1);
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-[1400px]">
+    <div className="p-4 lg:p-6 space-y-6">
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
