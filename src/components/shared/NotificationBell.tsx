@@ -99,7 +99,7 @@ export default function NotificationBell() {
                 )} />
               )}
               <span className={cn(
-                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white",
+                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-white",
                 criticalCount > 0 ? "bg-red-500" : "bg-destructive"
               )}>
                 {totalBadge > 9 ? "9+" : totalBadge}
@@ -198,7 +198,7 @@ export default function NotificationBell() {
                     {notif.body && (
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.body}</p>
                     )}
-                    <p className="text-[10px] text-muted-foreground/70 mt-1">
+                    <p className="text-xs text-muted-foreground/70 mt-1">
                       {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                     </p>
                   </div>

@@ -407,7 +407,7 @@ export default function ShiftSchedulePage() {
                   "px-2 py-1.5 border-b border-border flex flex-col items-center",
                   isToday && "border-primary/20"
                 )}>
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {format(day, "EEE")}
                   </span>
                   <span className={cn(
@@ -417,7 +417,7 @@ export default function ShiftSchedulePage() {
                     {format(day, "d")}
                   </span>
                   {dayShifts.length > 0 && (
-                    <Badge variant="secondary" className="text-[9px] px-1 py-0 mt-0.5">
+                    <Badge variant="secondary" className="text-xs px-1 py-0 mt-0.5">
                       {dayShifts.length}
                     </Badge>
                   )}
@@ -442,7 +442,7 @@ export default function ShiftSchedulePage() {
                 {/* Add button */}
                 <button
                   onClick={() => openModalForDay(day)}
-                  className="w-full py-1 text-[10px] text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors border-t border-border rounded-b-lg"
+                  className="w-full py-1 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors border-t border-border rounded-b-lg"
                 >
                   + Add
                 </button>
@@ -495,7 +495,7 @@ export default function ShiftSchedulePage() {
                     {isLoading ? null : dayShifts.slice(0, 2).map((s) => (
                       <div
                         key={s.id}
-                        className="group relative text-[10px] rounded bg-primary/10 text-primary px-1 py-0.5 truncate cursor-default"
+                        className="group relative text-xs rounded bg-primary/10 text-primary px-1 py-0.5 truncate cursor-default"
                         title={`${workerMap[s.worker_id] ?? "?"} · ${s.start_time.slice(0,5)}–${s.end_time.slice(0,5)}`}
                       >
                         <span className="font-medium">{workerMap[s.worker_id]?.split(" ")[0] ?? "?"}</span>
@@ -509,7 +509,7 @@ export default function ShiftSchedulePage() {
                       </div>
                     ))}
                     {dayShifts.length > 2 && (
-                      <p className="text-[10px] text-muted-foreground pl-1">+{dayShifts.length - 2} more</p>
+                      <p className="text-xs text-muted-foreground pl-1">+{dayShifts.length - 2} more</p>
                     )}
                   </div>
                 </div>

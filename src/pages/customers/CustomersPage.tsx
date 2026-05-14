@@ -78,15 +78,15 @@ const C = {
 
 function TypeBadge({ type }: { type: Customer["type"] }) {
   return type === "external"
-    ? <Badge variant="outline" className="text-blue-600 border-blue-200 text-[10px]">External</Badge>
-    : <Badge variant="outline" className="text-muted-foreground text-[10px]">Internal</Badge>;
+    ? <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">External</Badge>
+    : <Badge variant="outline" className="text-muted-foreground text-xs">Internal</Badge>;
 }
 
 function StatusBadge({ status }: { status: Customer["status"] }) {
-  if (status === "prospect")  return <Badge variant="outline" className="text-violet-600 border-violet-200 text-[10px]">Prospect</Badge>;
-  if (status === "active")    return <Badge variant="outline" className="text-blue-600 border-blue-200 text-[10px]">Active</Badge>;
-  if (status === "completed") return <Badge variant="outline" className="text-blue-500 border-blue-100 text-[10px]">Completed</Badge>;
-  return <Badge variant="outline" className="text-muted-foreground text-[10px]">Inactive</Badge>;
+  if (status === "prospect")  return <Badge variant="outline" className="text-violet-600 border-violet-200 text-xs">Prospect</Badge>;
+  if (status === "active")    return <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">Active</Badge>;
+  if (status === "completed") return <Badge variant="outline" className="text-blue-500 border-blue-100 text-xs">Completed</Badge>;
+  return <Badge variant="outline" className="text-muted-foreground text-xs">Inactive</Badge>;
 }
 
 // ─── Rent Charge Modal ────────────────────────────────────────────────────────
@@ -408,7 +408,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
                   </div>
                   <div>
                     <p className="text-sm font-medium leading-tight">Time-based contract</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {hasTimedContract
                         ? "Client billed on a daily rate with start/end dates"
                         : "Client with no fixed rate or contract period"}
@@ -569,7 +569,7 @@ export default function CustomersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">Customers</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Financial metrics reflect {format(startOfMonth(today), "MMMM yyyy")}
           </p>
         </div>
@@ -639,22 +639,22 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
                     Customer
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden sm:table-cell">
+                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden sm:table-cell">
                     Contact
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden md:table-cell">
+                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden md:table-cell">
                     Started
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
                     Status
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
+                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
                     End Date
                   </th>
-                  <th className="text-right px-4 py-2.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
+                  <th className="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
                     Net Revenue
                   </th>
                   <th className="px-4 py-2.5 w-[88px]" />
@@ -682,7 +682,7 @@ export default function CustomersPage() {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${avatarCls[c.status] ?? "bg-muted text-muted-foreground"}`}>
-                            <span className="text-[11px] font-semibold uppercase">
+                            <span className="text-xs font-semibold uppercase">
                               {c.name.slice(0, 2)}
                             </span>
                           </div>
@@ -761,7 +761,7 @@ export default function CustomersPage() {
                               {summary.netProfit < 0 ? "-" : ""}
                               {fmtCompact(Math.abs(summary.netProfit))}
                             </p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               {summary.transactionCount} txn{summary.transactionCount !== 1 ? "s" : ""}
                             </p>
                           </div>
@@ -815,7 +815,7 @@ export default function CustomersPage() {
 
       {/* Row count */}
       {!isLoading && filtered.length > 0 && (
-        <p className="text-[11px] text-muted-foreground text-right">
+        <p className="text-xs text-muted-foreground text-right">
           {filtered.length} {filtered.length === 1 ? "customer" : "customers"}
           {filtered.length !== customers.length && ` of ${customers.length}`}
         </p>

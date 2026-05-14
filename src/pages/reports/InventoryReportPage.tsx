@@ -165,7 +165,7 @@ const REASON_BADGE: Record<string, { label: string; className: string }> = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground mb-4">
+    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">
       {children}
     </p>
   );
@@ -215,7 +215,7 @@ function StatCard({
           style={{ backgroundColor: color }}
         />
       )}
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">
+      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">
         {label}
       </p>
       <p
@@ -224,7 +224,7 @@ function StatCard({
       >
         {value}
       </p>
-      {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
     </div>
   );
 }
@@ -255,7 +255,7 @@ function CustomerRow({
             <span className="text-sm font-semibold truncate">{customerName}</span>
             <span className="text-sm font-bold tabular-nums shrink-0">{fmtCurrency(totalValue)}</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {lines.length} item{lines.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -272,16 +272,16 @@ function CustomerRow({
             <table className="w-full text-xs min-w-[420px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                     Item
                   </th>
-                  <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                     Qty
                   </th>
-                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">
+                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">
                     Unit
                   </th>
-                  <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                     Value
                   </th>
                 </tr>
@@ -788,7 +788,7 @@ export default function InventoryReportPage() {
       <div className="space-y-1">
         <Link
           to="/reports"
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mb-1"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
         >
           <ArrowLeft className="h-3 w-3" /> Reports
         </Link>
@@ -831,7 +831,7 @@ export default function InventoryReportPage() {
               <button
                 key={p.label}
                 onClick={() => { setDateFrom(p.from); setDateTo(p.to); }}
-                className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
                   active
                     ? "bg-foreground text-background border-foreground"
                     : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
@@ -844,7 +844,7 @@ export default function InventoryReportPage() {
         </div>
         <div className="flex items-end gap-3 shrink-0">
           <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">From</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">From</Label>
             <Input
               type="date"
               value={dateFrom}
@@ -853,7 +853,7 @@ export default function InventoryReportPage() {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">To</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">To</Label>
             <Input
               type="date"
               value={dateTo}
@@ -964,11 +964,11 @@ export default function InventoryReportPage() {
                   <table className="w-full text-xs min-w-[480px]">
                     <thead>
                       <tr className="border-b border-border bg-muted/30">
-                        <th className="px-4 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Item</th>
-                        <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Category</th>
-                        <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Unit</th>
-                        <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Qty Used</th>
-                        <th className="px-4 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Value</th>
+                        <th className="px-4 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Item</th>
+                        <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">Category</th>
+                        <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">Unit</th>
+                        <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Qty Used</th>
+                        <th className="px-4 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Value</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -1089,12 +1089,12 @@ export default function InventoryReportPage() {
               <table className="w-full text-xs min-w-[520px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Item</th>
-                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Category</th>
-                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Current Qty</th>
-                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Reorder At</th>
-                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Status</th>
-                    <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Days Left</th>
+                    <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Item</th>
+                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">Category</th>
+                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Current Qty</th>
+                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden md:table-cell">Reorder At</th>
+                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Status</th>
+                    <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Days Left</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1119,11 +1119,11 @@ export default function InventoryReportPage() {
                       </td>
                       <td className="px-3 py-3">
                         {isOut ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 border border-red-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
                             Out of Stock
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
                             Low Stock
                           </span>
                         )}
@@ -1161,13 +1161,13 @@ export default function InventoryReportPage() {
               <table className="w-full text-xs min-w-[560px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Date</th>
-                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Item</th>
-                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Category</th>
-                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Qty</th>
-                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Reason</th>
-                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Value</th>
-                    <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Notes</th>
+                    <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Date</th>
+                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Item</th>
+                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">Category</th>
+                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Qty</th>
+                    <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Reason</th>
+                    <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Value</th>
+                    <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden md:table-cell">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -1186,7 +1186,7 @@ export default function InventoryReportPage() {
                         <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{row.quantity}</td>
                         <td className="px-3 py-3">
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${reasonStyle.className}`}
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${reasonStyle.className}`}
                           >
                             {reasonStyle.label}
                           </span>

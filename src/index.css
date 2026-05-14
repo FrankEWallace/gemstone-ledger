@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..700&family=Nunito+Sans:ital,opsz,wght@0,6..12,300..700;1,6..12,300..700&family=Figtree:ital,wght@0,300..700;1,300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..700&family=Nunito+Sans:ital,opsz,wght@0,6..12,300..700;1,6..12,300..700&family=Figtree:ital,wght@0,300..700;1,300..700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -150,8 +150,8 @@
   --sidebar-ring: oklch(0.23 0.028 255);
 
   /* fonts */
-  --font-body: 'Nunito Sans', 'Inter', sans-serif;
-  --font-display: 'Figtree', 'Inter', sans-serif;
+  --font-body: 'Geist', 'Inter', sans-serif;
+  --font-display: 'Figtree', 'Geist', sans-serif;
 }
 
 /* ─── Dark theme ─────────────────────────────────────────────────────── */
@@ -253,19 +253,19 @@
 /* ─── Font switching (data-font on <html>) ───────────────────────────── */
 html[data-font="inter"] {
   --font-body: 'Inter', sans-serif;
-  --font-display: 'Inter', sans-serif;
+  --font-display: 'Figtree', 'Inter', sans-serif;
 }
 html[data-font="nunito-sans"] {
   --font-body: 'Nunito Sans', sans-serif;
-  --font-display: 'Figtree', 'Inter', sans-serif;
+  --font-display: 'Figtree', 'Nunito Sans', sans-serif;
 }
 html[data-font="figtree"] {
   --font-body: 'Figtree', sans-serif;
   --font-display: 'Figtree', sans-serif;
 }
 html[data-font="geist"] {
-  --font-body: 'Geist Variable', sans-serif;
-  --font-display: 'Geist Variable', sans-serif;
+  --font-body: 'Geist', sans-serif;
+  --font-display: 'Figtree', 'Geist', sans-serif;
 }
 
 /* ─── Date input picker icon ─────────────────────────────────────────── */

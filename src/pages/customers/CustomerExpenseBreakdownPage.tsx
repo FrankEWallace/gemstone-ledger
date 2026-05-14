@@ -112,7 +112,7 @@ function CategoryRow({
               style={{ width: `${barPct}%`, backgroundColor: barColor }}
             />
           </div>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {transactions.length} transaction{transactions.length !== 1 ? "s" : ""} · {pct}% of customer expenses
           </p>
         </div>
@@ -130,19 +130,19 @@ function CategoryRow({
             <table className="w-full text-xs min-w-[520px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                     Description
                   </th>
-                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">
+                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">
                     Date
                   </th>
-                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">
+                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden md:table-cell">
                     Qty × Unit
                   </th>
-                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  <th className="px-3 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                     Status
                   </th>
-                  <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                  <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                     Amount
                   </th>
                 </tr>
@@ -157,7 +157,7 @@ function CategoryRow({
                           {t.description || "—"}
                         </span>
                         {t.reference_no && (
-                          <span className="text-[10px] text-muted-foreground">{t.reference_no}</span>
+                          <span className="text-xs text-muted-foreground">{t.reference_no}</span>
                         )}
                       </td>
                       <td className="px-3 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
@@ -167,7 +167,7 @@ function CategoryRow({
                         {t.quantity} × {CURRENCY_SYMBOL}{fmtCompact(t.unit_price)}
                       </td>
                       <td className="px-3 py-3">
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                           <span className={`h-1.5 w-1.5 rounded-full ${statusDot(t.status)}`} />
                           {t.status}
                         </span>
@@ -331,7 +331,7 @@ export default function CustomerExpenseBreakdownPage() {
       <div className="space-y-1">
         <Link
           to={`/customers/${id}`}
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mb-1"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
         >
           <ArrowLeft className="h-3 w-3" />
           {customer?.name ?? "Customer"}
@@ -351,7 +351,7 @@ export default function CustomerExpenseBreakdownPage() {
               <button
                 key={p.label}
                 onClick={() => { setDateFrom(p.from); setDateTo(p.to); }}
-                className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
                   active
                     ? "bg-foreground text-background border-foreground"
                     : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
@@ -364,7 +364,7 @@ export default function CustomerExpenseBreakdownPage() {
         </div>
         <div className="flex items-end gap-3 shrink-0">
           <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">From</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">From</Label>
             <Input
               type="date"
               value={dateFrom}
@@ -373,7 +373,7 @@ export default function CustomerExpenseBreakdownPage() {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">To</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">To</Label>
             <Input
               type="date"
               value={dateTo}
@@ -387,15 +387,15 @@ export default function CustomerExpenseBreakdownPage() {
       {/* Summary strip */}
       <div className="grid grid-cols-3 rounded-xl border border-border bg-card divide-x divide-border">
         <div className="px-5 py-4">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Total Expenses</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Total Expenses</p>
           <p className="font-display text-2xl font-bold tabular-nums mt-1">{fmtCurrency(grandTotal)}</p>
         </div>
         <div className="px-5 py-4">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Categories</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Categories</p>
           <p className="font-display text-2xl font-bold tabular-nums mt-1">{grouped.length}</p>
         </div>
         <div className="px-5 py-4">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Transactions</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Transactions</p>
           <p className="font-display text-2xl font-bold tabular-nums mt-1">{filteredTxs.length}</p>
         </div>
       </div>
@@ -465,7 +465,7 @@ export default function CustomerExpenseBreakdownPage() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
                 statusFilter === s
                   ? "bg-foreground text-background border-foreground"
                   : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
@@ -482,7 +482,7 @@ export default function CustomerExpenseBreakdownPage() {
             <button
               key={s}
               onClick={() => setSortBy(s)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
                 sortBy === s
                   ? "bg-foreground text-background border-foreground"
                   : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"

@@ -7,7 +7,6 @@ import {
   Users,
   BarChart3,
   MessageSquare,
-  TrendingUp,
   Megaphone,
   UserCircle,
   Layers,
@@ -74,7 +73,7 @@ const operationsItems: NavItem[] = [
 ];
 
 const teamItems: NavItem[] = [
-  { label: "Team",      icon: TrendingUp, to: "/team",            module: "team" },
+  { label: "Team",      icon: Users,      to: "/team",            module: "team" },
   { label: "Roles",     icon: Shield,     to: "/management/roles" },
   { label: "Audit Log", icon: FileText,   to: "/management/audit" },
 ];
@@ -135,7 +134,7 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium leading-tight">{section.label}</p>
-                <p className="text-[11px] text-sidebar-foreground/50 truncate">{section.description}</p>
+                <p className="text-xs text-sidebar-foreground/50 truncate">{section.description}</p>
               </div>
               <span className={cn(
                 "inline-flex h-5 w-9 shrink-0 rounded-full border-2 transition-colors",
@@ -151,7 +150,7 @@ function NavCustomizer({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <div className="px-4 py-2.5 border-t border-sidebar-border">
-        <p className="text-[11px] text-sidebar-foreground/40 text-center">Saved to this browser</p>
+        <p className="text-xs text-sidebar-foreground/40 text-center">Saved to this browser</p>
       </div>
     </div>
   );
@@ -274,7 +273,7 @@ export default function AppSidebar({
             <p className="font-display font-semibold text-sm leading-tight truncate text-sidebar-foreground">
               FW Mining OS
             </p>
-            <p className="text-[11px] text-sidebar-foreground/45 leading-tight">Mining Co.</p>
+            <p className="text-xs text-sidebar-foreground/45 leading-tight">Mining Co.</p>
           </div>
         </div>
       </SidebarHeader>
@@ -296,7 +295,7 @@ export default function AppSidebar({
             title="Extensions"
             items={visibleExtensions}
             badge={
-              <span className="inline-flex items-center gap-1 rounded-md bg-sidebar-accent px-1.5 py-0.5 text-[9px] font-semibold text-sidebar-foreground/50 uppercase tracking-wide group-data-[collapsible=icon]:hidden">
+              <span className="inline-flex items-center gap-1 rounded-md bg-sidebar-accent px-1.5 py-0.5 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wide group-data-[collapsible=icon]:hidden">
                 <Puzzle className="h-2.5 w-2.5" />
                 optional
               </span>

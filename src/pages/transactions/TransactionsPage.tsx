@@ -422,7 +422,7 @@ export default function TransactionsPage() {
           <p className="text-xl font-bold mt-1" style={{ color: C.income }}>
             {fmtCurrency(totalIncome)}
           </p>
-          <p className="text-[11px] text-muted-foreground">success status only</p>
+          <p className="text-xs text-muted-foreground">success status only</p>
         </div>
         <div className="rounded-lg border border-border p-4 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.expense }} />
@@ -430,7 +430,7 @@ export default function TransactionsPage() {
           <p className="text-xl font-bold mt-1" style={{ color: C.expense }}>
             {fmtCurrency(totalExpenses)}
           </p>
-          <p className="text-[11px] text-muted-foreground">success status only</p>
+          <p className="text-xs text-muted-foreground">success status only</p>
         </div>
         <div className="rounded-lg border border-border p-4 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.net }} />
@@ -438,7 +438,7 @@ export default function TransactionsPage() {
           <p className="text-xl font-bold mt-1" style={{ color: totalIncome - totalExpenses >= 0 ? C.income : C.expense }}>
             {fmtCurrency(totalIncome - totalExpenses)}
           </p>
-          <p className="text-[11px] text-muted-foreground">income − expenses</p>
+          <p className="text-xs text-muted-foreground">income − expenses</p>
         </div>
         <div className="rounded-lg border border-border p-4 overflow-hidden relative">
           <div className="absolute inset-x-0 top-0 h-[3px] bg-foreground/20" />
@@ -446,7 +446,7 @@ export default function TransactionsPage() {
           <p className="text-xl font-bold mt-1 tabular-nums" style={{ color: (txWithBalance[0]?._balance ?? 0) >= 0 ? C.income : C.expense }}>
             {fmtCurrency(Math.abs(txWithBalance[0]?._balance ?? 0))}
           </p>
-          <p className="text-[11px] text-muted-foreground">all transactions incl. pending</p>
+          <p className="text-xs text-muted-foreground">all transactions incl. pending</p>
         </div>
       </div>
 

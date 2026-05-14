@@ -282,7 +282,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
       <div className="flex items-center gap-2 mb-1">
         <Database className="h-4 w-4 text-muted-foreground" />
         <h2 className="font-semibold text-sm">Backend Provider</h2>
-        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
+        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
           Developer
         </span>
       </div>
@@ -302,7 +302,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Supabase</span>
               {!isRest && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
                   Active
                 </span>
               )}
@@ -319,7 +319,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Custom REST API</span>
               {isRest && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
                   Active
                 </span>
               )}

@@ -58,7 +58,7 @@ const C = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground mb-4">
+    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">
       {children}
     </p>
   );
@@ -90,9 +90,9 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3 flex flex-col gap-1 min-w-0 overflow-hidden relative">
       {color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-lg" style={{ backgroundColor: color }} />}
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">{label}</p>
+      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">{label}</p>
       <p className="text-lg font-bold tracking-tight leading-none tabular-nums font-display truncate" style={color ? { color } : undefined}>{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
     </div>
   );
 }
@@ -366,7 +366,7 @@ export default function ReportsPage() {
       {/* ── Date range ────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
+          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
           <Input
             type="date"
             value={dateFrom}
@@ -375,7 +375,7 @@ export default function ReportsPage() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
+          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
           <Input
             type="date"
             value={dateTo}
@@ -486,7 +486,7 @@ export default function ReportsPage() {
                 <Bar dataKey="Expenses" name="Expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-            <div className="flex items-center gap-5 mt-3 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-5 mt-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: C.income }} /> Income
               </span>
@@ -589,23 +589,23 @@ export default function ReportsPage() {
       {categories.length > 0 && (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
-            <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+            <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
               Expense Category Breakdown
             </p>
           </div>
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                   Category
                 </th>
-                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">
                   Total Spent
                 </th>
-                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">
                   % of Expenses
                 </th>
-                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">
+                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden md:table-cell">
                   Share
                 </th>
               </tr>
@@ -645,7 +645,7 @@ export default function ReportsPage() {
             {summary && (
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted/20">
-                  <td className="px-5 py-3 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Total</td>
+                  <td className="px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Total</td>
                   <td className="px-3 py-3 text-right tabular-nums font-bold">{fmt(summary.totalExpenses)}</td>
                   <td className="px-3 py-3 text-right text-muted-foreground hidden sm:table-cell">100%</td>
                   <td className="px-5 py-3 hidden md:table-cell" />
@@ -660,17 +660,17 @@ export default function ReportsPage() {
       {trend.length > 0 && (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
-            <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+            <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
               Monthly Financials
             </p>
           </div>
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Month</th>
-                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Income</th>
-                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Expenses</th>
-                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Net</th>
+                <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Month</th>
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Income</th>
+                <th className="px-3 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Expenses</th>
+                <th className="px-5 py-2.5 text-right font-semibold tracking-wider uppercase text-xs text-muted-foreground">Net</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -700,7 +700,7 @@ export default function ReportsPage() {
         return (
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+              <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                 Inventory Snapshot
               </p>
               <Link
@@ -716,16 +716,16 @@ export default function ReportsPage() {
                   <Package className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Items</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Total Items</p>
                   <p className="text-lg font-bold tabular-nums leading-tight">{totalItems}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg border bg-muted text-muted-foreground shrink-0">
-                  <span className="text-[10px] font-bold">{CURRENCY_SYMBOL}</span>
+                  <span className="text-xs font-bold">{CURRENCY_SYMBOL}</span>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Stock Value</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Stock Value</p>
                   <p className="text-lg font-bold tabular-nums leading-tight">{fmtShort(stockValue)}</p>
                 </div>
               </div>
@@ -734,7 +734,7 @@ export default function ReportsPage() {
                   <AlertTriangle className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Low / Out of Stock</p>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Low / Out of Stock</p>
                   <p className={`text-lg font-bold tabular-nums leading-tight ${lowOutCount > 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                     {lowOutCount}
                   </p>
@@ -824,7 +824,7 @@ export default function ReportsPage() {
                         </Badge>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Net Profit</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Net Profit</p>
                         <p className="text-lg font-bold tabular-nums" style={{ color: cs.netProfit >= 0 ? C.income : C.expense }}>
                           {cs.netProfit >= 0 ? "+" : "−"}{fmt(Math.abs(cs.netProfit))}
                         </p>
@@ -834,11 +834,11 @@ export default function ReportsPage() {
                     {/* Income / Expenses */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="rounded-lg bg-muted/40 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Income</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Income</p>
                         <p className="text-sm font-semibold tabular-nums" style={{ color: C.income }}>{fmt(cs.totalIncome)}</p>
                       </div>
                       <div className="rounded-lg bg-muted/40 p-3">
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Expenses</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">Expenses</p>
                         <p className="text-sm font-semibold tabular-nums" style={{ color: C.expense }}>{fmt(cs.totalExpenses)}</p>
                       </div>
                     </div>
@@ -846,7 +846,7 @@ export default function ReportsPage() {
                     {/* Expense category breakdown */}
                     {cs.expensesByCategory.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Expenses by Category
                         </p>
                         {cs.expensesByCategory.slice(0, 4).map((c, idx) => {
@@ -874,10 +874,10 @@ export default function ReportsPage() {
                     )}
 
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {cs.transactionCount} transaction{cs.transactionCount !== 1 ? "s" : ""}
                       </p>
-                      <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                         View report →
                       </span>
                     </div>

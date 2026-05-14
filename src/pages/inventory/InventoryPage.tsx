@@ -301,7 +301,7 @@ function StatusBadge({ quantity, reorderLevel }: { quantity: number; reorderLeve
   const status = getStockStatus(quantity, reorderLevel);
   if (status === "out") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-50 text-red-600 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800">
+      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-red-50 text-red-600 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800">
         <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
         Out of Stock
       </span>
@@ -309,14 +309,14 @@ function StatusBadge({ quantity, reorderLevel }: { quantity: number; reorderLeve
   }
   if (status === "low") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold bg-amber-50 text-amber-600 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-800">
+      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-600 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-800">
         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
         Low Stock
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-800">
+    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-800">
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
       In Stock
     </span>
@@ -334,7 +334,7 @@ function DaysLeftChip({ daysLeft }: { daysLeft: number }) {
       ? "text-amber-500 dark:text-amber-400"
       : "text-muted-foreground";
   return (
-    <span className={`text-[10px] font-medium tabular-nums ${color}`}>
+    <span className={`text-xs font-medium tabular-nums ${color}`}>
       ({label})
     </span>
   );
@@ -691,7 +691,7 @@ export default function InventoryPage() {
       className: "text-center",
       render: (val) =>
         val ? (
-          <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground ring-1 ring-border">
+          <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground ring-1 ring-border">
             {val as string}
           </span>
         ) : (

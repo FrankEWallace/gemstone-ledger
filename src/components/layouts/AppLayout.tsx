@@ -125,7 +125,7 @@ export default function AppLayout() {
               className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-border/80 hover:bg-accent/50 transition-colors"
             >
               <span className="text-xs">Search…</span>
-              <kbd className="hidden lg:inline-flex h-4.5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground/70">
+              <kbd className="hidden lg:inline-flex h-4.5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground/70">
                 ⌘K
               </kbd>
             </button>

@@ -419,7 +419,7 @@ export default function ActivityPage() {
                     </span>
                     <span
                       className={cn(
-                        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
+                        "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wide",
                         customer.type === "internal"
                           ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
                           : "bg-muted text-muted-foreground"
@@ -443,7 +443,7 @@ export default function ActivityPage() {
                 {/* Financials */}
                 <div className="flex gap-5 text-sm">
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
                       Income
                     </p>
                     <p className="font-semibold" style={{ color: C.income }}>
@@ -451,7 +451,7 @@ export default function ActivityPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
                       Expenses
                     </p>
                     <p className="font-semibold" style={{ color: C.expense }}>
@@ -459,7 +459,7 @@ export default function ActivityPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
                       Net
                     </p>
                     <p className="font-bold" style={{ color: net >= 0 ? C.income : C.expense }}>

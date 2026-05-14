@@ -604,7 +604,7 @@ export default function CustomerDetailPage() {
               )}
 
               {/* Activity meta */}
-              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground">
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
                 {firstActivityDate ? (
                   <span className="flex items-center gap-1">
                     <CalendarDays className="h-3 w-3" />
@@ -644,15 +644,15 @@ export default function CustomerDetailPage() {
 
       {/* ── Date range filter ── */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
-        <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground self-center mr-2">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground self-center mr-2">
           Period
         </p>
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
+          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
           <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-38 h-8 text-xs" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
+          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
           <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-38 h-8 text-xs" />
         </div>
       </div>
@@ -668,7 +668,7 @@ export default function CustomerDetailPage() {
             <div key={s.label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2.5 overflow-hidden relative">
               {s.color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl" style={{ backgroundColor: s.color }} />}
               <div className="flex items-center justify-between gap-2 pt-0.5">
-                <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground leading-tight">
+                <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground leading-tight">
                   {s.label}
                 </p>
                 {s.spark && s.spark.some((v) => v > 0)
@@ -679,7 +679,7 @@ export default function CustomerDetailPage() {
                 {s.value}
               </p>
               {s.sub && (
-                <p className="text-[11px] text-muted-foreground">{s.sub}</p>
+                <p className="text-xs text-muted-foreground">{s.sub}</p>
               )}
             </div>
           ))}
@@ -692,12 +692,12 @@ export default function CustomerDetailPage() {
         {/* Expense breakdown */}
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+            <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
               Expense Breakdown
             </p>
             <Link
               to={`/customers/${id}/expenses`}
-              className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               View detail <ChevronRight className="h-3 w-3" />
             </Link>
@@ -734,7 +734,7 @@ export default function CustomerDetailPage() {
 
         {/* Income breakdown */}
         <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground mb-4">
+          <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">
             Income Breakdown
           </p>
           {incomeByCategory.length > 0 ? (

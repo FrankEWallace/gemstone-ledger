@@ -59,7 +59,7 @@ function RoleBadge({ role }: { role: string }) {
       ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
       : "bg-muted text-muted-foreground";
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${className}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>
       {label}
     </span>
   );
@@ -145,8 +145,8 @@ function AvatarSection({
           <Upload className="h-3 w-3" />
           {uploading ? "Uploading…" : "Change photo"}
         </button>
-        <p className="text-[11px] text-muted-foreground mt-0.5">PNG, JPG · Max 2MB</p>
-        <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">PNG, JPG · Max 2MB</p>
+        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
           Requires <code>user-avatars</code> bucket in Supabase Storage.
         </p>
       </div>
@@ -246,7 +246,7 @@ export default function ProfilePage() {
           <div className="mt-1.5 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
             {user?.email ?? "—"}
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="mt-1 text-xs text-muted-foreground">
             Email is managed by your authentication provider and cannot be changed here.
           </p>
         </div>

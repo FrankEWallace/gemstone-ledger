@@ -291,7 +291,7 @@ export default function TimesheetPage() {
               {days.map((day) => (
                 <th key={day.toISOString()} className="px-3 py-3 text-center font-medium">
                   <div>{format(day, "EEE")}</div>
-                  <div className="text-[10px] text-muted-foreground/70">{format(day, "d")}</div>
+                  <div className="text-xs text-muted-foreground/70">{format(day, "d")}</div>
                 </th>
               ))}
               <th className="px-4 py-3 text-right font-medium">Total hrs</th>

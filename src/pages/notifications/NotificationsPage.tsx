@@ -76,10 +76,10 @@ function SystemAlertCard({ alert, onDismiss }: { alert: SystemAlert; onDismiss: 
       <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", level.color)} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className={cn("inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider", level.color)}>
+          <span className={cn("inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider", level.color)}>
             {level.label}
           </span>
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <CatIcon className="h-3 w-3" />
             {cat.label}
           </span>
@@ -145,7 +145,7 @@ function NotifRow({
         {notif.body && (
           <p className="text-xs text-muted-foreground mt-0.5">{notif.body}</p>
         )}
-        <p className="text-[10px] text-muted-foreground/70 mt-1">
+        <p className="text-xs text-muted-foreground/70 mt-1">
           {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
         </p>
       </div>
@@ -236,7 +236,7 @@ export default function NotificationsPage() {
 
       {/* System Alerts */}
       <section>
-        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-3">
           System Alerts
         </p>
 
@@ -263,7 +263,7 @@ export default function NotificationsPage() {
 
       {/* Push Notifications */}
       <section>
-        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-3">
           Push Notifications
         </p>
 

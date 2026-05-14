@@ -33,7 +33,7 @@ export default function FontPicker() {
               {opt.sample}
             </span>
             <span
-              className="text-[11px] text-muted-foreground leading-none"
+              className="text-xs text-muted-foreground leading-none"
               style={{ fontFamily: FONT_FAMILY[opt.key] }}
             >
               {opt.label}

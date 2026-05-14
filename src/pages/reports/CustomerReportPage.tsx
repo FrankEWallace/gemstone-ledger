@@ -60,7 +60,7 @@ const fmtShort = (n: number) => fmtCompact(n);
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground mb-4">
+    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">
       {children}
     </p>
   );
@@ -82,13 +82,13 @@ function KpiCard({
   return (
     <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2 min-w-0">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground truncate">
+        <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate">
           {label}
         </p>
         {icon}
       </div>
       <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">
+        <span className="text-xs font-semibold tracking-wider text-muted-foreground">
           {CURRENCY_SYMBOL}
         </span>
         <p className={`font-display text-2xl font-bold leading-none tabular-nums truncate ${color}`}>
@@ -96,7 +96,7 @@ function KpiCard({
         </p>
       </div>
       {sub && (
-        <p className="text-[11px] text-muted-foreground truncate">{sub}</p>
+        <p className="text-xs text-muted-foreground truncate">{sub}</p>
       )}
     </div>
   );
@@ -113,14 +113,14 @@ function PlainKpiCard({
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2 min-w-0">
-      <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground truncate">
+      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate">
         {label}
       </p>
       <p className="font-display text-2xl font-bold leading-none tabular-nums truncate">
         {value}
       </p>
       {sub && (
-        <p className="text-[11px] text-muted-foreground truncate">{sub}</p>
+        <p className="text-xs text-muted-foreground truncate">{sub}</p>
       )}
     </div>
   );
@@ -539,11 +539,11 @@ export default function CustomerReportPage() {
       {/* Date range filter */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
+          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
           <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-38 h-8 text-xs" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
+          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
           <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-38 h-8 text-xs" />
         </div>
         <div className="flex flex-wrap gap-2 pb-0.5">
@@ -656,7 +656,7 @@ export default function CustomerReportPage() {
                   <Area type="monotone" dataKey="Expenses" stroke="var(--chart-2)" fill="var(--chart-2)" fillOpacity={0.15} strokeWidth={2} />
                 </AreaChart>
               </ChartContainer>
-              <div className="flex items-center gap-5 mt-3 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-5 mt-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--chart-1)" }} /> Income
                 </span>
@@ -699,7 +699,7 @@ export default function CustomerReportPage() {
                       if (!(viewBox && "cx" in viewBox && "cy" in viewBox)) return null;
                       return (
                         <text dominantBaseline="middle" textAnchor="middle" x={viewBox.cx} y={viewBox.cy}>
-                          <tspan className="fill-muted-foreground text-[10px]" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>
+                          <tspan className="fill-muted-foreground text-xs" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>
                             Total
                           </tspan>
                           <tspan className="fill-foreground font-bold text-sm tabular-nums" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
@@ -725,10 +725,10 @@ export default function CustomerReportPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Category</th>
-                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Total Spent</th>
-                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">% of Expenses</th>
-                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Share</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground">Category</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground">Total Spent</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">% of Expenses</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden md:table-cell">Share</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -754,7 +754,7 @@ export default function CustomerReportPage() {
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-border bg-muted/20">
-                <td className="px-5 py-3 text-center font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">Total</td>
+                <td className="px-5 py-3 text-center font-semibold text-xs uppercase tracking-wider text-muted-foreground">Total</td>
                 <td className="px-3 py-3 text-center tabular-nums font-bold">{fmt(summary.totalExpenses)}</td>
                 <td className="px-3 py-3 text-center text-muted-foreground hidden sm:table-cell">100%</td>
                 <td className="px-5 py-3 hidden md:table-cell" />
@@ -767,13 +767,13 @@ export default function CustomerReportPage() {
       {/* Transaction table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <p className="text-[11px] font-semibold tracking-widest uppercase text-muted-foreground">
+          <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
             Transactions ({sortedTx.length})
           </p>
           {customer && (
             <Link
               to={`/customers/${customer.id}`}
-              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               View customer profile →
             </Link>
@@ -791,12 +791,12 @@ export default function CustomerReportPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Date</th>
-                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Description</th>
-                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden sm:table-cell">Category</th>
-                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Type</th>
-                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground hidden md:table-cell">Status</th>
-                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-[10px] text-muted-foreground">Amount</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground">Date</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground">Description</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden sm:table-cell">Category</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground">Type</th>
+                <th className="px-3 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground hidden md:table-cell">Status</th>
+                <th className="px-5 py-2.5 text-center font-semibold tracking-wider uppercase text-xs text-muted-foreground">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

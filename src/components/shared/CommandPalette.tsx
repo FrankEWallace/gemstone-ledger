@@ -171,7 +171,7 @@ export default function CommandPalette({ open, onClose }: Props) {
               placeholder="Search pages, inventory, equipment, workers…"
               className="flex h-12 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
             />
-            <kbd className="hidden sm:inline-flex shrink-0 h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <kbd className="hidden sm:inline-flex shrink-0 h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground">
               ESC
             </kbd>
           </div>
