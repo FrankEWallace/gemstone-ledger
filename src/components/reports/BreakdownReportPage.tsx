@@ -9,6 +9,8 @@ import {
 import { Label as ChartLabel, Pie, PieChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { useSite } from "@/hooks/useSite";
+import { useReportDateRange } from "@/hooks/useReportDateRange";
+import ReportsSubNav from "@/components/reports/ReportsSubNav";
 import { getTransactions } from "@/services/transactions.service";
 import { getCustomers } from "@/services/customers.service";
 import { fmtCurrency, fmtCompact, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
@@ -186,8 +188,7 @@ export default function BreakdownReportPage({ type }: Props) {
   const today = new Date();
   const isExpense = type === "expense";
 
-  const [dateFrom, setDateFrom] = useState(format(startOfMonth(subMonths(today, 5)), "yyyy-MM-dd"));
-  const [dateTo, setDateTo] = useState(format(today, "yyyy-MM-dd"));
+  const { dateFrom, dateTo, setDateFrom, setDateTo } = useReportDateRange();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "success" | "pending" | "refunded" | "cancelled">("all");
   const [sortBy, setSortBy] = useState<"total" | "count" | "alpha">("total");
@@ -312,12 +313,14 @@ export default function BreakdownReportPage({ type }: Props) {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-5 max-w-[960px] mx-auto">
+    <div className="p-4 lg:p-6 space-y-5">
+
+      <ReportsSubNav />
 
       {/* Header */}
       <div className="space-y-1">
-        <Link to="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1">
-          <ArrowLeft className="h-3 w-3" /> Dashboard
+        <Link to="/reports" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1">
+          <ArrowLeft className="h-3 w-3" /> Reports
         </Link>
         <h1 className="font-display text-2xl font-semibold tracking-tight">
           {isExpense ? "Expense Breakdown" : "Income Breakdown"}

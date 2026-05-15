@@ -28,6 +28,8 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 import { useSite } from "@/hooks/useSite";
+import { useReportDateRange } from "@/hooks/useReportDateRange";
+import ReportsSubNav from "@/components/reports/ReportsSubNav";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -49,9 +51,6 @@ const PRESETS = [
   { label: "Last 3 months", months: 2 },
   { label: "Last 6 months", months: 5 },
 ];
-
-const DEFAULT_FROM = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
-const DEFAULT_TO   = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
 const fmt      = fmtCurrency;
 const fmtShort = (n: number) => fmtCompact(n);
@@ -133,8 +132,7 @@ export default function CustomerReportPage() {
   const { id } = useParams<{ id: string }>();
   const { activeSiteId, activeSite } = useSite();
 
-  const [dateFrom, setDateFrom] = useState(DEFAULT_FROM);
-  const [dateTo,   setDateTo]   = useState(DEFAULT_TO);
+  const { dateFrom, dateTo, setDateFrom, setDateTo } = useReportDateRange();
   const [isExportingPDF,   setIsExportingPDF]   = useState(false);
   const [isExportingXLSX,  setIsExportingXLSX]  = useState(false);
 
@@ -476,15 +474,17 @@ export default function CustomerReportPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
 
+      <ReportsSubNav />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="space-y-1">
           <Link
-            to="/reports"
+            to="/reports/customers"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            Reports & Analytics
+            Customer Reports
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-display text-2xl font-bold tracking-tight">

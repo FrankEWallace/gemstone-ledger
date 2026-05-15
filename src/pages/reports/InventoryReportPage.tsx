@@ -23,6 +23,8 @@ import {
 import { ArrowLeft, Download, ChevronRight, ChevronDown, Package, AlertTriangle } from "lucide-react";
 
 import { useSite } from "@/hooks/useSite";
+import { useReportDateRange } from "@/hooks/useReportDateRange";
+import ReportsSubNav from "@/components/reports/ReportsSubNav";
 import { supabase } from "@/lib/supabase";
 import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtTick, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
@@ -324,11 +326,8 @@ export default function InventoryReportPage() {
   const { activeSiteId, activeSite } = useSite();
   const today = new Date();
 
-  // ── Date range state ──────────────────────────────────────────────────────
-  const [dateFrom, setDateFrom] = useState(
-    format(startOfMonth(today), "yyyy-MM-dd")
-  );
-  const [dateTo, setDateTo] = useState(format(today, "yyyy-MM-dd"));
+  // ── Date range state (synced via URL params) ──────────────────────────────
+  const { dateFrom, dateTo, setDateFrom, setDateTo } = useReportDateRange();
   const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   // ── Customer row expand map ───────────────────────────────────────────────
@@ -782,7 +781,9 @@ export default function InventoryReportPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-6 space-y-5 max-w-[960px] mx-auto">
+    <div className="p-4 lg:p-6 space-y-5">
+
+      <ReportsSubNav />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="space-y-1">

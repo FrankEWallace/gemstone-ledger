@@ -21,6 +21,8 @@ const InventoryPage     = lazy(() => import("@/pages/inventory/InventoryPage"));
 const TransactionsPage  = lazy(() => import("@/pages/transactions/TransactionsPage"));
 const TeamPage          = lazy(() => import("@/pages/team/TeamPage"));
 const ReportsPage              = lazy(() => import("@/pages/reports/ReportsPage"));
+const OverviewReportPage       = lazy(() => import("@/pages/reports/OverviewReportPage"));
+const CustomerListReportPage   = lazy(() => import("@/pages/reports/CustomerListReportPage"));
 const CustomerReportPage       = lazy(() => import("@/pages/reports/CustomerReportPage"));
 const ExpenseBreakdownPage     = lazy(() => import("@/pages/reports/ExpenseBreakdownPage"));
 const IncomeBreakdownPage      = lazy(() => import("@/pages/reports/IncomeBreakdownPage"));
@@ -107,10 +109,12 @@ export default function Router() {
 
           {/* Phase 4 */}
           <Route path="/reports"                    element={<BoundedRoute element={<ReportsPage />} />} />
+          <Route path="/reports/overview"           element={<BoundedRoute element={<OverviewReportPage />} />} />
           <Route path="/reports/expenses"           element={<BoundedRoute element={<ExpenseBreakdownPage />} />} />
           <Route path="/reports/income"             element={<BoundedRoute element={<IncomeBreakdownPage />} />} />
           <Route path="/reports/inventory"          element={<BoundedRoute element={<InventoryReportPage />} />} />
-          <Route path="/reports/customers/:id"  element={<BoundedRoute element={<CustomerReportPage />} />} />
+          <Route path="/reports/customers"          element={<BoundedRoute element={<CustomerListReportPage />} />} />
+          <Route path="/reports/customers/:id"      element={<BoundedRoute element={<CustomerReportPage />} />} />
           <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
           <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />
 
