@@ -407,7 +407,7 @@ export default function ProductionLogPage() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           { label: "Total Ore (t)",    value: totalOre.toLocaleString(undefined, { maximumFractionDigits: 1 }),    icon: <Pickaxe className="h-4 w-4 text-yellow-500" /> },
           { label: "Total Waste (t)",  value: totalWaste.toLocaleString(undefined, { maximumFractionDigits: 1 }),  icon: <Mountain className="h-4 w-4 text-muted-foreground" /> },

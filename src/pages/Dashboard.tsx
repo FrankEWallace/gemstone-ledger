@@ -245,7 +245,7 @@ export default function Dashboard() {
       </div>
 
       {/* Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-4 items-stretch">
         <BreakdownCard
           type="expense"
           siteId={activeSiteId}

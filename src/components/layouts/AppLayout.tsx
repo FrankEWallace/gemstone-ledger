@@ -50,6 +50,7 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
 };
 
 function getSidebarDefaultOpen(): boolean {
+  if (window.innerWidth < 1024) return false;
   const match = document.cookie
     .split(";")
     .find((c) => c.trim().startsWith("sidebar:state="));

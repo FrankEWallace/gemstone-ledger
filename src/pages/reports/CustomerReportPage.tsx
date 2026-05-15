@@ -570,13 +570,13 @@ export default function CustomerReportPage() {
 
       {/* KPI strip */}
       {loadingSummary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="h-28 animate-pulse bg-muted rounded-xl" />
           ))}
         </div>
       ) : summary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <KpiCard
             label="Total Income"
             value={fmtShort(summary.totalIncome).replace(`${CURRENCY_SYMBOL} `, "")}
@@ -615,7 +615,7 @@ export default function CustomerReportPage() {
       ) : null}
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Monthly trend */}
         <div className="rounded-xl border border-border bg-card p-5">

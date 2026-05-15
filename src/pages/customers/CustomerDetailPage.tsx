@@ -687,7 +687,7 @@ export default function CustomerDetailPage() {
       ) : null}
 
       {/* ── Breakdown charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Expense breakdown */}
         <div className="rounded-xl border border-border bg-card p-5">

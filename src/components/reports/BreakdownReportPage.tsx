@@ -385,25 +385,25 @@ export default function BreakdownReportPage({ type }: Props) {
 
       {/* Summary strip */}
       <div className="grid grid-cols-3 rounded-xl border border-border bg-card divide-x divide-border">
-        <div className="px-5 py-4">
-          <p className="text-xs text-muted-foreground">{isExpense ? "Total Expenses" : "Total Income"}</p>
-          <div className="flex items-baseline gap-2 mt-1 flex-wrap">
-            <p className="font-display text-2xl font-semibold tabular-nums">{fmtCurrency(grandTotal)}</p>
+        <div className="px-3 sm:px-5 py-4 min-w-0 overflow-hidden">
+          <p className="text-xs text-muted-foreground truncate">{isExpense ? "Total Expenses" : "Total Income"}</p>
+          <div className="flex items-baseline gap-2 mt-1 flex-wrap min-w-0">
+            <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums truncate">{fmtCurrency(grandTotal)}</p>
             {comparing && prevGrandTotal > 0 && deltaBadge(grandTotal, prevGrandTotal)}
           </div>
           {comparing && prevGrandTotal > 0 && (
-            <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+            <p className="text-xs text-muted-foreground mt-0.5 tabular-nums truncate">
               prev: {fmtCompact(prevGrandTotal)}
             </p>
           )}
         </div>
-        <div className="px-5 py-4">
+        <div className="px-3 sm:px-5 py-4 min-w-0">
           <p className="text-xs text-muted-foreground">Categories</p>
-          <p className="font-display text-2xl font-semibold tabular-nums mt-1">{grouped.length}</p>
+          <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums mt-1">{grouped.length}</p>
         </div>
-        <div className="px-5 py-4">
+        <div className="px-3 sm:px-5 py-4 min-w-0">
           <p className="text-xs text-muted-foreground">Transactions</p>
-          <p className="font-display text-2xl font-semibold tabular-nums mt-1">{filteredTxs.length}</p>
+          <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums mt-1">{filteredTxs.length}</p>
         </div>
       </div>
 
