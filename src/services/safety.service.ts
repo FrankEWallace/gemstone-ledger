@@ -7,6 +7,8 @@ import { DEMO_SAFETY as DEMO_SAFETY_INCIDENTS } from "@/lib/demo/data";
 import { enqueue } from "@/lib/offline/syncQueue";
 import { registerHandler } from "@/lib/offline/syncEngine";
 
+export type ResolutionStatus = "open" | "under_review" | "resolved";
+
 export type SafetyIncidentPayload = {
   title: string;
   severity?: SafetySeverity;
@@ -14,6 +16,8 @@ export type SafetyIncidentPayload = {
   description?: string;
   actions_taken?: string;
   resolved_at?: string | null;
+  resolution_status?: ResolutionStatus;
+  resolution_notes?: string | null;
 };
 
 export async function getSafetyIncidents(siteId: string): Promise<SafetyIncident[]> {
@@ -90,22 +94,34 @@ export async function deleteSafetyIncident(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function resolveSafetyIncident(id: string): Promise<SafetyIncident> {
-  const resolved_at = new Date().toISOString();
+export async function updateIncidentStatus(
+  id: string,
+  status: ResolutionStatus,
+  resolutionNotes?: string
+): Promise<SafetyIncident> {
+  const patch: Partial<SafetyIncidentPayload> = {
+    resolution_status: status,
+    resolution_notes: resolutionNotes ?? null,
+    resolved_at: status === "resolved" ? new Date().toISOString() : null,
+  };
   if (!navigator.onLine) {
-    await enqueue({ entity: "safety_incidents", operation: "update", payload: { id, resolved_at }, siteId: "", timestamp: Date.now() });
-    return { id, resolved_at } as unknown as SafetyIncident;
+    await enqueue({ entity: "safety_incidents", operation: "update", payload: { id, ...patch }, siteId: "", timestamp: Date.now() });
+    return { id, ...patch } as unknown as SafetyIncident;
   }
-  if (isRestActive()) return restPut<SafetyIncident>(`/safety-incidents/${id}`, { resolved_at });
+  if (isRestActive()) return restPut<SafetyIncident>(`/safety-incidents/${id}`, patch);
 
   const { data, error } = await supabase
     .from("safety_incidents")
-    .update({ resolved_at })
+    .update(patch)
     .eq("id", id)
     .select()
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function resolveSafetyIncident(id: string): Promise<SafetyIncident> {
+  return updateIncidentStatus(id, "resolved");
 }
 
 // ─── Sync handlers (registered once at module load) ──────────────────────────

@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Wrench, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Wrench, AlertTriangle, ClipboardList, X } from "lucide-react";
 import { toast } from "sonner";
 import { format, isPast, parseISO, differenceInDays } from "date-fns";
 
 import { useSite } from "@/hooks/useSite";
+import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +51,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { fmtCurrency } from "@/lib/formatCurrency";
 
 import type { Equipment, EquipmentStatus } from "@/lib/supabaseTypes";
 import {
@@ -51,7 +61,12 @@ import {
   createEquipment,
   updateEquipment,
   deleteEquipment,
+  getMaintenanceLogs,
+  addMaintenanceLog,
+  deleteMaintenanceLog,
   type EquipmentPayload,
+  type MaintenanceLog,
+  type MaintenanceLogPayload,
 } from "@/services/equipment.service";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -80,7 +95,7 @@ const STATUS_COLORS: Record<EquipmentStatus, string> = {
   retired:     "bg-muted text-muted-foreground",
 };
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// ─── Equipment Modal ──────────────────────────────────────────────────────────
 
 function EquipmentModal({
   open, onClose, siteId, editing,
@@ -217,16 +232,247 @@ function EquipmentModal({
   );
 }
 
+// ─── Maintenance Log Sheet ────────────────────────────────────────────────────
+
+function MaintenanceLogSheet({
+  equipment,
+  siteId,
+  onClose,
+}: {
+  equipment: Equipment;
+  siteId: string;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [serviceDate, setServiceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [description, setDescription] = useState("");
+  const [cost, setCost] = useState("");
+  const [performedBy, setPerformedBy] = useState("");
+  const [nextServiceDate, setNextServiceDate] = useState(equipment.next_service_date ?? "");
+  const [deleteLogTarget, setDeleteLogTarget] = useState<string | null>(null);
+
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ["maintenance-logs", equipment.id],
+    queryFn: () => getMaintenanceLogs(equipment.id),
+  });
+
+  const { mutate: addLog, isPending: isAdding } = useMutation({
+    mutationFn: async () => {
+      const payload: MaintenanceLogPayload = {
+        service_date: serviceDate,
+        description,
+        cost: cost ? Number(cost) : null,
+        performed_by: performedBy || null,
+        next_service_date: nextServiceDate || null,
+      };
+      await addMaintenanceLog(siteId, equipment.id, payload);
+      // Keep equipment record in sync
+      await updateEquipment(equipment.id, {
+        last_service_date: serviceDate,
+        ...(nextServiceDate ? { next_service_date: nextServiceDate } : {}),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["maintenance-logs", equipment.id] });
+      queryClient.invalidateQueries({ queryKey: ["equipment", siteId] });
+      toast.success("Maintenance entry logged.");
+      setDescription("");
+      setCost("");
+      setPerformedBy("");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const { mutate: removeLog } = useMutation({
+    mutationFn: (id: string) => deleteMaintenanceLog(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["maintenance-logs", equipment.id] });
+      toast.success("Log entry removed.");
+      setDeleteLogTarget(null);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const canSubmit = serviceDate && description.trim();
+
+  return (
+    <>
+      <Sheet open onOpenChange={(o) => !o && onClose()}>
+        <SheetContent className="w-full sm:max-w-lg flex flex-col gap-0 p-0 overflow-hidden">
+          <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
+            <SheetTitle className="text-base">
+              Maintenance Log — {equipment.name}
+            </SheetTitle>
+            {equipment.type && (
+              <p className="text-xs text-muted-foreground">{equipment.type}</p>
+            )}
+          </SheetHeader>
+
+          {/* Add Entry Form */}
+          <div className="px-5 py-4 border-b border-border bg-muted/20 shrink-0">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+              Log Service Entry
+            </p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Service Date *</Label>
+                  <Input
+                    type="date"
+                    value={serviceDate}
+                    onChange={(e) => setServiceDate(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Cost (optional)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
+                    value={cost}
+                    onChange={(e) => setCost(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Description *</Label>
+                <Textarea
+                  placeholder="e.g. Oil change, filter replacement, hydraulic check…"
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="text-xs resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Performed By</Label>
+                  <Input
+                    placeholder="Technician name"
+                    value={performedBy}
+                    onChange={(e) => setPerformedBy(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Next Service Due</Label>
+                  <Input
+                    type="date"
+                    value={nextServiceDate}
+                    onChange={(e) => setNextServiceDate(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                className="w-full"
+                disabled={!canSubmit || isAdding}
+                onClick={() => addLog()}
+              >
+                {isAdding ? "Saving…" : "Add Log Entry"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Log History */}
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="p-5 space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
+                ))}
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-center px-5">
+                <ClipboardList className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                <p className="text-sm text-muted-foreground">No service entries yet.</p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">Log the first maintenance event above.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {logs.map((log) => (
+                  <div key={log.id} className="px-5 py-3.5 flex gap-3 group">
+                    <div className="flex flex-col items-center shrink-0 pt-0.5">
+                      <div className="h-2 w-2 rounded-full bg-primary mt-1" />
+                      <div className="w-px flex-1 bg-border mt-1" />
+                    </div>
+                    <div className="flex-1 min-w-0 pb-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium leading-tight">{log.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {format(parseISO(log.service_date), "MMM d, yyyy")}
+                            {log.performed_by && <> · {log.performed_by}</>}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {log.cost != null && log.cost > 0 && (
+                            <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                              {fmtCurrency(log.cost, 2)}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setDeleteLogTarget(log.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                      {log.next_service_date && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Next service: {format(parseISO(log.next_service_date), "MMM d, yyyy")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog open={!!deleteLogTarget} onOpenChange={(o) => !o && setDeleteLogTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this log entry?</AlertDialogTitle>
+            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteLogTarget && removeLog(deleteLogTarget)}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function EquipmentPage() {
   const { activeSiteId } = useSite();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const [statusFilter, setStatusFilter] = useState<EquipmentStatus | "all">("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Equipment | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Equipment | null>(null);
+  const [logTarget, setLogTarget] = useState<Equipment | null>(null);
 
   const { data: equipment = [], isLoading } = useQuery({
     queryKey: ["equipment", activeSiteId],
@@ -278,7 +524,13 @@ export default function EquipmentPage() {
         </div>
       ),
     },
-    { key: "serial_number", header: "Serial #", render: (v) => v ? <span className="font-mono text-xs">{String(v)}</span> : <span className="text-muted-foreground">—</span> },
+    {
+      key: "serial_number",
+      header: "Serial #",
+      render: (v) => v
+        ? <span className="font-mono text-xs">{String(v)}</span>
+        : <span className="text-muted-foreground">—</span>,
+    },
     {
       key: "status",
       header: "Status",
@@ -310,23 +562,47 @@ export default function EquipmentPage() {
     {
       key: "last_service_date",
       header: "Last Serviced",
-      render: (val) => val ? format(parseISO(String(val)), "MMM d, yyyy") : <span className="text-muted-foreground">—</span>,
+      render: (val) => val
+        ? format(parseISO(String(val)), "MMM d, yyyy")
+        : <span className="text-muted-foreground">—</span>,
     },
     {
       key: "notes",
       header: "Notes",
-      render: (val) => val ? <span className="text-sm text-muted-foreground truncate max-w-xs block">{String(val)}</span> : <span className="text-muted-foreground">—</span>,
+      render: (val) => val
+        ? <span className="text-sm text-muted-foreground truncate max-w-xs block">{String(val)}</span>
+        : <span className="text-muted-foreground">—</span>,
     },
     {
       key: "id",
       header: "",
-      className: "w-20 text-right",
+      className: "w-28 text-right",
       render: (_, row) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditing(row); setModalOpen(true); }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground hover:text-foreground px-2 gap-1"
+            title="Maintenance log"
+            onClick={(e) => { e.stopPropagation(); setLogTarget(row as unknown as Equipment); }}
+          >
+            <ClipboardList className="h-3.5 w-3.5" />
+            Log
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={(e) => { e.stopPropagation(); setEditing(row as unknown as Equipment); setModalOpen(true); }}
+          >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(row)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(row as unknown as Equipment); }}
+          >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -353,7 +629,7 @@ export default function EquipmentPage() {
         </Button>
       </div>
 
-      {/* Stat pills */}
+      {/* Status filter pills */}
       <div className="flex flex-wrap gap-2">
         {(["all", "operational", "maintenance", "retired"] as const).map((s) => (
           <button
@@ -393,11 +669,19 @@ export default function EquipmentPage() {
         />
       )}
 
+      {logTarget && (
+        <MaintenanceLogSheet
+          equipment={logTarget}
+          siteId={activeSiteId!}
+          onClose={() => setLogTarget(null)}
+        />
+      )}
+
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{deleteTarget?.name}"?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently remove the asset record.</AlertDialogDescription>
+            <AlertDialogDescription>This will permanently remove the asset record and all maintenance logs.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

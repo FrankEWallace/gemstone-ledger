@@ -62,3 +62,61 @@ export async function deleteEquipment(id: string): Promise<void> {
   const { error } = await supabase.from("equipment").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ─── Maintenance Logs ─────────────────────────────────────────────────────────
+
+export interface MaintenanceLog {
+  id: string;
+  equipment_id: string;
+  site_id: string;
+  service_date: string;
+  description: string;
+  cost: number | null;
+  performed_by: string | null;
+  next_service_date: string | null;
+  created_at: string;
+}
+
+export interface MaintenanceLogPayload {
+  service_date: string;
+  description: string;
+  cost?: number | null;
+  performed_by?: string | null;
+  next_service_date?: string | null;
+}
+
+export async function getMaintenanceLogs(equipmentId: string): Promise<MaintenanceLog[]> {
+  const { data, error } = await supabase
+    .from("equipment_maintenance_logs" as any)
+    .select("*")
+    .eq("equipment_id", equipmentId)
+    .order("service_date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as MaintenanceLog[];
+}
+
+export async function addMaintenanceLog(
+  siteId: string,
+  equipmentId: string,
+  payload: MaintenanceLogPayload
+): Promise<MaintenanceLog> {
+  const { data, error } = await supabase
+    .from("equipment_maintenance_logs" as any)
+    .insert({
+      site_id: siteId,
+      equipment_id: equipmentId,
+      ...payload,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as MaintenanceLog;
+}
+
+export async function deleteMaintenanceLog(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("equipment_maintenance_logs" as any)
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}

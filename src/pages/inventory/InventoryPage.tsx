@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, PackageSearch, Archive, Boxes, PackageX, Wallet } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, PackageSearch, Archive, Boxes, PackageX, Wallet, PackagePlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSite } from "@/hooks/useSite";
@@ -55,6 +55,7 @@ import {
   getInventoryConsumptionRates,
   consumeInventoryItem,
   writeOffInventoryItem,
+  receiveInventoryStock,
   type WriteOffReason,
 } from "@/services/inventory.service";
 import { getCustomers } from "@/services/customers.service";
@@ -588,6 +589,91 @@ function WriteOffModal({ open, onClose, item, siteId, userId }: WriteOffModalPro
   );
 }
 
+// ─── Receive Stock Modal ──────────────────────────────────────────────────────
+
+interface StockReceiveModalProps {
+  open: boolean;
+  onClose: () => void;
+  item: InventoryItem;
+  siteId: string;
+}
+
+function StockReceiveModal({ open, onClose, item, siteId }: StockReceiveModalProps) {
+  const queryClient = useQueryClient();
+  const [qty, setQty] = useState(1);
+  const [notes, setNotes] = useState("");
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => receiveInventoryStock(siteId, item, qty, notes || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory", siteId] });
+      toast.success(`Received ${qty} ${item.unit ?? "unit(s)"} of ${item.name}. Stock: ${item.quantity} → ${item.quantity + qty}.`);
+      setQty(1);
+      setNotes("");
+      onClose();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Receive Stock</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="rounded-lg bg-muted/40 p-3 space-y-0.5">
+            <p className="text-sm font-semibold">{item.name}</p>
+            <p className="text-xs text-muted-foreground">
+              Current stock: <span className="font-medium">{item.quantity} {item.unit ?? "units"}</span>
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Quantity Received *</Label>
+            <Input
+              type="number"
+              min={1}
+              value={qty}
+              onChange={(e) => setQty(Math.max(1, Number(e.target.value)))}
+              className="h-8 text-xs"
+              autoFocus
+            />
+            {qty > 0 && (
+              <p className="text-xs text-muted-foreground">
+                New stock level: <span className="font-semibold text-foreground">{item.quantity + qty} {item.unit ?? "units"}</span>
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Notes (optional)</Label>
+            <Textarea
+              placeholder="e.g. Delivery from ABC Supplies, PO #1042"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button
+            onClick={() => mutate()}
+            disabled={isPending || qty < 1}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            {isPending ? "Saving…" : "Confirm Receipt"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InventoryPage() {
@@ -603,6 +689,7 @@ export default function InventoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [logUsageTarget, setLogUsageTarget] = useState<InventoryItem | null>(null);
   const [writeOffTarget, setWriteOffTarget] = useState<InventoryItem | null>(null);
+  const [receiveTarget, setReceiveTarget] = useState<InventoryItem | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory", activeSiteId],
@@ -758,15 +845,25 @@ export default function InventoryPage() {
     {
       key: "id",
       header: "",
-      className: "w-28 text-center",
+      className: "w-40 text-center",
       render: (_, row) => (
         <div className="flex items-center justify-center gap-0.5">
           <Button
             variant="ghost"
             size="sm"
+            className="h-7 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 px-2 gap-1"
+            title="Receive stock — add incoming delivery"
+            onClick={(e) => { e.stopPropagation(); setReceiveTarget(row as unknown as InventoryItem); }}
+          >
+            <PackagePlus className="h-3.5 w-3.5" />
+            Receive
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-7 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 gap-1"
             title="Log usage → auto-expense"
-            onClick={() => setLogUsageTarget(row as unknown as InventoryItem)}
+            onClick={(e) => { e.stopPropagation(); setLogUsageTarget(row as unknown as InventoryItem); }}
           >
             <PackageSearch className="h-3.5 w-3.5" />
             Use
@@ -776,7 +873,7 @@ export default function InventoryPage() {
             size="sm"
             className="h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 px-2 gap-1"
             title="Write off — record a loss"
-            onClick={() => setWriteOffTarget(row as unknown as InventoryItem)}
+            onClick={(e) => { e.stopPropagation(); setWriteOffTarget(row as unknown as InventoryItem); }}
           >
             <Archive className="h-3.5 w-3.5" />
             Write Off
@@ -1012,6 +1109,15 @@ export default function InventoryPage() {
           item={writeOffTarget}
           siteId={activeSiteId!}
           userId={user?.id}
+        />
+      )}
+
+      {receiveTarget && (
+        <StockReceiveModal
+          open={!!receiveTarget}
+          onClose={() => setReceiveTarget(null)}
+          item={receiveTarget}
+          siteId={activeSiteId!}
         />
       )}
     </div>

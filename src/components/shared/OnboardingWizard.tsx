@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, ChevronUp, ChevronRight, Pickaxe } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSite } from "@/hooks/useSite";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -29,14 +31,43 @@ interface OnboardingWizardProps {
 
 export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { user, userProfile, sites } = useAuth();
+  const { activeSiteId } = useSite();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
   const [dismissing, setDismissing] = useState(false);
 
-  // Derive completion from auth context — no extra queries needed
+  const { data: hasWorkers } = useQuery({
+    queryKey: ["onboarding-workers", activeSiteId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("workers")
+        .select("id", { count: "exact", head: true })
+        .eq("site_id", activeSiteId!);
+      return (count ?? 0) > 0;
+    },
+    enabled: !!activeSiteId,
+    staleTime: 30_000,
+  });
+
+  const { data: hasInventory } = useQuery({
+    queryKey: ["onboarding-inventory", activeSiteId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("inventory_items")
+        .select("id", { count: "exact", head: true })
+        .eq("site_id", activeSiteId!);
+      return (count ?? 0) > 0;
+    },
+    enabled: !!activeSiteId,
+    staleTime: 30_000,
+  });
+
+  // Derive completion from auth context + DB checks
   const completedIds = new Set<number>([1]); // always: account exists
   if (userProfile?.org_id) completedIds.add(2);
   if (sites && sites.length > 0) completedIds.add(3);
+  if (hasWorkers) completedIds.add(4);
+  if (hasInventory) completedIds.add(5);
 
   const completedCount = completedIds.size;
   const total = STEPS.length;

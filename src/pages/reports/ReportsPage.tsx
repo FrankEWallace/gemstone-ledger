@@ -8,6 +8,7 @@ import { useReportDateRange } from "@/hooks/useReportDateRange";
 import { getReportSummary } from "@/services/reports.service";
 import { getInventoryItems } from "@/services/inventory.service";
 import { fmtCurrency, fmtCompact } from "@/lib/formatCurrency";
+import StatCard from "@/components/shared/StatCard";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -25,18 +26,6 @@ const PRESETS = [
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-card px-4 py-4 flex flex-col gap-1.5 min-w-0 relative overflow-hidden">
-      {color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl" style={{ backgroundColor: color }} />}
-      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">{label}</p>
-      <p className="font-display text-2xl font-bold tracking-tight leading-none tabular-nums truncate" style={color ? { color } : undefined}>
-        {value}
-      </p>
-      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
-    </div>
-  );
-}
 
 function ReportCard({
   to, icon: Icon, title, description, badge, dateQuery,
@@ -143,25 +132,25 @@ export default function ReportsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard
+          <StatCard
             label="Total Income"
             value={fmtCompact(summary?.totalIncome ?? 0)}
             sub={fmtCurrency(summary?.totalIncome ?? 0)}
             color={C.income}
           />
-          <KpiCard
+          <StatCard
             label="Total Expenses"
             value={fmtCompact(summary?.totalExpenses ?? 0)}
             sub={fmtCurrency(summary?.totalExpenses ?? 0)}
             color={C.expense}
           />
-          <KpiCard
+          <StatCard
             label="Net Revenue"
             value={fmtCompact(summary?.netRevenue ?? 0)}
             sub={(summary?.netRevenue ?? 0) >= 0 ? "Positive cashflow" : "Net loss"}
             color={(summary?.netRevenue ?? 0) >= 0 ? C.income : C.expense}
           />
-          <KpiCard
+          <StatCard
             label="Profit Margin"
             value={margin ? `${margin}%` : "—"}
             sub="Of income retained"

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, CheckCircle2, ShieldAlert, AlertTriangle, Info } from "lucide-react";
+import { Plus, Trash2, ShieldAlert, AlertTriangle, Info, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -11,7 +11,6 @@ import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -46,13 +45,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 import type { SafetyIncident, IncidentSeverity, IncidentType } from "@/lib/supabaseTypes";
 import {
   getSafetyIncidents,
   createSafetyIncident,
-  resolveSafetyIncident,
+  updateIncidentStatus,
   deleteSafetyIncident,
+  type ResolutionStatus,
 } from "@/services/safety.service";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -67,6 +68,12 @@ const SEVERITY_STYLES: Record<IncidentSeverity, string> = {
   critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
+const STATUS_CONFIG: Record<ResolutionStatus, { label: string; className: string }> = {
+  open:         { label: "Open",         className: "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400" },
+  under_review: { label: "Under Review", className: "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400" },
+  resolved:     { label: "Resolved",     className: "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400" },
+};
+
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
 const incidentSchema = z.object({
@@ -79,15 +86,107 @@ const incidentSchema = z.object({
 
 type IncidentFormValues = z.infer<typeof incidentSchema>;
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// ─── Inline Status Select ─────────────────────────────────────────────────────
 
-function IncidentModal({
-  open, onClose, siteId,
+function StatusSelect({ incident, siteId }: { incident: SafetyIncident; siteId: string }) {
+  const queryClient = useQueryClient();
+  const status = (incident as any).resolution_status as ResolutionStatus ?? (incident.resolved_at ? "resolved" : "open");
+  const config = STATUS_CONFIG[status];
+
+  const { mutate } = useMutation({
+    mutationFn: (newStatus: ResolutionStatus) => updateIncidentStatus(incident.id, newStatus),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["safety-incidents", siteId] }),
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Select value={status} onValueChange={(v) => mutate(v as ResolutionStatus)}>
+      <SelectTrigger className={`h-7 w-36 text-xs border font-medium focus:ring-0 ${config.className}`}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {(Object.entries(STATUS_CONFIG) as [ResolutionStatus, typeof STATUS_CONFIG[ResolutionStatus]][]).map(([val, cfg]) => (
+          <SelectItem key={val} value={val} className="text-xs">{cfg.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+// ─── Resolution Notes Modal ───────────────────────────────────────────────────
+
+function ResolutionNotesModal({
+  incident,
+  siteId,
+  onClose,
 }: {
-  open: boolean;
-  onClose: () => void;
+  incident: SafetyIncident;
   siteId: string;
+  onClose: () => void;
 }) {
+  const queryClient = useQueryClient();
+  const currentStatus = (incident as any).resolution_status as ResolutionStatus ?? "open";
+  const [status, setStatus] = useState<ResolutionStatus>(currentStatus);
+  const [notes, setNotes] = useState<string>((incident as any).resolution_notes ?? "");
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => updateIncidentStatus(incident.id, status, notes || undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["safety-incidents", siteId] });
+      toast.success("Incident updated.");
+      onClose();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base">Resolution — {incident.title}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-1">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Status</Label>
+            <Select value={status} onValueChange={(v) => setStatus(v as ResolutionStatus)}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.entries(STATUS_CONFIG) as [ResolutionStatus, typeof STATUS_CONFIG[ResolutionStatus]][]).map(([val, cfg]) => (
+                  <SelectItem key={val} value={val}>{cfg.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Resolution Notes</Label>
+            <Textarea
+              placeholder="Describe corrective actions, investigation findings, or closure notes…"
+              rows={4}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+          {(incident as any).resolution_notes && (
+            <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Last saved: {(incident as any).resolution_notes}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button onClick={() => mutate()} disabled={isPending}>
+            {isPending ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Log Incident Modal ───────────────────────────────────────────────────────
+
+function IncidentModal({ open, onClose, siteId }: { open: boolean; onClose: () => void; siteId: string }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -104,6 +203,7 @@ function IncidentModal({
         type:          values.type,
         description:   values.description || undefined,
         actions_taken: values.actions_taken || undefined,
+        resolution_status: "open",
       }, user?.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["safety-incidents", siteId] });
@@ -136,9 +236,7 @@ function IncidentModal({
                 <FormItem>
                   <FormLabel>Severity *</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                    </FormControl>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       {SEVERITIES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
                     </SelectContent>
@@ -151,9 +249,7 @@ function IncidentModal({
                 <FormItem>
                   <FormLabel>Type *</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                    </FormControl>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       {TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
                     </SelectContent>
@@ -175,9 +271,9 @@ function IncidentModal({
 
             <FormField control={form.control} name="actions_taken" render={({ field }) => (
               <FormItem>
-                <FormLabel>Actions Taken</FormLabel>
+                <FormLabel>Immediate Actions Taken</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Immediate response, corrective actions, follow-up…" rows={2} {...field} />
+                  <Textarea placeholder="Immediate response, first aid, area secured…" rows={2} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -203,23 +299,15 @@ export default function SafetyPage() {
   const queryClient = useQueryClient();
 
   const [severityFilter, setSeverityFilter] = useState<IncidentSeverity | "all">("all");
-  const [showOpen, setShowOpen] = useState<"all" | "open" | "resolved">("all");
+  const [statusFilter, setStatusFilter] = useState<ResolutionStatus | "all">("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SafetyIncident | null>(null);
+  const [notesTarget, setNotesTarget] = useState<SafetyIncident | null>(null);
 
   const { data: incidents = [], isLoading } = useQuery({
     queryKey: ["safety-incidents", activeSiteId],
     queryFn: () => getSafetyIncidents(activeSiteId!),
     enabled: !!activeSiteId,
-  });
-
-  const { mutate: doResolve } = useMutation({
-    mutationFn: (id: string) => resolveSafetyIncident(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["safety-incidents", activeSiteId] });
-      toast.success("Incident marked as resolved.");
-    },
-    onError: (err: Error) => toast.error(err.message),
   });
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
@@ -241,17 +329,21 @@ export default function SafetyPage() {
     },
   });
 
-  const openIncidents     = incidents.filter((i) => !i.resolved_at);
-  const criticalIncidents = incidents.filter((i) => i.severity === "critical" && !i.resolved_at);
-  const thisMonth         = incidents.filter((i) => {
+  const getStatus = (i: SafetyIncident): ResolutionStatus =>
+    (i as any).resolution_status ?? (i.resolved_at ? "resolved" : "open");
+
+  const openCount     = incidents.filter((i) => getStatus(i) === "open").length;
+  const reviewCount   = incidents.filter((i) => getStatus(i) === "under_review").length;
+  const criticalOpen  = incidents.filter((i) => i.severity === "critical" && getStatus(i) !== "resolved").length;
+  const thisMonthCount = incidents.filter((i) => {
     const d = new Date(i.created_at);
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
+  }).length;
 
   const filtered = incidents
     .filter((i) => severityFilter === "all" || i.severity === severityFilter)
-    .filter((i) => showOpen === "all" || (showOpen === "open" ? !i.resolved_at : !!i.resolved_at));
+    .filter((i) => statusFilter === "all" || getStatus(i) === statusFilter);
 
   const columns: DataTableColumn<SafetyIncident>[] = [
     {
@@ -262,7 +354,12 @@ export default function SafetyPage() {
         <div>
           <p className="font-medium">{row.title}</p>
           {row.description && (
-            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{row.description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{row.description}</p>
+          )}
+          {(row as any).resolution_notes && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 line-clamp-1 italic">
+              Note: {(row as any).resolution_notes}
+            </p>
           )}
         </div>
       ),
@@ -290,16 +387,12 @@ export default function SafetyPage() {
       render: (val) => format(new Date(String(val)), "MMM d, yyyy"),
     },
     {
-      key: "resolved_at",
+      key: "id",
       header: "Status",
-      render: (val) => val ? (
-        <Badge variant="secondary" className="gap-1 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20">
-          <CheckCircle2 className="h-3 w-3" /> Resolved
-        </Badge>
-      ) : (
-        <Badge variant="secondary" className="gap-1 text-orange-600 bg-orange-50 dark:bg-orange-900/20">
-          <AlertTriangle className="h-3 w-3" /> Open
-        </Badge>
+      render: (_, row) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <StatusSelect incident={row as unknown as SafetyIncident} siteId={activeSiteId!} />
+        </div>
       ),
     },
     {
@@ -307,15 +400,22 @@ export default function SafetyPage() {
       header: "",
       className: "w-24 text-right",
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1">
-          {!row.resolved_at && (
-            <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-              onClick={() => doResolve(row.id)}>
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Resolve
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-            onClick={() => setDeleteTarget(row)}>
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            title="Resolution notes"
+            onClick={() => setNotesTarget(row as unknown as SafetyIncident)}
+          >
+            <FileText className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            onClick={() => setDeleteTarget(row as unknown as SafetyIncident)}
+          >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -335,17 +435,18 @@ export default function SafetyPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Open Incidents", value: openIncidents.length, icon: <AlertTriangle className="h-4 w-4 text-orange-500" />, color: openIncidents.length > 0 ? "text-orange-600" : "" },
-          { label: "Critical (Open)", value: criticalIncidents.length, icon: <ShieldAlert className="h-4 w-4 text-red-500" />, color: criticalIncidents.length > 0 ? "text-red-600" : "" },
-          { label: "This Month", value: thisMonth.length, icon: <Info className="h-4 w-4 text-muted-foreground" />, color: "" },
+          { label: "Open",         value: openCount,      icon: <AlertTriangle className="h-4 w-4 text-orange-500" />, color: openCount > 0 ? "text-orange-600" : "" },
+          { label: "Under Review", value: reviewCount,    icon: <ShieldAlert className="h-4 w-4 text-blue-500" />,    color: reviewCount > 0 ? "text-blue-600" : "" },
+          { label: "Critical",     value: criticalOpen,   icon: <ShieldAlert className="h-4 w-4 text-red-500" />,     color: criticalOpen > 0 ? "text-red-600" : "" },
+          { label: "This Month",   value: thisMonthCount, icon: <Info className="h-4 w-4 text-muted-foreground" />,   color: "" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-border p-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+          <div key={stat.label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {stat.icon} {stat.label}
             </div>
-            <p className={`text-3xl font-bold font-display ${stat.color}`}>{stat.value}</p>
+            <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${stat.color}`}>{stat.value}</p>
           </div>
         ))}
       </div>
@@ -360,12 +461,13 @@ export default function SafetyPage() {
           </SelectContent>
         </Select>
 
-        <Select value={showOpen} onValueChange={(v) => setShowOpen(v as "all" | "open" | "resolved")}>
-          <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ResolutionStatus | "all")}>
+          <SelectTrigger className="w-40 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="open">Open only</SelectItem>
-            <SelectItem value="resolved">Resolved only</SelectItem>
+            {(Object.entries(STATUS_CONFIG) as [ResolutionStatus, typeof STATUS_CONFIG[ResolutionStatus]][]).map(([val, cfg]) => (
+              <SelectItem key={val} value={val}>{cfg.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -384,6 +486,14 @@ export default function SafetyPage() {
 
       {modalOpen && (
         <IncidentModal open={modalOpen} onClose={() => setModalOpen(false)} siteId={activeSiteId!} />
+      )}
+
+      {notesTarget && (
+        <ResolutionNotesModal
+          incident={notesTarget}
+          siteId={activeSiteId!}
+          onClose={() => setNotesTarget(null)}
+        />
       )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>

@@ -127,6 +127,23 @@ export async function getInventoryConsumptionRates(
   return rates;
 }
 
+export async function receiveInventoryStock(
+  siteId: string,
+  item: InventoryItem,
+  qty: number,
+  notes?: string
+): Promise<void> {
+  await updateInventoryItem(item.id, { quantity: item.quantity + qty });
+
+  await supabase.from("inventory_transactions" as any).insert({
+    site_id: siteId,
+    inventory_item_id: item.id,
+    quantity_change: qty,
+    notes: notes || null,
+    type: "received",
+  });
+}
+
 /**
  * Atomically deducts inventory stock and creates a `source: 'inventory'` expense transaction.
  * Transaction is only created when unit_cost > 0.

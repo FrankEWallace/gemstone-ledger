@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   BarChart3,
   MessageSquare,
-  Megaphone,
   UserCircle,
   ShoppingCart,
   CalendarDays,
@@ -20,6 +19,10 @@ import {
   Layers,
   Shield,
   Settings,
+  Activity,
+  Pickaxe,
+  Clock,
+  Users,
 } from "lucide-react";
 import { useSite } from "@/hooks/useSite";
 import { supabase } from "@/lib/supabase";
@@ -38,23 +41,26 @@ interface SearchResult {
 // ─── Static navigation items ─────────────────────────────────────────────────
 
 const NAV_ITEMS: SearchResult[] = [
-  { id: "nav-dashboard",   label: "Dashboard",         icon: LayoutDashboard, href: "/",                      group: "Navigation" },
-  { id: "nav-inventory",   label: "Inventory",         icon: Package,         href: "/inventory",             group: "Navigation" },
-  { id: "nav-transactions",label: "Transactions",      icon: ArrowLeftRight,  href: "/transactions",          group: "Navigation" },
-  { id: "nav-reports",     label: "Reports",           icon: BarChart3,       href: "/reports",               group: "Navigation" },
-  { id: "nav-messages",    label: "Messages",          icon: MessageSquare,   href: "/messages",              group: "Navigation" },
-  { id: "nav-campaigns",   label: "Campaigns",         icon: Megaphone,       href: "/campaigns",             group: "Navigation" },
-  { id: "nav-equipment",   label: "Equipment",         icon: Wrench,          href: "/equipment",             group: "Navigation" },
-  { id: "nav-safety",      label: "Safety Incidents",  icon: ShieldAlert,     href: "/safety",                group: "Navigation" },
-  { id: "nav-schedule",    label: "Shift Schedule",    icon: CalendarDays,    href: "/team/schedule",         group: "Navigation" },
-  { id: "nav-documents",   label: "Documents",         icon: FolderOpen,      href: "/documents",             group: "Navigation" },
-  { id: "nav-suppliers",   label: "Suppliers",         icon: UserCircle,      href: "/supply/suppliers",      group: "Navigation" },
-  { id: "nav-channels",    label: "Channels",          icon: Layers,          href: "/supply/channels",       group: "Navigation" },
-  { id: "nav-orders",      label: "Orders",            icon: ShoppingCart,    href: "/supply/orders",         group: "Navigation" },
-  { id: "nav-roles",       label: "Roles & Permissions",icon: Shield,         href: "/management/roles",      group: "Navigation" },
-  { id: "nav-audit",       label: "Audit Log",         icon: FileText,        href: "/management/audit",      group: "Navigation" },
-  { id: "nav-system",      label: "System Settings",   icon: Settings,        href: "/settings/system",       group: "Navigation" },
-  { id: "nav-alerts",      label: "Alert Rules",       icon: ShieldAlert,     href: "/settings/alerts",       group: "Navigation" },
+  { id: "nav-dashboard",   label: "Dashboard",          icon: LayoutDashboard, href: "/",                         group: "Navigation" },
+  { id: "nav-activity",    label: "Activity",            icon: Activity,        href: "/activity",                 group: "Navigation" },
+  { id: "nav-inventory",   label: "Inventory",           icon: Package,         href: "/inventory",                group: "Navigation" },
+  { id: "nav-transactions",label: "Transactions",        icon: ArrowLeftRight,  href: "/transactions",             group: "Navigation" },
+  { id: "nav-reports",     label: "Reports",             icon: BarChart3,       href: "/reports",                  group: "Navigation" },
+  { id: "nav-messages",    label: "Messages",            icon: MessageSquare,   href: "/messages",                 group: "Navigation" },
+  { id: "nav-suppliers",   label: "Suppliers",           icon: UserCircle,      href: "/supply/suppliers",         group: "Navigation" },
+  { id: "nav-orders",      label: "Orders",              icon: ShoppingCart,    href: "/supply/orders",            group: "Navigation" },
+  { id: "nav-channels",    label: "Channels",            icon: Layers,          href: "/supply/channels",          group: "Navigation" },
+  { id: "nav-team",        label: "Team",                icon: Users,           href: "/team",                     group: "Navigation" },
+  { id: "nav-schedule",    label: "Schedules",           icon: CalendarDays,    href: "/team/schedule",            group: "Navigation" },
+  { id: "nav-timesheet",   label: "Timesheets",          icon: Clock,           href: "/team/timesheet",           group: "Navigation" },
+  { id: "nav-roles",       label: "Roles & Permissions", icon: Shield,          href: "/management/roles",         group: "Navigation" },
+  { id: "nav-audit",       label: "Audit Log",           icon: FileText,        href: "/management/audit",         group: "Navigation" },
+  { id: "nav-equipment",   label: "Equipment",           icon: Wrench,          href: "/equipment",                group: "Navigation" },
+  { id: "nav-safety",      label: "Safety Incidents",    icon: ShieldAlert,     href: "/safety",                   group: "Navigation" },
+  { id: "nav-production",  label: "Production",          icon: Pickaxe,         href: "/production",               group: "Navigation" },
+  { id: "nav-documents",   label: "Documents",           icon: FolderOpen,      href: "/documents",                group: "Navigation" },
+  { id: "nav-settings",    label: "Organization",        icon: Settings,        href: "/settings/system",          group: "Navigation" },
+  { id: "nav-alerts",      label: "Targets & Alerts",    icon: ShieldAlert,     href: "/settings/targets-alerts",  group: "Navigation" },
 ];
 
 // ─── Command Palette ──────────────────────────────────────────────────────────

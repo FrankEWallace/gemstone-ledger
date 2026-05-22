@@ -65,7 +65,7 @@ export async function uploadDocument(
       site_id: siteId,
       name: file.name,
       storage_path: path,
-      file_type: file.type,
+      mime_type: file.type,
       file_size: file.size,
       category: category ?? null,
       uploaded_by: uploadedBy ?? null,
