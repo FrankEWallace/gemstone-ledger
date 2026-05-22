@@ -7,7 +7,6 @@ import {
   Users,
   BarChart3,
   MessageSquare,
-  Megaphone,
   UserCircle,
   Layers,
   ShoppingCart,
@@ -86,7 +85,6 @@ const extensionItems: NavItem[] = [
   { label: "Production", icon: Pickaxe,       to: "/production",       module: "operations" },
   { label: "Documents",  icon: FolderOpen,    to: "/documents",        module: "operations" },
   { label: "Messages",   icon: MessageSquare, to: "/messages",         module: "messages" },
-  { label: "Campaigns",  icon: Megaphone,     to: "/campaigns",        module: "campaigns" },
   { label: "Channels",   icon: Layers,        to: "/supply/channels",  module: "supply_chain" },
 ];
 

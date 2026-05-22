@@ -28,7 +28,6 @@ const ExpenseBreakdownPage     = lazy(() => import("@/pages/reports/ExpenseBreak
 const IncomeBreakdownPage      = lazy(() => import("@/pages/reports/IncomeBreakdownPage"));
 const InventoryReportPage      = lazy(() => import("@/pages/reports/InventoryReportPage"));
 const MessagesPage      = lazy(() => import("@/pages/messages/MessagesPage"));
-const CampaignsPage     = lazy(() => import("@/pages/campaigns/CampaignsPage"));
 const SuppliersPage     = lazy(() => import("@/pages/supply-chain/SuppliersPage"));
 const ChannelsPage      = lazy(() => import("@/pages/supply-chain/ChannelsPage"));
 const OrdersPage        = lazy(() => import("@/pages/supply-chain/OrdersPage"));
@@ -112,7 +111,7 @@ export default function Router() {
           <Route path="/reports/customers"          element={<BoundedRoute element={<CustomerListReportPage />} />} />
           <Route path="/reports/customers/:id"      element={<BoundedRoute element={<CustomerReportPage />} />} />
           <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
-          <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />
+          <Route path="/campaigns"  element={<Navigate to="/" replace />} />
 
           {/* Phase 6 */}
           <Route path="/equipment"        element={<BoundedRoute element={<EquipmentPage />} />} />

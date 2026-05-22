@@ -6,7 +6,6 @@ import { isDemoMode } from "@/lib/demo";
 
 export type ModuleKey =
   | "messages"
-  | "campaigns"
   | "customers"
   | "reports"
   | "team"

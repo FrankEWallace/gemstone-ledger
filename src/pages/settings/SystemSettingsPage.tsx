@@ -206,7 +206,6 @@ function WeeklyReportSection({
 
 const MODULE_CONFIG: { key: ModuleKey; label: string; description: string }[] = [
   { key: "messages",     label: "Messages",            description: "Internal site messaging — general, safety, and operations channels" },
-  { key: "campaigns",    label: "Campaigns",           description: "Marketing and operational campaign management" },
   { key: "customers",    label: "Customers",           description: "Customer accounts, contracts, and drill-down views" },
   { key: "reports",      label: "Reports & Analytics", description: "Financial and operational reporting with data exports" },
   { key: "team",         label: "Team & Scheduling",   description: "Team performance, shift scheduling, and timesheets" },
