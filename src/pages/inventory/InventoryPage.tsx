@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, PackageSearch, Archive } from "lucide-react";
+import { Plus, Download, Upload, Pencil, Trash2, AlertTriangle, PackageSearch, Archive, Boxes, PackageX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSite } from "@/hooks/useSite";
@@ -596,6 +596,7 @@ export default function InventoryPage() {
   const queryClient = useQueryClient();
 
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "out" | "low">("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
@@ -647,13 +648,25 @@ export default function InventoryPage() {
     },
   });
 
-  const filteredItems = categoryFilter === "all"
+  const outOfStockCount = items.filter((i) => i.quantity === 0).length;
+  const lowStockCount = items.filter(
+    (i) => i.quantity > 0 && i.reorder_level !== null && i.quantity <= i.reorder_level
+  ).length;
+  const totalValue = items.reduce((sum, i) => {
+    if (i.unit_cost == null) return sum;
+    return sum + i.quantity * Number(i.unit_cost);
+  }, 0);
+  const itemsWithCost = items.filter((i) => i.unit_cost != null).length;
+
+  const categoryFiltered = categoryFilter === "all"
     ? items
     : items.filter((i) => i.category === categoryFilter);
 
-  const lowStockCount = items.filter(
-    (i) => i.reorder_level !== null && i.quantity <= i.reorder_level
-  ).length;
+  const filteredItems = statusFilter === "all"
+    ? categoryFiltered
+    : statusFilter === "out"
+    ? categoryFiltered.filter((i) => i.quantity === 0)
+    : categoryFiltered.filter((i) => i.quantity > 0 && i.reorder_level !== null && i.quantity <= i.reorder_level);
 
   const columns: DataTableColumn<InventoryItem>[] = [
     {
@@ -818,12 +831,6 @@ export default function InventoryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Inventory</h1>
-          {lowStockCount > 0 && (
-            <p className="text-sm text-destructive mt-0.5 flex items-center gap-1">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              {lowStockCount} item{lowStockCount !== 1 ? "s" : ""} below reorder level
-            </p>
-          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => exportCSV(filteredItems)}>
@@ -838,6 +845,77 @@ export default function InventoryPage() {
             <Plus className="h-4 w-4 mr-1.5" />
             Add Item
           </Button>
+        </div>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Total Items */}
+        <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Boxes className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-medium">Total Items</span>
+          </div>
+          <p className="font-display text-2xl font-semibold tabular-nums leading-none">{items.length}</p>
+          <p className="text-xs text-muted-foreground">{categoryFilter !== "all" ? `${filteredItems.length} in filter` : "across all categories"}</p>
+        </div>
+
+        {/* Out of Stock */}
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "out" ? "all" : "out")}
+          className={`rounded-xl border p-4 flex flex-col gap-1.5 text-left transition-colors ${
+            statusFilter === "out"
+              ? "border-red-400 bg-red-50 dark:bg-red-900/20"
+              : outOfStockCount > 0
+              ? "border-red-200 bg-red-50/50 dark:bg-red-900/10 hover:border-red-300"
+              : "border-border bg-card hover:border-foreground/20"
+          }`}
+        >
+          <div className={`flex items-center gap-2 ${outOfStockCount > 0 ? "text-red-500 dark:text-red-400" : "text-muted-foreground"}`}>
+            <PackageX className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-medium">Out of Stock</span>
+          </div>
+          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${outOfStockCount > 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+            {outOfStockCount}
+          </p>
+          <p className="text-xs text-muted-foreground">{statusFilter === "out" ? "click to clear filter" : "click to filter table"}</p>
+        </button>
+
+        {/* Low Stock */}
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === "low" ? "all" : "low")}
+          className={`rounded-xl border p-4 flex flex-col gap-1.5 text-left transition-colors ${
+            statusFilter === "low"
+              ? "border-amber-400 bg-amber-50 dark:bg-amber-900/20"
+              : lowStockCount > 0
+              ? "border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-300"
+              : "border-border bg-card hover:border-foreground/20"
+          }`}
+        >
+          <div className={`flex items-center gap-2 ${lowStockCount > 0 ? "text-amber-500 dark:text-amber-400" : "text-muted-foreground"}`}>
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-medium">Low Stock</span>
+          </div>
+          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${lowStockCount > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
+            {lowStockCount}
+          </p>
+          <p className="text-xs text-muted-foreground">{statusFilter === "low" ? "click to clear filter" : "click to filter table"}</p>
+        </button>
+
+        {/* Total Value */}
+        <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Wallet className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-medium">Stock Value</span>
+          </div>
+          <p className="font-display text-2xl font-semibold tabular-nums leading-none">{fmtCurrency(totalValue, 0)}</p>
+          <p className="text-xs text-muted-foreground">
+            {items.length - itemsWithCost > 0
+              ? `excl. ${items.length - itemsWithCost} item${items.length - itemsWithCost !== 1 ? "s" : ""} without cost`
+              : "all items included"}
+          </p>
         </div>
       </div>
 
