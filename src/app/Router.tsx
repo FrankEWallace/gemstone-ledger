@@ -33,13 +33,10 @@ const SuppliersPage     = lazy(() => import("@/pages/supply-chain/SuppliersPage"
 const ChannelsPage      = lazy(() => import("@/pages/supply-chain/ChannelsPage"));
 const OrdersPage        = lazy(() => import("@/pages/supply-chain/OrdersPage"));
 const RolesPermissionsPage = lazy(() => import("@/pages/management/RolesPermissionsPage"));
-const IntegrationsPage  = lazy(() => import("@/pages/management/IntegrationsPage"));
-const SystemSettingsPage = lazy(() => import("@/pages/settings/SystemSettingsPage"));
-const HelpCenterPage    = lazy(() => import("@/pages/settings/HelpCenterPage"));
-const SupportPage       = lazy(() => import("@/pages/settings/SupportPage"));
-const AuditLogPage      = lazy(() => import("@/pages/management/AuditLogPage"));
-const AlertRulesPage    = lazy(() => import("@/pages/settings/AlertRulesPage"));
-const KpiTargetsPage      = lazy(() => import("@/pages/settings/KpiTargetsPage"));
+const SystemSettingsPage  = lazy(() => import("@/pages/settings/SystemSettingsPage"));
+const AuditLogPage        = lazy(() => import("@/pages/management/AuditLogPage"));
+const TargetsAlertsPage   = lazy(() => import("@/pages/settings/TargetsAlertsPage"));
+const HelpSupportPage     = lazy(() => import("@/pages/settings/HelpSupportPage"));
 const SyncHistoryPage     = lazy(() => import("@/pages/settings/SyncHistoryPage"));
 const CustomersPage                  = lazy(() => import("@/pages/customers/CustomersPage"));
 const CustomerDetailPage             = lazy(() => import("@/pages/customers/CustomerDetailPage"));
@@ -53,7 +50,6 @@ const ShiftSchedulePage = lazy(() => import("@/pages/team/ShiftSchedulePage"));
 const DocumentsPage     = lazy(() => import("@/pages/documents/DocumentsPage"));
 const ActivityPage      = lazy(() => import("@/pages/activity/ActivityPage"));
 const ProfilePage       = lazy(() => import("@/pages/settings/ProfilePage"));
-const ComingSoon        = lazy(() => import("@/pages/ComingSoon"));
 const NotFound          = lazy(() => import("@/pages/NotFound"));
 
 // ─── Wrappers ─────────────────────────────────────────────────────────────────
@@ -133,22 +129,25 @@ export default function Router() {
           <Route path="/management/roles"        element={<BoundedRoute element={<RolesPermissionsPage />} />} />
           <Route path="/management/audit"        element={<BoundedRoute element={<AuditLogPage />} />} />
           {/* Legacy redirects — keep old bookmarks working */}
-          <Route path="/management/integrations" element={<Navigate to="/settings/integrations" replace />} />
-          <Route path="/management/billing"      element={<Navigate to="/settings/billing" replace />} />
+          <Route path="/management/integrations" element={<Navigate to="/settings/system" replace />} />
+          <Route path="/management/billing"      element={<Navigate to="/settings/profile" replace />} />
 
           {/* Settings — nested under SettingsLayout for the tab bar */}
           <Route path="/settings" element={<SettingsLayout />}>
             <Route index element={<Navigate to="/settings/profile" replace />} />
             <Route path="profile"            element={<BoundedRoute element={<ProfilePage />} />} />
             <Route path="expense-categories" element={<BoundedRoute element={<ExpenseCategoriesPage />} />} />
-            <Route path="targets"            element={<BoundedRoute element={<KpiTargetsPage />} />} />
-            <Route path="alerts"             element={<BoundedRoute element={<AlertRulesPage />} />} />
-            <Route path="integrations"       element={<BoundedRoute element={<IntegrationsPage />} />} />
-            <Route path="billing"            element={<BoundedRoute element={<ComingSoon title="Billing & Subscription" description="Subscription management is coming soon. You'll be able to manage your plan and payment methods here." />} />} />
+            <Route path="targets-alerts"     element={<BoundedRoute element={<TargetsAlertsPage />} />} />
             <Route path="system"             element={<BoundedRoute element={<SystemSettingsPage />} />} />
-            <Route path="help"               element={<BoundedRoute element={<HelpCenterPage />} />} />
-            <Route path="support"            element={<BoundedRoute element={<SupportPage />} />} />
+            <Route path="help-support"       element={<BoundedRoute element={<HelpSupportPage />} />} />
             <Route path="sync"               element={<BoundedRoute element={<SyncHistoryPage />} />} />
+            {/* Legacy redirects */}
+            <Route path="targets"      element={<Navigate to="/settings/targets-alerts" replace />} />
+            <Route path="alerts"       element={<Navigate to="/settings/targets-alerts" replace />} />
+            <Route path="help"         element={<Navigate to="/settings/help-support" replace />} />
+            <Route path="support"      element={<Navigate to="/settings/help-support" replace />} />
+            <Route path="billing"      element={<Navigate to="/settings/profile" replace />} />
+            <Route path="integrations" element={<Navigate to="/settings/profile" replace />} />
           </Route>
           <Route path="/production"       element={<BoundedRoute element={<ProductionLogPage />} />} />
           <Route path="/team/timesheet"   element={<BoundedRoute element={<TimesheetPage />} />} />

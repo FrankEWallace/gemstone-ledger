@@ -4,26 +4,18 @@ import {
   UserCircle,
   Tag,
   Target,
-  Zap,
-  Plug,
-  CreditCard,
   Settings,
   HelpCircle,
-  Headphones,
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { label: "Profile",      icon: UserCircle,  to: "/settings/profile" },
-  { label: "Categories",   icon: Tag,         to: "/settings/expense-categories" },
-  { label: "KPI Targets",  icon: Target,      to: "/settings/targets" },
-  { label: "Alert Rules",  icon: Zap,         to: "/settings/alerts" },
-  { label: "Integrations", icon: Plug,        to: "/settings/integrations" },
-  { label: "Billing",      icon: CreditCard,  to: "/settings/billing" },
-  { label: "System",       icon: Settings,    to: "/settings/system" },
-  { label: "Help",         icon: HelpCircle,  to: "/settings/help" },
-  { label: "Support",      icon: Headphones,  to: "/settings/support" },
+  { label: "Profile",          icon: UserCircle, to: "/settings/profile" },
+  { label: "Categories",       icon: Tag,        to: "/settings/expense-categories" },
+  { label: "Targets & Alerts", icon: Target,     to: "/settings/targets-alerts" },
+  { label: "Organization",     icon: Settings,   to: "/settings/system" },
+  { label: "Help & Support",   icon: HelpCircle, to: "/settings/help-support" },
 ];
 
 export default function SettingsLayout() {
