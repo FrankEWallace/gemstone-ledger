@@ -69,6 +69,7 @@ const coreItems: NavItem[] = [
 const operationsItems: NavItem[] = [
   { label: "Suppliers", icon: UserCircle,   to: "/supply/suppliers", module: "supply_chain" },
   { label: "Orders",    icon: ShoppingCart, to: "/supply/orders",    module: "supply_chain" },
+  { label: "Channels",  icon: Layers,       to: "/supply/channels",  module: "supply_chain" },
 ];
 
 const teamItems: NavItem[] = [
@@ -85,7 +86,6 @@ const extensionItems: NavItem[] = [
   { label: "Production", icon: Pickaxe,       to: "/production",       module: "operations" },
   { label: "Documents",  icon: FolderOpen,    to: "/documents",        module: "operations" },
   { label: "Messages",   icon: MessageSquare, to: "/messages",         module: "messages" },
-  { label: "Channels",   icon: Layers,        to: "/supply/channels",  module: "supply_chain" },
 ];
 
 const TOGGLEABLE_SECTIONS: { key: NavSectionKey; label: string; description: string }[] = [
