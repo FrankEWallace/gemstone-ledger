@@ -24,7 +24,6 @@ import {
   SlidersHorizontal,
   Eye,
   EyeOff,
-  Puzzle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -64,6 +63,7 @@ const coreItems: NavItem[] = [
   { label: "Transactions", icon: ArrowLeftRight,  to: "/transactions" },
   { label: "Inventory",    icon: Package,         to: "/inventory" },
   { label: "Reports",      icon: BarChart3,       to: "/reports",       module: "reports" },
+  { label: "Messages",     icon: MessageSquare,   to: "/messages",      module: "messages" },
 ];
 
 const operationsItems: NavItem[] = [
@@ -73,25 +73,24 @@ const operationsItems: NavItem[] = [
 ];
 
 const teamItems: NavItem[] = [
-  { label: "Team",      icon: Users,      to: "/team",            module: "team" },
-  { label: "Roles",     icon: Shield,     to: "/management/roles" },
-  { label: "Audit Log", icon: FileText,   to: "/management/audit" },
+  { label: "Team",       icon: Users,        to: "/team",           module: "team" },
+  { label: "Schedules",  icon: CalendarDays, to: "/team/schedule",  module: "team" },
+  { label: "Timesheets", icon: Clock,        to: "/team/timesheet", module: "team" },
+  { label: "Roles",      icon: Shield,       to: "/management/roles" },
+  { label: "Audit Log",  icon: FileText,     to: "/management/audit" },
 ];
 
-const extensionItems: NavItem[] = [
-  { label: "Equipment",  icon: Wrench,        to: "/equipment",        module: "operations" },
-  { label: "Safety",     icon: ShieldAlert,   to: "/safety",           module: "operations" },
-  { label: "Schedules",  icon: CalendarDays,  to: "/team/schedule",    module: "team" },
-  { label: "Timesheets", icon: Clock,         to: "/team/timesheet",   module: "team" },
-  { label: "Production", icon: Pickaxe,       to: "/production",       module: "operations" },
-  { label: "Documents",  icon: FolderOpen,    to: "/documents",        module: "operations" },
-  { label: "Messages",   icon: MessageSquare, to: "/messages",         module: "messages" },
+const fieldItems: NavItem[] = [
+  { label: "Equipment",  icon: Wrench,      to: "/equipment",  module: "operations" },
+  { label: "Safety",     icon: ShieldAlert, to: "/safety",     module: "operations" },
+  { label: "Production", icon: Pickaxe,     to: "/production", module: "operations" },
+  { label: "Documents",  icon: FolderOpen,  to: "/documents",  module: "operations" },
 ];
 
 const TOGGLEABLE_SECTIONS: { key: NavSectionKey; label: string; description: string }[] = [
-  { key: "operations", label: "Operations",    description: "Suppliers and order management" },
-  { key: "team",       label: "Team & System", description: "Team, roles, and audit log" },
-  { key: "extensions", label: "Extensions",    description: "Equipment, production, messages…" },
+  { key: "operations", label: "Operations",    description: "Suppliers, orders, and channels" },
+  { key: "team",       label: "Team & System", description: "Team, scheduling, roles, audit log" },
+  { key: "field",      label: "Field",         description: "Equipment, safety, production, documents" },
 ];
 
 // ─── NavCustomizer ────────────────────────────────────────────────────────────
@@ -254,10 +253,9 @@ export default function AppSidebar({
     return () => clearInterval(interval);
   }, [activeSiteId, location.pathname]);
 
-  const extensionsWithBadge: NavItem[] = extensionItems.map((item) =>
+  const coreWithBadge: NavItem[] = coreItems.map((item) =>
     item.to === "/messages" ? { ...item, badge: unreadMessages } : item
   );
-  const visibleExtensions = filterByModule(extensionsWithBadge);
 
   return (
     <Sidebar variant={variant} collapsible="icon">
@@ -278,7 +276,7 @@ export default function AppSidebar({
 
       {/* Navigation */}
       <SidebarContent>
-        <NavSection title="Core" items={filterByModule(coreItems)} />
+        <NavSection items={filterByModule(coreWithBadge)} />
 
         {!isSectionHidden("operations") && (
           <NavSection title="Operations" items={filterByModule(operationsItems)} />
@@ -288,16 +286,8 @@ export default function AppSidebar({
           <NavSection title="Team & System" items={filterByModule(teamItems)} />
         )}
 
-        {!isSectionHidden("extensions") && visibleExtensions.length > 0 && (
-          <NavSection
-            items={visibleExtensions}
-            badge={
-              <span className="inline-flex items-center gap-1 rounded-md bg-sidebar-accent px-1.5 py-0.5 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wide group-data-[collapsible=icon]:hidden">
-                <Puzzle className="h-2.5 w-2.5" />
-                optional
-              </span>
-            }
-          />
+        {!isSectionHidden("field") && (
+          <NavSection title="Field" items={filterByModule(fieldItems)} />
         )}
 
         {/* Settings pinned to bottom of nav */}

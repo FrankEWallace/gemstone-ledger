@@ -5,7 +5,7 @@ export type NavSectionKey =
   | "core"
   | "operations"
   | "team"
-  | "extensions";
+  | "field";
 
 const STORAGE_KEY = "fw-hidden-nav";
 
