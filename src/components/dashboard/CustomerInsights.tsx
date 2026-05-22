@@ -25,7 +25,7 @@ export default function CustomerInsights({ summaries, selectedId, onSelect }: Cu
             to="/activity"
             className="inline-flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Follow-up <ChevronRight className="h-3.5 w-3.5" />
+            Activity <ChevronRight className="h-3.5 w-3.5" />
           </Link>
           <Link
             to="/customers"
