@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/":                   { breadcrumb: "",          title: "Dashboard" },
   "/notifications":      { breadcrumb: "",          title: "Notifications" },
+  "/activity":           { breadcrumb: "",          title: "Follow-up" },
   "/customers":          { breadcrumb: "",          title: "Customers" },
   "/transactions":       { breadcrumb: "",          title: "Transactions" },
   "/inventory":          { breadcrumb: "",          title: "Inventory" },
@@ -44,7 +45,6 @@ const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/production":         { breadcrumb: "Field",     title: "Production" },
   "/documents":          { breadcrumb: "Field",     title: "Documents" },
   "/messages":           { breadcrumb: "",          title: "Messages" },
-  "/campaigns":          { breadcrumb: "",          title: "Campaigns" },
   "/supply/channels":    { breadcrumb: "Operations", title: "Channels" },
   "/settings":           { breadcrumb: "",          title: "Settings" },
 };

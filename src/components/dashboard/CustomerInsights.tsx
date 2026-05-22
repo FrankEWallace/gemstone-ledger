@@ -20,12 +20,20 @@ export default function CustomerInsights({ summaries, selectedId, onSelect }: Cu
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <p className="text-sm font-medium">Customer Profitability</p>
-        <Link
-          to="/customers"
-          className="inline-flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          View all <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/activity"
+            className="inline-flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Follow-up <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+          <Link
+            to="/customers"
+            className="inline-flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            All customers <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
       <div className="divide-y divide-border">
         {sorted.slice(0, 5).map((cs, idx) => (
