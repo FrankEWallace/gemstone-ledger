@@ -11,6 +11,7 @@ import { Download } from "lucide-react";
 import { useSite } from "@/hooks/useSite";
 import { useReportDateRange } from "@/hooks/useReportDateRange";
 import ReportsSubNav from "@/components/reports/ReportsSubNav";
+import StatCard from "@/components/shared/StatCard";
 import {
   getReportSummary, getMonthlyTrend, getExpensesByCategory,
 } from "@/services/reports.service";
@@ -43,19 +44,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">
       {children}
     </p>
-  );
-}
-
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3 flex flex-col gap-1 min-w-0 overflow-hidden relative">
-      {color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl" style={{ backgroundColor: color }} />}
-      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">{label}</p>
-      <p className="text-lg font-bold tracking-tight leading-none tabular-nums font-display truncate" style={color ? { color } : undefined}>
-        {value}
-      </p>
-      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
-    </div>
   );
 }
 

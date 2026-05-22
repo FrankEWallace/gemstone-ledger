@@ -45,6 +45,7 @@ import {
 } from "@/services/transactions.service";
 import { getCustomers } from "@/services/customers.service";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
+import StatCard from "@/components/shared/StatCard";
 import {
   RecordPaymentModal,
   RecordExpenseModal,
@@ -427,38 +428,30 @@ export default function TransactionsPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
-          <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.income }} />
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Collected Income</p>
-          <p className="text-xl font-bold mt-1" style={{ color: C.income }}>
-            {fmtCurrency(totalIncome)}
-          </p>
-          <p className="text-xs text-muted-foreground">success status only</p>
-        </div>
-        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
-          <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.expense }} />
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Total Expenses</p>
-          <p className="text-xl font-bold mt-1" style={{ color: C.expense }}>
-            {fmtCurrency(totalExpenses)}
-          </p>
-          <p className="text-xs text-muted-foreground">success status only</p>
-        </div>
-        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
-          <div className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: C.net }} />
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Net Profit</p>
-          <p className="text-xl font-bold mt-1" style={{ color: totalIncome - totalExpenses >= 0 ? C.income : C.expense }}>
-            {fmtCurrency(totalIncome - totalExpenses)}
-          </p>
-          <p className="text-xs text-muted-foreground">income − expenses</p>
-        </div>
-        <div className="rounded-lg border border-border p-4 overflow-hidden relative">
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-foreground/20" />
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold pt-0.5">Net Balance</p>
-          <p className="text-xl font-bold mt-1 tabular-nums" style={{ color: (txWithBalance[0]?._balance ?? 0) >= 0 ? C.income : C.expense }}>
-            {fmtCurrency(Math.abs(txWithBalance[0]?._balance ?? 0))}
-          </p>
-          <p className="text-xs text-muted-foreground">success status only</p>
-        </div>
+        <StatCard
+          label="Collected Income"
+          value={fmtCurrency(totalIncome)}
+          sub="success status only"
+          color={C.income}
+        />
+        <StatCard
+          label="Total Expenses"
+          value={fmtCurrency(totalExpenses)}
+          sub="success status only"
+          color={C.expense}
+        />
+        <StatCard
+          label="Net Profit"
+          value={fmtCurrency(totalIncome - totalExpenses)}
+          sub="income − expenses"
+          color={totalIncome - totalExpenses >= 0 ? C.income : C.expense}
+        />
+        <StatCard
+          label="Net Balance"
+          value={fmtCurrency(Math.abs(txWithBalance[0]?._balance ?? 0))}
+          sub="running total"
+          color={(txWithBalance[0]?._balance ?? 0) >= 0 ? C.income : C.expense}
+        />
       </div>
 
       {/* Table */}
