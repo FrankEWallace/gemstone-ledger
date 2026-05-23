@@ -46,6 +46,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const OP_SYMBOLS: Record<string, string> = {
+  lte: "≤", gte: "≥", lt: "<", gt: ">", eq: "=",
+};
+
+function describeCondition(rule: { entity_type: string; field: string; operator: string; threshold: number }) {
+  const entity = rule.entity_type.replace(/_/g, " ");
+  const field  = rule.field.replace(/_/g, " ");
+  const op     = OP_SYMBOLS[rule.operator] ?? rule.operator;
+  return `${entity} › ${field} ${op} ${rule.threshold}`;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AlertRule {
@@ -396,7 +409,7 @@ export default function AlertRulesPage() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                  {rule.entity_type.replace(/_/g, " ")} · {rule.field.replace(/_/g, " ")} {rule.operator} {rule.threshold}
+                  {describeCondition(rule)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Notifies: <span className="font-medium">{rule.notification_title}</span>

@@ -295,6 +295,7 @@ export default function TransactionsPage() {
     {
       key: "reference_no",
       header: "Ref #",
+      className: "hidden sm:table-cell",
       render: (val) => <span className="font-mono text-xs">{String(val || "—")}</span>,
     },
     {
@@ -316,6 +317,7 @@ export default function TransactionsPage() {
     {
       key: "customer_id",
       header: "Customer",
+      className: "hidden md:table-cell",
       render: (val) => {
         const name = val ? customerMap.get(String(val)) : null;
         return <span className="text-xs text-muted-foreground">{name ?? "—"}</span>;
@@ -324,6 +326,7 @@ export default function TransactionsPage() {
     {
       key: "type",
       header: "Type",
+      className: "hidden sm:table-cell",
       sortable: true,
       render: (val) => (
         <div className="flex items-center gap-1.5 capitalize">
@@ -359,7 +362,7 @@ export default function TransactionsPage() {
     {
       key: "_balance" as keyof (typeof txWithBalance)[number],
       header: "Balance",
-      className: "text-right",
+      className: "hidden md:table-cell text-right",
       render: (val) => {
         const n = Number(val);
         return (
@@ -447,10 +450,9 @@ export default function TransactionsPage() {
           color={totalIncome - totalExpenses >= 0 ? C.income : C.expense}
         />
         <StatCard
-          label="Net Balance"
-          value={fmtCurrency(Math.abs(txWithBalance[0]?._balance ?? 0))}
-          sub="running total"
-          color={(txWithBalance[0]?._balance ?? 0) >= 0 ? C.income : C.expense}
+          label="Transactions"
+          value={transactions.length.toString()}
+          sub={`${transactions.filter((t) => t.type === "income").length} income · ${transactions.filter((t) => t.type === "expense").length} expense`}
         />
       </div>
 

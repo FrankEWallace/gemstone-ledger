@@ -13,7 +13,6 @@ import {
   Download,
   FileSpreadsheet,
 } from "lucide-react";
-import { TrendArrow } from "@/components/shared/TrendArrow";
 import {
   AreaChart,
   Area,
@@ -33,7 +32,8 @@ import ReportsSubNav from "@/components/reports/ReportsSubNav";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { fmtCurrency, fmtTick, fmtCompact, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
+import { fmtCurrency, fmtTick, fmtCompact } from "@/lib/formatCurrency";
+import StatCard from "@/components/shared/StatCard";
 import { getCustomers } from "@/services/customers.service";
 import { getCustomerDetail } from "@/services/reports.service";
 import { getTransactions } from "@/services/transactions.service";
@@ -65,65 +65,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  sub,
-  color = "text-foreground",
-  icon,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2 min-w-0">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate">
-          {label}
-        </p>
-        {icon}
-      </div>
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-xs font-semibold tracking-wider text-muted-foreground">
-          {CURRENCY_SYMBOL}
-        </span>
-        <p className={`font-display text-2xl font-bold leading-none tabular-nums truncate ${color}`}>
-          {value}
-        </p>
-      </div>
-      {sub && (
-        <p className="text-xs text-muted-foreground truncate">{sub}</p>
-      )}
-    </div>
-  );
-}
-
-function PlainKpiCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2 min-w-0">
-      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate">
-        {label}
-      </p>
-      <p className="font-display text-2xl font-bold leading-none tabular-nums truncate">
-        {value}
-      </p>
-      {sub && (
-        <p className="text-xs text-muted-foreground truncate">{sub}</p>
-      )}
-    </div>
-  );
-}
 
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -577,38 +518,32 @@ export default function CustomerReportPage() {
         </div>
       ) : summary ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <KpiCard
+          <StatCard
             label="Total Income"
-            value={fmtShort(summary.totalIncome).replace(`${CURRENCY_SYMBOL} `, "")}
+            value={fmtShort(summary.totalIncome)}
             sub={`${summary.transactionCount} transactions`}
-            color="text-emerald-600"
-            icon={<TrendArrow direction="up" className="h-2.5 w-2.5 text-emerald-500" />}
+            color="var(--chart-income)"
           />
-          <KpiCard
+          <StatCard
             label="Total Expenses"
-            value={fmtShort(summary.totalExpenses).replace(`${CURRENCY_SYMBOL} `, "")}
+            value={fmtShort(summary.totalExpenses)}
             sub={expenseByCategory.length > 0 ? `${expenseByCategory[0].category} is largest` : "No expenses"}
-            color="text-red-500"
-            icon={<TrendArrow direction="down" className="h-2.5 w-2.5 text-red-400" />}
+            color="var(--chart-expense)"
           />
-          <KpiCard
+          <StatCard
             label="Net Profit"
-            value={fmtShort(summary.netProfit).replace(`${CURRENCY_SYMBOL} `, "").replace("−", "")}
+            value={fmtShort(Math.abs(summary.netProfit))}
             sub={summary.totalIncome > 0 ? `${margin}% margin` : ""}
-            color={summary.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}
+            color={summary.netProfit >= 0 ? "var(--chart-income)" : "var(--chart-expense)"}
           />
-          <PlainKpiCard
+          <StatCard
             label="Days Worked"
             value={String(daysWorked)}
             sub="days with income"
           />
-          <PlainKpiCard
+          <StatCard
             label="Avg / Day"
-            value={
-              daysWorked > 0
-                ? fmtShort(summary.totalIncome / daysWorked).replace(`${CURRENCY_SYMBOL} `, "")
-                : "—"
-            }
+            value={daysWorked > 0 ? fmtShort(summary.totalIncome / daysWorked) : "—"}
             sub="revenue per working day"
           />
         </div>

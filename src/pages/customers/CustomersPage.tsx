@@ -66,6 +66,7 @@ import {
 } from "@/services/customers.service";
 import { createTransaction } from "@/services/transactions.service";
 import { getCustomerSummaries } from "@/services/reports.service";
+import StatCard from "@/components/shared/StatCard";
 
 // ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
 
@@ -577,6 +578,32 @@ export default function CustomersPage() {
           <Plus className="h-4 w-4 mr-1.5" />
           Add Customer
         </Button>
+      </div>
+
+      {/* ── Stat cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Customers"
+          value={customers.length.toString()}
+          sub={`${customers.filter((c) => c.type === "external").length} external · ${customers.filter((c) => c.type === "internal").length} internal`}
+        />
+        <StatCard
+          label="Active"
+          value={customers.filter((c) => c.status === "active").length.toString()}
+          sub="currently active"
+          color="var(--chart-income)"
+        />
+        <StatCard
+          label="Prospects"
+          value={customers.filter((c) => c.status === "prospect").length.toString()}
+          sub="not yet active"
+        />
+        <StatCard
+          label="Revenue This Month"
+          value={fmtCompact(summaries.reduce((sum, s) => sum + s.netProfit, 0))}
+          sub={`${summaries.filter((s) => s.netProfit > 0).length} customers with income`}
+          color="var(--chart-income)"
+        />
       </div>
 
       {/* ── Toolbar ── */}

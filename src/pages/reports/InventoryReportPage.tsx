@@ -29,6 +29,7 @@ import { supabase } from "@/lib/supabase";
 import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtTick, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 import { getInventoryItems, getInventoryConsumptionRates } from "@/services/inventory.service";
+import SharedStatCard from "@/components/shared/StatCard";
 import type { Tables } from "@/lib/supabaseTypes";
 
 import { Button } from "@/components/ui/button";
@@ -198,38 +199,6 @@ function ChartTooltipCustom({ active, payload, label }: any) {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card px-4 py-3 flex flex-col gap-1 min-w-0 overflow-hidden relative">
-      {color && (
-        <div
-          className="absolute inset-x-0 top-0 h-[3px] rounded-t-lg"
-          style={{ backgroundColor: color }}
-        />
-      )}
-      <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground truncate pt-0.5">
-        {label}
-      </p>
-      <p
-        className="text-lg font-bold tracking-tight leading-none tabular-nums font-display truncate"
-        style={color ? { color } : undefined}
-      >
-        {value}
-      </p>
-      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
-    </div>
-  );
-}
 
 // ─── Customer row (expandable) ────────────────────────────────────────────────
 
@@ -874,19 +843,19 @@ export default function InventoryReportPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard
+          <SharedStatCard
             label="Total Items"
             value={String(totalItems)}
             sub={`${inventoryItems.filter((i) => i.quantity > 0).length} in stock`}
             color="var(--chart-cat-1)"
           />
-          <StatCard
+          <SharedStatCard
             label="Stock Value"
             value={fmtCurrency(stockValue)}
             sub={`${CURRENCY_SYMBOL} unit cost × qty`}
             color="var(--chart-cat-2)"
           />
-          <StatCard
+          <SharedStatCard
             label="Low / Out of Stock"
             value={String(lowOrOutItems.length)}
             sub={
@@ -896,7 +865,7 @@ export default function InventoryReportPage() {
             }
             color={lowOrOutItems.length > 0 ? "var(--chart-expense)" : "var(--chart-income)"}
           />
-          <StatCard
+          <SharedStatCard
             label="Consumption Value"
             value={fmtCurrency(consumptionValue)}
             sub={`${enrichedUsage.length} usage transactions`}

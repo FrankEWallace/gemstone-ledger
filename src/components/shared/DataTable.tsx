@@ -170,7 +170,7 @@ export function DataTable<T extends Record<string, unknown>>({
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/20 hover:bg-muted/20 border-b border-border">
@@ -191,7 +191,7 @@ export function DataTable<T extends Record<string, unknown>>({
               Array.from({ length: pageSize > 8 ? 6 : pageSize }).map((_, i) => (
                 <TableRow key={i} className="hover:bg-transparent">
                   {columns.map((col, ci) => (
-                    <TableCell key={col.key}>
+                    <TableCell key={col.key} className={col.className}>
                       <Skeleton
                         className={cn(
                           "h-3.5 rounded",

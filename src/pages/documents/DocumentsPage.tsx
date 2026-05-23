@@ -41,7 +41,7 @@ import {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const CATEGORIES = ["Compliance", "Safety", "Contracts", "Permits", "Reports", "Training", "Other"];
+const CATEGORIES = ["Compliance", "Safety", "Geology", "Operations", "Finance", "Contracts", "Permits", "Reports", "Training", "Other"];
 
 const MAX_SIZE_MB = 20;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
@@ -50,11 +50,15 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 function fileIcon(mime: string | null) {
   if (!mime) return <File className="h-5 w-5 text-muted-foreground" />;
-  if (mime.startsWith("image/")) return <FileImage className="h-5 w-5 text-blue-500" />;
-  if (mime.includes("pdf")) return <FileText className="h-5 w-5 text-red-500" />;
+  if (mime.startsWith("image/"))
+    return <FileImage className="h-5 w-5 text-blue-500" />;
+  if (mime.includes("pdf"))
+    return <FileText className="h-5 w-5 text-red-500" />;
   if (mime.includes("sheet") || mime.includes("excel") || mime.includes("csv"))
-    return <FileSpreadsheet className="h-5 w-5 text-emerald-500" />;
-  return <FileText className="h-5 w-5 text-muted-foreground" />;
+    return <FileSpreadsheet className="h-5 w-5 text-emerald-600" />;
+  if (mime.includes("word") || mime.includes("msword") || mime.includes("wordprocessingml"))
+    return <FileText className="h-5 w-5 text-blue-600" />;
+  return <File className="h-5 w-5 text-muted-foreground" />;
 }
 
 function formatBytes(bytes: number | null): string {
@@ -75,7 +79,7 @@ export default function DocumentsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [uploadCategory, setUploadCategory] = useState<string>("");
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SiteDocument | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
@@ -146,7 +150,12 @@ export default function DocumentsPage() {
   const usedCategories = [...new Set(documents.map((d) => d.category).filter(Boolean))] as string[];
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div
+      className="p-4 lg:p-6 space-y-6"
+      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false); }}
+      onDrop={(e) => { e.preventDefault(); setIsDragOver(false); handleFiles(e.dataTransfer.files); }}
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -182,26 +191,22 @@ export default function DocumentsPage() {
         </div>
       </div>
 
-      {/* Drop zone */}
+      {/* Drop zone — compact strip normally, expands when dragging */}
       <div
-        className={cn(
-          "rounded-lg border-2 border-dashed p-6 flex flex-col items-center gap-2 transition-colors cursor-pointer",
-          isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/20"
-        )}
         onClick={() => fileInputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDragging(false);
-          handleFiles(e.dataTransfer.files);
-        }}
+        className={cn(
+          "rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-all duration-200 overflow-hidden",
+          isDragOver
+            ? "border-primary bg-primary/5 py-10 flex-col gap-2"
+            : "border-border hover:border-primary/40 hover:bg-muted/20 py-3 gap-3"
+        )}
       >
-        <Upload className="h-8 w-8 text-muted-foreground" />
+        <Upload className={cn("shrink-0 text-muted-foreground transition-all", isDragOver ? "h-8 w-8" : "h-4 w-4")} />
         <p className="text-sm text-muted-foreground">
-          Drop files here or <span className="text-primary font-medium">click to upload</span>
+          {isDragOver
+            ? <>Drop to upload</>
+            : <>Drop files or <span className="text-primary font-medium">click to upload</span> · Max {MAX_SIZE_MB} MB</>}
         </p>
-        <p className="text-xs text-muted-foreground">Max {MAX_SIZE_MB} MB per file</p>
       </div>
 
       {/* Filters */}

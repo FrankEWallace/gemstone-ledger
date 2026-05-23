@@ -69,6 +69,34 @@ import {
   type MaintenanceLogPayload,
 } from "@/services/equipment.service";
 
+// ─── Maintenance health ───────────────────────────────────────────────────────
+
+type HealthLevel = "overdue" | "soon" | "ok" | "neutral";
+
+function getHealthLevel(e: Equipment): HealthLevel {
+  if (e.status === "retired") return "neutral";
+  if (e.status === "maintenance") return "overdue";
+  if (!e.next_service_date) return "neutral";
+  const days = differenceInDays(parseISO(e.next_service_date), new Date());
+  if (days < 0) return "overdue";
+  if (days <= 7) return "soon";
+  return "ok";
+}
+
+const HEALTH_DOT: Record<HealthLevel, string> = {
+  overdue: "bg-destructive",
+  soon:    "bg-yellow-500",
+  ok:      "bg-emerald-500",
+  neutral: "bg-muted-foreground/30",
+};
+
+const HEALTH_LABEL: Record<HealthLevel, string> = {
+  overdue: "Overdue / In maintenance",
+  soon:    "Service due soon",
+  ok:      "Healthy",
+  neutral: "No service schedule",
+};
+
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
 const equipSchema = z.object({
@@ -517,16 +545,27 @@ export default function EquipmentPage() {
       key: "name",
       header: "Asset",
       sortable: true,
-      render: (_, row) => (
-        <div>
-          <p className="font-medium">{row.name}</p>
-          {row.type && <p className="text-xs text-muted-foreground">{row.type}</p>}
-        </div>
-      ),
+      render: (_, row) => {
+        const eq = row as unknown as Equipment;
+        const health = getHealthLevel(eq);
+        return (
+          <div className="flex items-start gap-2.5">
+            <span
+              title={HEALTH_LABEL[health]}
+              className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${HEALTH_DOT[health]}`}
+            />
+            <div>
+              <p className="font-medium">{eq.name}</p>
+              {eq.type && <p className="text-xs text-muted-foreground">{eq.type}</p>}
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: "serial_number",
       header: "Serial #",
+      className: "hidden sm:table-cell",
       render: (v) => v
         ? <span className="font-mono text-xs">{String(v)}</span>
         : <span className="text-muted-foreground">—</span>,
@@ -562,6 +601,7 @@ export default function EquipmentPage() {
     {
       key: "last_service_date",
       header: "Last Serviced",
+      className: "hidden md:table-cell",
       render: (val) => val
         ? format(parseISO(String(val)), "MMM d, yyyy")
         : <span className="text-muted-foreground">—</span>,
@@ -569,6 +609,7 @@ export default function EquipmentPage() {
     {
       key: "notes",
       header: "Notes",
+      className: "hidden lg:table-cell",
       render: (val) => val
         ? <span className="text-sm text-muted-foreground truncate max-w-xs block">{String(val)}</span>
         : <span className="text-muted-foreground">—</span>,

@@ -352,7 +352,13 @@ export default function SafetyPage() {
       sortable: true,
       render: (_, row) => (
         <div>
-          <p className="font-medium">{row.title}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-medium">{row.title}</p>
+            {/* Severity shown inline on mobile only */}
+            <span className={`sm:hidden inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${SEVERITY_STYLES[row.severity as IncidentSeverity]}`}>
+              {String(row.severity)}
+            </span>
+          </div>
           {row.description && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{row.description}</p>
           )}
@@ -367,6 +373,7 @@ export default function SafetyPage() {
     {
       key: "severity",
       header: "Severity",
+      className: "hidden sm:table-cell",
       sortable: true,
       render: (val) => (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${SEVERITY_STYLES[val as IncidentSeverity]}`}>
@@ -377,12 +384,14 @@ export default function SafetyPage() {
     {
       key: "type",
       header: "Type",
+      className: "hidden sm:table-cell",
       sortable: true,
       render: (val) => <span className="capitalize text-sm">{String(val)}</span>,
     },
     {
       key: "created_at",
       header: "Reported",
+      className: "hidden md:table-cell",
       sortable: true,
       render: (val) => format(new Date(String(val)), "MMM d, yyyy"),
     },
@@ -404,7 +413,7 @@ export default function SafetyPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            className="h-9 w-9 sm:h-7 sm:w-7 text-muted-foreground hover:text-foreground"
             title="Resolution notes"
             onClick={() => setNotesTarget(row as unknown as SafetyIncident)}
           >
@@ -413,7 +422,7 @@ export default function SafetyPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-destructive hover:text-destructive"
+            className="h-9 w-9 sm:h-7 sm:w-7 text-destructive hover:text-destructive"
             onClick={() => setDeleteTarget(row as unknown as SafetyIncident)}
           >
             <Trash2 className="h-3.5 w-3.5" />
