@@ -3,10 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Phone, Lock, Shield, Upload, LogOut, Camera } from "lucide-react";
+import { User, Phone, Lock, Shield, Upload, LogOut, Camera, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { updateUserProfile, uploadUserAvatar, changePassword } from "@/services/profile.service";
+import { updateUserProfile, uploadUserAvatar, changePassword, changeEmail } from "@/services/profile.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,8 +38,13 @@ const passwordSchema = z
     path: ["confirmPassword"],
   });
 
+const emailSchema = z.object({
+  newEmail: z.string().email("Enter a valid email address"),
+});
+
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
+type EmailFormValues = z.infer<typeof emailSchema>;
 
 // ─── Role badge ────────────────────────────────────────────────────────────────
 
@@ -204,6 +209,20 @@ export default function ProfilePage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const emailForm = useForm<EmailFormValues>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: { newEmail: "" },
+  });
+
+  const { mutate: updateEmail, isPending: savingEmail } = useMutation({
+    mutationFn: (values: EmailFormValues) => changeEmail(values.newEmail),
+    onSuccess: () => {
+      emailForm.reset();
+      toast.success("Confirmation sent — check your new email address to confirm the change.");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   return (
     <div className="p-4 lg:p-6 space-y-8 max-w-2xl mx-auto">
       <h1 className="font-display text-2xl font-bold">My Profile</h1>
@@ -240,15 +259,12 @@ export default function ProfilePage() {
           <h2 className="font-semibold text-sm">Personal Information</h2>
         </div>
 
-        {/* Email — read-only, from auth */}
+        {/* Email — read-only display */}
         <div className="mb-4">
-          <label className="text-sm font-medium leading-none">Email</label>
+          <label className="text-sm font-medium leading-none">Current Email</label>
           <div className="mt-1.5 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
             {user?.email ?? "—"}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Email is managed by your authentication provider and cannot be changed here.
-          </p>
         </div>
 
         <Form {...profileForm}>
@@ -352,6 +368,46 @@ export default function ProfilePage() {
             {demo && (
               <p className="text-xs text-amber-600 dark:text-amber-400 text-right">
                 Password changes are disabled in demo mode.
+              </p>
+            )}
+          </form>
+        </Form>
+      </div>
+
+      <Separator />
+
+      {/* Change email */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          <h2 className="font-semibold text-sm">Change Email</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Enter a new email address. A confirmation link will be sent to the new address — the change takes effect after you click it.
+        </p>
+        <Form {...emailForm}>
+          <form onSubmit={emailForm.handleSubmit((v) => updateEmail(v))} className="space-y-4">
+            <FormField
+              control={emailForm.control}
+              name="newEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="new@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-end">
+              <Button type="submit" variant="outline" disabled={savingEmail || demo}>
+                {savingEmail ? "Sending…" : "Send Confirmation"}
+              </Button>
+            </div>
+            {demo && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 text-right">
+                Email changes are disabled in demo mode.
               </p>
             )}
           </form>

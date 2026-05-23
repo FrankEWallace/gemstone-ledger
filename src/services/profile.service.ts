@@ -47,3 +47,9 @@ export async function changePassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw error;
 }
+
+export async function changeEmail(newEmail: string): Promise<void> {
+  if (isDemoMode()) throw new Error("Email changes are not available in demo mode.");
+  const { error } = await supabase.auth.updateUser({ email: newEmail });
+  if (error) throw error;
+}

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid, Type } from "lucide-react";
+import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid, Type, MapPin, Pencil, X, Check } from "lucide-react";
 import FontPicker from "@/components/shared/FontPicker";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { getOrganization, updateOrganization, uploadOrgLogo } from "@/services/settings.service";
+import { getOrgSites, updateSite } from "@/services/auth.service";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -371,6 +372,116 @@ function BackendProviderSection({ role }: { role: string | null }) {
   );
 }
 
+// ─── Site Management Section ──────────────────────────────────────────────────
+
+function SiteManagementSection({ orgId }: { orgId: string }) {
+  const queryClient = useQueryClient();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+
+  const { data: sites = [], isLoading } = useQuery({
+    queryKey: ["org-sites", orgId],
+    queryFn: () => getOrgSites(orgId),
+  });
+
+  const { mutate: saveSite, isPending: saving } = useMutation({
+    mutationFn: ({ id, name, location }: { id: string; name: string; location: string }) =>
+      updateSite(id, { name: name.trim(), location: location.trim() || undefined }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org-sites", orgId] });
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      setEditingId(null);
+      toast.success("Site updated.");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  function startEdit(site: { id: string; name: string; location: string | null }) {
+    setEditingId(site.id);
+    setEditName(site.name);
+    setEditLocation(site.location ?? "");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  if (isLoading) {
+    return <div className="space-y-2">{[1, 2].map((i) => <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />)}</div>;
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <MapPin className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-semibold text-sm">Site Management</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Rename sites or update their location. Changes are reflected org-wide immediately.
+      </p>
+      <div className="space-y-2">
+        {sites.map((site) =>
+          editingId === site.id ? (
+            <div key={site.id} className="rounded-lg border border-primary bg-card p-3 space-y-2">
+              <input
+                className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Site name"
+                autoFocus
+              />
+              <input
+                className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                value={editLocation}
+                onChange={(e) => setEditLocation(e.target.value)}
+                placeholder="Location (optional)"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={cancelEdit}
+                  className="flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted transition-colors"
+                >
+                  <X className="h-3 w-3" /> Cancel
+                </button>
+                <button
+                  onClick={() => saveSite({ id: site.id, name: editName, location: editLocation })}
+                  disabled={saving || !editName.trim()}
+                  className="flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                  Save
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              key={site.id}
+              className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+            >
+              <div>
+                <p className="text-sm font-medium">{site.name}</p>
+                {site.location && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{site.location}</p>
+                )}
+              </div>
+              <button
+                onClick={() => startEdit(site)}
+                className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted transition-colors"
+              >
+                <Pencil className="h-3 w-3" /> Rename
+              </button>
+            </div>
+          )
+        )}
+        {sites.length === 0 && (
+          <p className="text-sm text-muted-foreground">No sites found for this organization.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SystemSettingsPage() {
@@ -610,6 +721,14 @@ export default function SystemSettingsPage() {
         <>
           <Separator />
           <ModuleConfigSection />
+        </>
+      )}
+
+      {/* Site management — admin only */}
+      {activeRole === "admin" && orgId && (
+        <>
+          <Separator />
+          <SiteManagementSection orgId={orgId} />
         </>
       )}
 

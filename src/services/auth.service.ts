@@ -69,3 +69,33 @@ export async function inviteUser(payload: {
   const { error } = await supabase.functions.invoke("invite-user", { body: payload });
   if (error) throw error;
 }
+
+export async function updateSite(
+  siteId: string,
+  payload: { name?: string; location?: string }
+): Promise<void> {
+  if (isRestActive()) {
+    await restPut(`/sites/${siteId}`, payload);
+    return;
+  }
+
+  const { error } = await supabase
+    .from("sites")
+    .update(payload)
+    .eq("id", siteId);
+  if (error) throw error;
+}
+
+export async function getOrgSites(orgId: string): Promise<{ id: string; name: string; location: string | null; status: string }[]> {
+  if (isRestActive()) {
+    return restGet(`/sites?org_id=${orgId}`);
+  }
+
+  const { data, error } = await supabase
+    .from("sites")
+    .select("id, name, location, status")
+    .eq("org_id", orgId)
+    .order("name");
+  if (error) throw error;
+  return data ?? [];
+}
