@@ -732,13 +732,7 @@ export default function SystemSettingsPage() {
         </>
       )}
 
-      {/* Backend provider — admin only, inactive by default */}
-      {activeRole === "admin" && (
-        <>
-          <Separator />
-          <BackendProviderSection role={activeRole} />
-        </>
-      )}
+
     </div>
   );
 }
