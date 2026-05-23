@@ -409,10 +409,10 @@ export default function ActivityPage() {
             return (
               <div
                 key={customer.id}
-                className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-4"
+                className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3"
               >
                 {/* Identity */}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-0.5">
                     <span className="font-semibold text-sm truncate">
                       {customer.name}
@@ -440,63 +440,66 @@ export default function ActivityPage() {
                   </p>
                 </div>
 
-                {/* Financials */}
-                <div className="flex gap-5 text-sm">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Income
-                    </p>
-                    <p className="font-semibold" style={{ color: C.income }}>
-                      {fmtCompact(income)}
-                    </p>
+                {/* Financials + Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  {/* Financials */}
+                  <div className="flex gap-5 text-sm">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
+                        Income
+                      </p>
+                      <p className="font-semibold" style={{ color: C.income }}>
+                        {fmtCompact(income)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
+                        Expenses
+                      </p>
+                      <p className="font-semibold" style={{ color: C.expense }}>
+                        {fmtCompact(expenses)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
+                        Net
+                      </p>
+                      <p className="font-bold" style={{ color: net >= 0 ? C.income : C.expense }}>
+                        {net < 0 ? "−" : ""}
+                        {fmtCompact(Math.abs(net))}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Expenses
-                    </p>
-                    <p className="font-semibold" style={{ color: C.expense }}>
-                      {fmtCompact(expenses)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Net
-                    </p>
-                    <p className="font-bold" style={{ color: net >= 0 ? C.income : C.expense }}>
-                      {net < 0 ? "−" : ""}
-                      {fmtCompact(Math.abs(net))}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setQuickTxCustomer(customer)}
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Add Transaction
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-blue-600 border-blue-200"
-                    onClick={() => setUseInvCustomer(customer)}
-                  >
-                    <Package className="h-3.5 w-3.5 mr-1" />
-                    Use Inventory
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-muted-foreground"
-                    onClick={() => setCloseCustomer(customer)}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                    Close Activity
-                  </Button>
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setQuickTxCustomer(customer)}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Add Transaction
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-200"
+                      onClick={() => setUseInvCustomer(customer)}
+                    >
+                      <Package className="h-3.5 w-3.5 mr-1" />
+                      Use Inventory
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-muted-foreground"
+                      onClick={() => setCloseCustomer(customer)}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Close Activity
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
