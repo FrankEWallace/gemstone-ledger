@@ -1,0 +1,43 @@
+---
+title: Vercel Deployment
+description: Deploy Gemstone Ledger to production on Vercel.
+---
+
+Gemstone Ledger is pre-configured for Vercel via `vercel.json` in the project root.
+
+## Automatic deployment
+
+Push to your connected Git branch and Vercel builds and deploys automatically.
+
+- **Preview** — every pull request gets a unique preview URL
+- **Production** — merges to `main` trigger a production deploy
+
+## Manual deploy
+
+```bash
+vercel --prod
+```
+
+## Environment variables
+
+Set these in your Vercel project dashboard under **Settings → Environment Variables**:
+
+| Variable | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key |
+
+Or use the CLI:
+
+```bash
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_ANON_KEY
+```
+
+<Tip>
+  Add the variables to all three environments (Production, Preview, Development) in Vercel to ensure preview deployments work correctly.
+</Tip>
+
+## Build configuration
+
+The build command is `npm run build` and the output directory is `dist`. Vercel detects this automatically from `vite.config.ts`. No custom configuration is needed.

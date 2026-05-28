@@ -1,0 +1,34 @@
+---
+title: Production Log
+description: Daily production entries linked to inventory consumption.
+---
+
+The Production Log records daily output from mining operations and connects each entry to the inventory items consumed in producing it.
+
+## Logging an entry
+
+Each production entry captures:
+
+- **Date**
+- **Product / gem type** produced
+- **Quantity** produced
+- **Inventory consumed** — which stock items were used and how much
+- **Notes** (optional)
+
+Saving an entry automatically deducts the consumed quantities from Inventory.
+
+## Editing and deleting
+
+Editing a production entry recalculates inventory adjustments. Deleting an entry reverses the inventory deduction.
+
+<Warning>
+  Deleting historical production entries affects inventory figures retroactively. Use write-offs for stock discrepancies instead.
+</Warning>
+
+## Filtering
+
+Filter the log by date range, gem type, or team member to narrow down production history for reporting purposes.
+
+## Reports
+
+Export production summaries as PDF from the [Reports](/features/reports) module.

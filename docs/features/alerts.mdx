@@ -1,0 +1,36 @@
+---
+title: Alert Rules
+description: Configurable threshold alerts for KPIs and stock levels.
+---
+
+Alert Rules let you define conditions that, when breached, surface notifications on the Dashboard and in the Notifications panel.
+
+## Creating an alert rule
+
+Each rule defines:
+
+- **Name** — a human-readable label
+- **Metric** — what to watch (e.g. inventory item quantity, revenue, expense total)
+- **Condition** — above or below a threshold
+- **Threshold value**
+- **Severity** — Info / Warning / Critical
+
+## Supported metrics
+
+| Metric | Triggers when |
+|---|---|
+| Inventory quantity | Stock for an item drops below threshold |
+| Daily revenue | Revenue for the day falls below threshold |
+| Daily expenses | Expenses for the day exceed threshold |
+| Open incidents | Number of unresolved safety incidents exceeds threshold |
+
+## Alert lifecycle
+
+1. Rule condition is met → alert is **raised**
+2. Alert appears on Dashboard and in Notifications
+3. User acknowledges or resolves the underlying issue
+4. When the condition is no longer met, the alert **auto-clears**
+
+## Managing rules
+
+Enable, disable, edit, or delete rules from the Alert Rules settings page. Disabled rules do not fire but are preserved for reuse.

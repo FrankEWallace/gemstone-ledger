@@ -1,0 +1,53 @@
+---
+title: Database Migrations
+description: Applying Supabase Postgres migrations in the correct order.
+---
+
+All database schema is managed via migration files in `supabase/migrations/`. Apply them in numeric order.
+
+## Migration list
+
+| File | Description |
+|---|---|
+| `001_initial_schema.sql` | Core tables: organisations, users, inventory, transactions |
+| `002_fix_rls_insert_policies.sql` | RLS policy corrections for insert operations |
+| `003_fix_rls_circular_deps.sql` | Resolves circular dependency in RLS policies |
+| `004_low_stock_notification_trigger.sql` | Postgres trigger for low-stock events |
+| `005_rls_audit.sql` | Audit table and RLS policies |
+| `006_phase6_schema.sql` | Team, equipment, safety, documents modules |
+| `007_audit_log.sql` | Full audit log table and triggers |
+| `008_alert_rules.sql` | Alert rules table and evaluation logic |
+| `009_phase8_schema.sql` | Supply chain, campaigns modules |
+| `010_customers_schema.sql` | Customers module |
+| `011_org_module_config.sql` | Per-organisation module visibility config |
+| `012_signup_rpc.sql` | RPC function for safe user signup flow |
+| `013_inventory_write_offs.sql` | Write-offs table and inventory adjustment logic |
+
+## Applying migrations
+
+### Via Supabase CLI (recommended)
+
+```bash
+supabase db push
+```
+
+This applies all pending migrations against your linked remote project.
+
+### Via Supabase dashboard
+
+1. Open your project in the [Supabase dashboard](https://supabase.com/dashboard)
+2. Navigate to **SQL Editor**
+3. Paste and run each migration file in order
+
+<Warning>
+  Always apply migrations in numeric order. Skipping or reordering migrations will break the schema.
+</Warning>
+
+## Local development
+
+To run a local Supabase stack:
+
+```bash
+supabase start
+supabase db reset  # applies all migrations from scratch
+```

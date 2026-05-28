@@ -1,0 +1,31 @@
+---
+title: Roles & Permissions
+description: Role-based access control per organisation.
+---
+
+Gemstone Ledger uses role-based access control (RBAC) scoped per organisation. Every user has a single role within their organisation that controls what they can see and do.
+
+## Built-in roles
+
+| Role | Description |
+|---|---|
+| **Owner** | Full access — all modules, settings, and user management |
+| **Admin** | Full access to all modules; can manage team members but not billing/org settings |
+| **Manager** | Read/write access to all operational modules; no access to Settings or Admin |
+| **Viewer** | Read-only access across all modules |
+
+## Module-level permissions
+
+Permissions are enforced at both the UI layer (components are hidden or disabled) and the database layer (Supabase RLS policies). Client-side permission checks are not the sole enforcement mechanism.
+
+## Inviting users
+
+Owners and Admins can invite new users from **Settings → Team**. An invitation email is sent; the recipient signs up and is automatically placed in the organisation with the assigned role.
+
+## Changing roles
+
+An Owner can change any member's role from **Settings → Team**. Role changes take effect immediately.
+
+<Warning>
+  There must always be at least one Owner in an organisation. You cannot demote or remove the last Owner.
+</Warning>

@@ -1,0 +1,32 @@
+---
+title: Reports
+description: PDF export for all major modules — income, expenses, inventory, production, and customers.
+---
+
+The Reports module is the central export hub. All reports generate as downloadable PDFs using `@react-pdf/renderer`.
+
+## Available reports
+
+| Report | Description |
+|---|---|
+| Income Breakdown | Revenue by category for a selected period |
+| Expense Breakdown | Expenses by category for a selected period |
+| Inventory Report | Current stock levels, values, and low-stock items |
+| Production Summary | Output by gem type for a selected period |
+| Customer Report | Revenue and transaction history per customer |
+| Safety Log | Full incident log with resolution status |
+
+## Generating a report
+
+1. Navigate to **Reports** in the sidebar.
+2. Select the report type.
+3. Set the date range or other filter parameters.
+4. Click **Generate PDF** — the file downloads immediately.
+
+## Period filtering
+
+All financial reports (Income, Expense) support date range filtering. The period defaults to the current month.
+
+## Customer reports
+
+Customer reports can also be generated directly from a customer profile page, pre-filtered to that customer.

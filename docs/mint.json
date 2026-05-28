@@ -1,0 +1,88 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Gemstone Ledger",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#7C3AED",
+    "light": "#A78BFA",
+    "dark": "#5B21B6",
+    "anchors": {
+      "from": "#7C3AED",
+      "to": "#A78BFA"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "mailto:fraeliking7@gmail.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Open App",
+    "url": "https://gemstone-ledger.vercel.app"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/FrankEWallace"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "getting-started/introduction",
+        "getting-started/quickstart",
+        "getting-started/environment-variables"
+      ]
+    },
+    {
+      "group": "Features",
+      "pages": [
+        "features/dashboard",
+        "features/inventory",
+        "features/production",
+        "features/transactions",
+        "features/customers",
+        "features/supply-chain",
+        "features/team",
+        "features/equipment",
+        "features/safety",
+        "features/documents",
+        "features/campaigns",
+        "features/reports",
+        "features/alerts"
+      ]
+    },
+    {
+      "group": "Administration",
+      "pages": [
+        "administration/roles-permissions",
+        "administration/audit-log",
+        "administration/settings"
+      ]
+    },
+    {
+      "group": "Deployment",
+      "pages": [
+        "deployment/vercel",
+        "deployment/database-migrations",
+        "deployment/offline-support"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/FrankEWallace"
+  }
+}

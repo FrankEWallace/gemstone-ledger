@@ -1,0 +1,36 @@
+---
+title: Offline Support
+description: IndexedDB-backed query persistence with background sync.
+---
+
+Gemstone Ledger is a Progressive Web App (PWA) with offline support powered by Dexie (IndexedDB) and TanStack Query's persister plugin.
+
+## How it works
+
+1. **On first load** — data is fetched from Supabase and cached in IndexedDB via the TanStack Query persister.
+2. **While offline** — the app serves cached data from IndexedDB. Users can browse all previously loaded data.
+3. **On reconnect** — background sync fires, refetching stale queries and writing any queued mutations.
+
+## What works offline
+
+- Reading any previously loaded data across all modules
+- Navigating between pages
+
+## What requires connectivity
+
+- Creating, updating, or deleting records
+- Generating and downloading PDF reports
+- Document uploads and downloads
+- Receiving real-time notifications
+
+## PWA installation
+
+Users can install Gemstone Ledger as a PWA on desktop and mobile via the browser's "Add to Home Screen" / "Install app" prompt. The installed app behaves like a native app with offline capability.
+
+## Service worker
+
+The service worker is registered via `vite-plugin-pwa` and handles:
+
+- Asset precaching for instant loads
+- Offline fallback routing
+- Background sync registration

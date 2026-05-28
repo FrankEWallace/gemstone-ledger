@@ -1,0 +1,29 @@
+---
+title: Equipment
+description: Equipment registry and maintenance tracking.
+---
+
+The Equipment module maintains a registry of all physical assets used in operations and tracks their maintenance history.
+
+## Equipment registry
+
+Each asset record includes:
+
+- Name, type, and serial number
+- Purchase date and cost
+- Status (operational / under maintenance / retired)
+- Notes
+
+## Maintenance logs
+
+Log maintenance events against any equipment item. Each log entry records:
+
+- Date of maintenance
+- Type (scheduled / repair / inspection)
+- Description of work performed
+- Cost
+- Next scheduled maintenance date
+
+## Alerts
+
+If a next-maintenance date passes without a new log entry, an alert is raised. Configure maintenance alert rules in [Alert Rules](/features/alerts).

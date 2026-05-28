@@ -1,0 +1,67 @@
+---
+title: Quickstart
+description: Get Gemstone Ledger running locally in under 5 minutes.
+---
+
+## Prerequisites
+
+- Node.js 20+ or [Bun](https://bun.sh)
+- A [Supabase](https://supabase.com) project
+
+## 1. Clone and install
+
+```bash
+git clone <repo-url>
+cd gemstone-ledger
+npm install
+# or
+bun install
+```
+
+## 2. Configure environment variables
+
+```bash
+cp .env.local.example .env.local
+```
+
+Edit `.env.local` and fill in your Supabase values:
+
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+Get these from your [Supabase dashboard](https://supabase.com/dashboard) → project → **Settings → API**.
+
+<Tip>
+  Never commit `.env.local` to version control. It's already in `.gitignore`.
+</Tip>
+
+## 3. Run database migrations
+
+Apply migrations in order using the Supabase CLI or the SQL editor in your Supabase dashboard.
+
+```bash
+supabase db push
+```
+
+Or apply each file manually from `supabase/migrations/` in numeric order. See [Database Migrations](/deployment/database-migrations) for the full list.
+
+## 4. Start the dev server
+
+```bash
+npm run dev
+```
+
+The app runs at `http://localhost:5173` by default.
+
+## Available scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start local dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run unit tests (Vitest) |
+| `npm run test:watch` | Run tests in watch mode |

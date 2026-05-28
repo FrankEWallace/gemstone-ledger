@@ -1,0 +1,41 @@
+---
+title: Environment Variables
+description: All environment variables required to run Gemstone Ledger.
+---
+
+## Required variables
+
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anonymous (public) key |
+
+Both values are available in your Supabase dashboard under **Settings → API**.
+
+## Local development
+
+Copy the example file and fill in your values:
+
+```bash
+cp .env.local.example .env.local
+```
+
+```env .env.local
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+<Warning>
+  Never expose your Supabase **service role key** in the client. Only the anon key is safe for browser use — Supabase RLS policies enforce access control.
+</Warning>
+
+## Production (Vercel)
+
+Set variables in your Vercel project dashboard under **Settings → Environment Variables**, or via the CLI:
+
+```bash
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_ANON_KEY
+```
+
+See [Vercel Deployment](/deployment/vercel) for full instructions.

@@ -1,0 +1,60 @@
+---
+title: Introduction
+description: Gemstone Ledger — a multi-tenant mining operations management SaaS for gemstone mining businesses.
+---
+
+# Gemstone Ledger
+
+Gemstone Ledger covers the full operational lifecycle of a gemstone mining business — from inventory and production logging to safety, supply chain, team management, and financial reporting.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
+    Get up and running in under 5 minutes
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="/features/dashboard">
+    Understand the KPI overview
+  </Card>
+  <Card title="Inventory" icon="boxes-stacked" href="/features/inventory">
+    Track stock, write-offs, and alerts
+  </Card>
+  <Card title="Reports" icon="file-chart-column" href="/features/reports">
+    Export PDF reports for any module
+  </Card>
+</CardGroup>
+
+## What's included
+
+| Module | Description |
+|---|---|
+| Dashboard | KPI overview — revenue, expenses, production, inventory |
+| Inventory | Stock tracking, write-offs, low-stock alerts, usage analytics |
+| Production Log | Daily entries linked to inventory consumption |
+| Transactions | Income and expense tracking with category breakdowns |
+| Customers | Profiles, per-customer expense breakdowns, customer reports |
+| Supply Chain | Suppliers, sales channels, purchase orders |
+| Team | Staff directory, shift scheduling, timesheets |
+| Equipment | Registry and maintenance tracking |
+| Safety | Incident reporting and safety log |
+| Documents | File storage and document management |
+| Campaigns | Marketing campaign tracking |
+| Reports | PDF export for all major modules |
+| Alert Rules | Configurable threshold alerts for KPIs and stock |
+| Audit Log | Full action history across the organisation |
+| Roles & Permissions | Role-based access control per organisation |
+| Offline Support | IndexedDB-backed persistence with background sync |
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + TypeScript + Vite |
+| Routing | React Router v6 |
+| UI | shadcn/ui + Radix UI + Tailwind CSS v4 |
+| Data Fetching | TanStack Query v5 |
+| Offline | Dexie (IndexedDB) + TanStack Query persister |
+| Backend | Supabase (Postgres + Auth + RLS + Edge Functions) |
+| PDF Export | @react-pdf/renderer |
+| Charts | Recharts |
+| Forms | React Hook Form + Zod |
+| PWA | vite-plugin-pwa |
+| Deployment | Vercel |
