@@ -18,4 +18,6 @@ export interface AuthContextValue {
   setActiveSite: (siteId: string) => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  /** Patch the cached profile locally without a server round-trip. */
+  setProfile: (profile: UserProfile) => void;
 }

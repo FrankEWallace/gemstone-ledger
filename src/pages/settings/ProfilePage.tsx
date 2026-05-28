@@ -20,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { isDemoMode } from "@/lib/demo";
+import type { UserProfile } from "@/lib/supabaseTypes";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ function AvatarSection({
   userId: string;
   avatarUrl: string | null;
   fullName: string | null;
-  onUploaded: (url: string) => void;
+  onUploaded: (profile: UserProfile) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -106,8 +107,8 @@ function AvatarSection({
     setUploading(true);
     try {
       const url = await uploadUserAvatar(userId, file);
-      await updateUserProfile(userId, { avatar_url: url });
-      onUploaded(url);
+      const updated = await updateUserProfile(userId, { avatar_url: url });
+      onUploaded(updated);
       toast.success("Avatar updated.");
     } catch (err) {
       toast.error((err as Error).message);
@@ -169,7 +170,7 @@ function AvatarSection({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const { user, userProfile, sites, signOut, refreshProfile } = useAuth();
+  const { user, userProfile, sites, signOut, setProfile } = useAuth();
   const queryClient = useQueryClient();
   const demo = isDemoMode();
 
@@ -192,9 +193,11 @@ export default function ProfilePage() {
         full_name: values.full_name,
         phone:     values.phone || null,
       }),
-    onSuccess: async () => {
-      await refreshProfile();
-      queryClient.invalidateQueries({ queryKey: ["userProfile", user?.id] });
+    // The update already returns the fresh row — patch the cache locally
+    // instead of refetching profile + site roles (avoids 2 round-trips).
+    onSuccess: (updated) => {
+      setProfile(updated);
+      queryClient.setQueryData(["userProfile", user?.id], updated);
       toast.success("Profile saved.");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -245,7 +248,10 @@ export default function ProfilePage() {
             userId={user!.id}
             avatarUrl={userProfile?.avatar_url ?? null}
             fullName={userProfile?.full_name ?? null}
-            onUploaded={() => refreshProfile()}
+            onUploaded={(updated) => {
+              setProfile(updated);
+              queryClient.setQueryData(["userProfile", user?.id], updated);
+            }}
           />
         )}
       </div>

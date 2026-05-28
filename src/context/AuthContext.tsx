@@ -217,6 +217,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadUserData(user.id);
   }, [user, loadUserData]);
 
+  // Patch cached profile locally — used after a mutation that already returns
+  // the updated row, avoiding a redundant full refetch (profile + site roles).
+  const setProfile = useCallback((profile: UserProfile) => {
+    setUserProfile(profile);
+  }, []);
+
   // ── Derived values ─────────────────────────────────────────────────────────
 
   const activeRole      = sites.find((s) => s.id === activeSiteId)?.role ?? null;
@@ -240,6 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setActiveSite:   () => {},
     signOut,
     refreshProfile,
+    setProfile:      () => {},
   };
 
   if (isDemoMode()) {
@@ -265,6 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setActiveSite,
         signOut,
         refreshProfile,
+        setProfile,
       }}
     >
       {children}
