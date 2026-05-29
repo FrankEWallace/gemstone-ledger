@@ -74,9 +74,20 @@ export default function Register() {
     if (!step1Data) return;
     setServerError(null);
 
+    // Org/profile/site/role are provisioned server-side by the on_auth_user_created
+    // trigger (public.handle_new_user), which reads this metadata. This guarantees
+    // setup runs atomically with user creation — even when email confirmation is
+    // pending and there is no client session to authorize an RPC call.
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: step1Data.email,
       password: step1Data.password,
+      options: {
+        data: {
+          full_name: step1Data.fullName,
+          org_name: values.orgName,
+          org_slug: slugify(values.orgName),
+        },
+      },
     });
 
     if (authError || !authData.user) {
@@ -84,20 +95,7 @@ export default function Register() {
       return;
     }
 
-    const userId = authData.user.id;
     const needsConfirmation = !authData.session;
-
-    const { error: setupError } = await supabase.rpc("handle_new_user_signup", {
-      p_user_id: userId,
-      p_full_name: step1Data.fullName,
-      p_org_name: values.orgName,
-      p_org_slug: slugify(values.orgName),
-    });
-
-    if (setupError) {
-      setServerError(setupError.message);
-      return;
-    }
 
     if (needsConfirmation) {
       navigate("/check-email", { replace: true });

@@ -1,5 +1,5 @@
 import type { Session, User } from "@supabase/supabase-js";
-import type { UserProfile, Site, UserRole } from "@/lib/supabaseTypes";
+import type { UserProfile, Site, UserRole, OrgRole } from "@/lib/supabaseTypes";
 
 export interface SiteWithRole extends Site {
   role: UserRole;
@@ -10,6 +10,8 @@ export interface AuthContextValue {
   user: User | null;
   userProfile: UserProfile | null;
   orgId: string | null;
+  /** Org-level role: owner | admin | member. Distinct from per-site `activeRole`. */
+  orgRole: OrgRole | null;
   sites: SiteWithRole[];
   activeSiteId: string | null;
   activeRole: UserRole | null;

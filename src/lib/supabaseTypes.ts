@@ -1231,8 +1231,10 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          notification_prefs: Json
           onboarding_completed: boolean
           org_id: string | null
+          org_role: string
           phone: string | null
         }
         Insert: {
@@ -1240,8 +1242,10 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          notification_prefs?: Json
           onboarding_completed?: boolean
           org_id?: string | null
+          org_role?: string
           phone?: string | null
         }
         Update: {
@@ -1249,8 +1253,10 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          notification_prefs?: Json
           onboarding_completed?: boolean
           org_id?: string | null
+          org_role?: string
           phone?: string | null
         }
         Relationships: [
@@ -1506,12 +1512,146 @@ export const Constants = {
   },
 } as const
 
-// Convenience row-type aliases
-export type InventoryItem      = Database["public"]["Tables"]["inventory_items"]["Row"]
-export type InventoryWriteOff  = Database["public"]["Tables"]["inventory_write_offs"]["Row"]
-export type Transaction        = Database["public"]["Tables"]["transactions"]["Row"]
-export type TransactionType    = Transaction["type"]
-export type TransactionStatus  = Transaction["status"]
-export type Customer           = Database["public"]["Tables"]["customers"]["Row"]
-A new version of Supabase CLI is available: v2.95.4 (currently installed v2.90.0)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+// ── Convenience row types ─────────────────────────────────────────────────────
+export type Organization      = Database["public"]["Tables"]["organizations"]["Row"]
+export type Site              = Database["public"]["Tables"]["sites"]["Row"]
+export type UserProfile       = Database["public"]["Tables"]["user_profiles"]["Row"]
+export type UserSiteRole      = Database["public"]["Tables"]["user_site_roles"]["Row"]
+export type Customer          = Database["public"]["Tables"]["customers"]["Row"]
+export type CustomerType      = Customer["type"]
+export type CustomerStatus    = Customer["status"]
+export type ExpenseCategory   = Database["public"]["Tables"]["expense_categories"]["Row"]
+export type Supplier          = Database["public"]["Tables"]["suppliers"]["Row"]
+export type InventoryItem     = Database["public"]["Tables"]["inventory_items"]["Row"]
+export type InventoryWriteOff = Database["public"]["Tables"]["inventory_write_offs"]["Row"]
+export type Transaction       = Database["public"]["Tables"]["transactions"]["Row"]
+export type Channel           = Database["public"]["Tables"]["channels"]["Row"]
+export type Order             = Database["public"]["Tables"]["orders"]["Row"]
+export type OrderItem         = Database["public"]["Tables"]["order_items"]["Row"]
+export type Worker            = Database["public"]["Tables"]["workers"]["Row"]
+export type ShiftRecord       = Database["public"]["Tables"]["shift_records"]["Row"]
+export type Message           = Database["public"]["Tables"]["messages"]["Row"]
+export type Campaign          = Database["public"]["Tables"]["campaigns"]["Row"]
+export type Notification      = Database["public"]["Tables"]["notifications"]["Row"]
+export type IntegrationConfig = Database["public"]["Tables"]["integration_configs"]["Row"]
+export type Equipment         = Database["public"]["Tables"]["equipment"]["Row"]
+export type SafetyIncident    = Database["public"]["Tables"]["safety_incidents"]["Row"]
+export type PlannedShift      = Database["public"]["Tables"]["planned_shifts"]["Row"]
+export type SiteDocument      = Database["public"]["Tables"]["site_documents"]["Row"]
+
+// ── User notification preferences (user_profiles.notification_prefs JSONB) ──────
+// Stored as JSONB so keys can be added without a migration. Read through
+// `resolveNotificationPrefs()` in profile.service so defaults are always applied.
+export interface NotificationPrefs {
+  /** Master switch — receive notification emails at all. */
+  email_enabled: boolean
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  email_enabled: true,
+}
+
+// ── Derived union / field types ───────────────────────────────────────────────
+export type OrgRole           = UserProfile["org_role"]
+export type UserRole          = UserSiteRole["role"]
+export type SiteStatus        = Site["status"]
+export type TransactionType   = Transaction["type"]
+export type TransactionStatus = Transaction["status"]
+export type TransactionSource = NonNullable<Transaction["source"]>
+export type OrderStatus       = Order["status"]
+export type WorkerStatus      = Worker["status"]
+export type MessageChannel    = Message["channel"]
+export type CampaignStatus    = Campaign["status"]
+export type NotificationType  = Notification["type"]
+export type EquipmentStatus   = Equipment["status"]
+export type IncidentSeverity  = SafetyIncident["severity"]
+export type SafetySeverity    = SafetyIncident["severity"]
+export type IncidentType      = SafetyIncident["type"]
+
+// ── Team / user management types ──────────────────────────────────────────────
+export interface OrgUserSiteRole {
+  site_id: string
+  site_name: string
+  role: UserRole
+}
+
+export interface OrgUser {
+  id: string
+  full_name: string | null
+  email: string | null
+  avatar_url: string | null
+  created_at: string
+  org_role?: OrgRole
+  site_roles: OrgUserSiteRole[]
+}
+
+// ── Phase 8 types ─────────────────────────────────────────────────────────────
+export interface KpiTarget {
+  id: string
+  site_id: string
+  month: string
+  revenue_target: number | null
+  expense_budget: number | null
+  shift_target: number | null
+  equipment_uptime_pct: number | null
+  ore_tonnes_target: number | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductionLog {
+  id: string
+  site_id: string
+  customer_id: string | null
+  log_date: string
+  ore_tonnes: number | null
+  waste_tonnes: number | null
+  grade_g_t: number | null
+  water_m3: number | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ── Audit log ─────────────────────────────────────────────────────────────────
+export interface AuditLog {
+  id: string
+  site_id: string | null
+  actor_id: string | null
+  entity_type: string
+  entity_id: string | null
+  action: "create" | "update" | "delete"
+  old_data: Record<string, unknown> | null
+  new_data: Record<string, unknown> | null
+  created_at: string
+}
+
+// ── Customer summary report type ──────────────────────────────────────────────
+export interface CustomerSummary {
+  customerId: string
+  customerName: string
+  customerType: "external" | "internal"
+  totalIncome: number
+  totalExpenses: number
+  netProfit: number
+  transactionCount: number
+  expensesByCategory: { category: string; total: number }[]
+  monthlyTrend?: { month: string; income: number; expenses: number }[]
+}
+
+// ── Contract summary ──────────────────────────────────────────────────────────
+export interface ContractSummary {
+  totalContractDays: number
+  billedDays: number
+  unbilledDays: number
+  contractValue: number
+  billedAmount: number
+  collectedAmount: number
+  pendingAmount: number
+  progressPct: number
+  daysRemaining: number
+  isExpired: boolean
+  isExpiringSoon: boolean
+}

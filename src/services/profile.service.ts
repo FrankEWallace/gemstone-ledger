@@ -1,12 +1,27 @@
 import { supabase } from "@/lib/supabase";
 import { isDemoMode } from "@/lib/demo";
-import type { UserProfile } from "@/lib/supabaseTypes";
+import {
+  DEFAULT_NOTIFICATION_PREFS,
+  type NotificationPrefs,
+  type UserProfile,
+} from "@/lib/supabaseTypes";
 
 export type ProfileUpdatePayload = {
   full_name?: string | null;
   phone?: string | null;
   avatar_url?: string | null;
+  notification_prefs?: NotificationPrefs;
 };
+
+/**
+ * Read a profile's notification preferences, applying defaults for any key
+ * that's missing or for an entirely absent/legacy blob. Always returns a
+ * complete object so the UI never has to null-check individual toggles.
+ */
+export function resolveNotificationPrefs(profile: UserProfile | null): NotificationPrefs {
+  const raw = (profile?.notification_prefs ?? null) as Partial<NotificationPrefs> | null;
+  return { ...DEFAULT_NOTIFICATION_PREFS, ...(raw ?? {}) };
+}
 
 export async function updateUserProfile(
   userId: string,

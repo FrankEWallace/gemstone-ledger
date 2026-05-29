@@ -50,6 +50,7 @@ export const DEMO_SITE = {
 export const DEMO_USER_PROFILE = {
   id: DEMO_USER_ID, org_id: DEMO_ORG_ID, full_name: "Alex Demo", avatar_url: null,
   phone: "+61 400 000 000", created_at: tsAgo(8760), onboarding_completed: true,
+  org_role: "owner",
 };
 
 // ─── Workers ─────────────────────────────────────────────────────────────────

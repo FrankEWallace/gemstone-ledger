@@ -3,10 +3,35 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Phone, Lock, Shield, Upload, LogOut, Camera, Mail } from "lucide-react";
+import {
+  User,
+  Phone,
+  Lock,
+  Shield,
+  Camera,
+  Mail,
+  LogOut,
+  Sun,
+  Moon,
+  Monitor,
+  Bell,
+  AlertTriangle,
+  Copy,
+  Check,
+  Pencil,
+  Calendar,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { updateUserProfile, uploadUserAvatar, changePassword, changeEmail } from "@/services/profile.service";
+import { useTheme } from "@/context/ThemeContext";
+import {
+  updateUserProfile,
+  uploadUserAvatar,
+  changePassword,
+  changeEmail,
+  resolveNotificationPrefs,
+} from "@/services/profile.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,10 +42,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardAction,
+} from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { isDemoMode } from "@/lib/demo";
-import type { UserProfile } from "@/lib/supabaseTypes";
+import type { UserProfile, OrgRole } from "@/lib/supabaseTypes";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -47,17 +82,41 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 type EmailFormValues = z.infer<typeof emailSchema>;
 
-// ─── Role badge ────────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────────
 
-const ROLE_LABELS: Record<string, string> = {
-  admin:        "Admin",
+const SITE_ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
   site_manager: "Site Manager",
-  worker:       "Worker",
-  viewer:       "Viewer",
+  worker: "Worker",
+  viewer: "Viewer",
 };
 
-function RoleBadge({ role }: { role: string }) {
-  const label = ROLE_LABELS[role] ?? role;
+const ORG_ROLE_LABELS: Record<OrgRole, string> = {
+  owner: "Owner",
+  admin: "Org Admin",
+  member: "Member",
+};
+
+function initialsOf(name: string | null): string {
+  return (name ?? "?")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function formatDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function SiteRoleBadge({ role }: { role: string }) {
+  const label = SITE_ROLE_LABELS[role] ?? role;
   const className =
     role === "admin"
       ? "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300"
@@ -71,35 +130,65 @@ function RoleBadge({ role }: { role: string }) {
   );
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+/** Read-only label/value row used in view mode. */
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-2.5">
+      <span className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </span>
+      <span className="text-sm font-medium text-right break-words">{value}</span>
+    </div>
+  );
+}
 
-function AvatarSection({
+// ─── Identity card ──────────────────────────────────────────────────────────────
+
+function IdentityCard({
   userId,
-  avatarUrl,
-  fullName,
+  profile,
+  email,
+  orgRole,
+  memberSince,
+  lastSignIn,
+  demo,
   onUploaded,
+  onSignOut,
 }: {
   userId: string;
-  avatarUrl: string | null;
-  fullName: string | null;
+  profile: UserProfile | null;
+  email: string | null;
+  orgRole: OrgRole | null;
+  memberSince: string | null;
+  lastSignIn: string | null;
+  demo: boolean;
   onUploaded: (profile: UserProfile) => void;
+  onSignOut: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const initials = (fullName ?? "?")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const fullName = profile?.full_name ?? null;
+  const src = preview ?? profile?.avatar_url ?? undefined;
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB.");
+      return;
+    }
 
-    // Local preview
     const reader = new FileReader();
     reader.onload = (ev) => setPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
@@ -118,87 +207,217 @@ function AvatarSection({
     }
   }
 
-  const src = preview ?? avatarUrl;
-
   return (
-    <div className="flex items-center gap-5">
-      <div className="relative shrink-0">
-        <div className="h-20 w-20 rounded-full border-2 border-border overflow-hidden bg-muted flex items-center justify-center text-xl font-semibold text-muted-foreground">
-          {src ? (
-            <img src={src} alt="Avatar" className="h-full w-full object-cover" />
-          ) : (
-            initials
+    <Card>
+      <CardContent className="flex flex-col gap-5 pt-6 sm:flex-row sm:items-center">
+        {/* Avatar */}
+        <div className="relative shrink-0 self-start sm:self-center">
+          <Avatar className="h-20 w-20 border-2 border-border">
+            {src && <AvatarImage src={src} alt={fullName ?? "Avatar"} className="object-cover" />}
+            <AvatarFallback className="text-xl font-semibold">{initialsOf(fullName)}</AvatarFallback>
+          </Avatar>
+          {!demo && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card shadow transition-colors hover:bg-muted disabled:opacity-50"
+              title="Change photo"
+              aria-label="Change photo"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </button>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card shadow hover:bg-muted transition-colors disabled:opacity-50"
-          title="Change avatar"
-        >
-          <Camera className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div>
-        <p className="text-sm font-medium">{fullName ?? "—"}</p>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 flex items-center gap-1"
-        >
-          <Upload className="h-3 w-3" />
-          {uploading ? "Uploading…" : "Change photo"}
-        </button>
-        <p className="text-xs text-muted-foreground mt-0.5">PNG, JPG · Max 2MB</p>
-        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-          Requires <code>user-avatars</code> bucket in Supabase Storage.
-        </p>
-      </div>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/png,image/jpeg"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-    </div>
+
+        {/* Identity */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-xl font-bold truncate">{fullName ?? "Unnamed user"}</h2>
+            {orgRole && (
+              <Badge variant={orgRole === "owner" ? "default" : "secondary"}>
+                {ORG_ROLE_LABELS[orgRole]}
+              </Badge>
+            )}
+          </div>
+          <div className="mt-1 flex flex-col gap-0.5 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5 truncate">
+              <Mail className="h-3.5 w-3.5 shrink-0" />
+              {email ?? "—"}
+            </span>
+            {profile?.phone && (
+              <span className="flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5 shrink-0" />
+                {profile.phone}
+              </span>
+            )}
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 shrink-0" />
+              Member since {formatDate(memberSince)}
+            </span>
+            {lastSignIn && (
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                Last sign-in {formatDate(lastSignIn)}
+              </span>
+            )}
+          </div>
+          {uploading && <p className="mt-2 text-xs text-muted-foreground">Uploading photo…</p>}
+        </div>
+
+        {/* Sign out */}
+        <div className="shrink-0 self-start sm:self-center">
+          <Button variant="outline" size="sm" onClick={onSignOut}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign out
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Account card (inline edit) ──────────────────────────────────────────────────
 
-export default function ProfilePage() {
-  const { user, userProfile, sites, signOut, setProfile } = useAuth();
-  const queryClient = useQueryClient();
-  const demo = isDemoMode();
+function AccountCard({
+  userId,
+  profile,
+  demo,
+  onSaved,
+}: {
+  userId: string;
+  profile: UserProfile | null;
+  demo: boolean;
+  onSaved: (profile: UserProfile) => void;
+}) {
+  const [editing, setEditing] = useState(false);
 
-  const profileForm = useForm<ProfileFormValues>({
+  const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     values: {
-      full_name: userProfile?.full_name ?? "",
-      phone:     userProfile?.phone ?? "",
+      full_name: profile?.full_name ?? "",
+      phone: profile?.phone ?? "",
     },
   });
 
+  const { mutate: save, isPending } = useMutation({
+    mutationFn: (values: ProfileFormValues) =>
+      updateUserProfile(userId, {
+        full_name: values.full_name,
+        phone: values.phone || null,
+      }),
+    onSuccess: (updated) => {
+      onSaved(updated);
+      setEditing(false);
+      toast.success("Profile saved.");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <User className="h-4 w-4 text-muted-foreground" />
+          Account
+        </CardTitle>
+        <CardDescription>Your name and contact number.</CardDescription>
+        {!editing && (
+          <CardAction>
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)} disabled={demo}>
+              <Pencil className="mr-2 h-3.5 w-3.5" />
+              Edit
+            </Button>
+          </CardAction>
+        )}
+      </CardHeader>
+      <CardContent>
+        {!editing ? (
+          <div className="divide-y divide-border">
+            <InfoRow icon={User} label="Full name" value={profile?.full_name ?? "—"} />
+            <InfoRow icon={Phone} label="Phone" value={profile?.phone || "Not set"} />
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit((v) => save(v))} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Jane Smith" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone (optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+1 555 000 0000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    form.reset();
+                    setEditing(false);
+                  }}
+                  disabled={isPending}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Security card ────────────────────────────────────────────────────────────
+
+function SecurityCard({ email, demo }: { email: string | null; demo: boolean }) {
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [editingPassword, setEditingPassword] = useState(false);
+
+  const emailForm = useForm<EmailFormValues>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: { newEmail: "" },
+  });
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
     defaultValues: { newPassword: "", confirmPassword: "" },
   });
 
-  const { mutate: saveProfile, isPending: savingProfile } = useMutation({
-    mutationFn: (values: ProfileFormValues) =>
-      updateUserProfile(user!.id, {
-        full_name: values.full_name,
-        phone:     values.phone || null,
-      }),
-    // The update already returns the fresh row — patch the cache locally
-    // instead of refetching profile + site roles (avoids 2 round-trips).
-    onSuccess: (updated) => {
-      setProfile(updated);
-      queryClient.setQueryData(["userProfile", user?.id], updated);
-      toast.success("Profile saved.");
+  const { mutate: updateEmail, isPending: savingEmail } = useMutation({
+    mutationFn: (values: EmailFormValues) => changeEmail(values.newEmail),
+    onSuccess: () => {
+      emailForm.reset();
+      setEditingEmail(false);
+      toast.success("Confirmation sent — check your new email address to confirm the change.");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -207,230 +426,239 @@ export default function ProfilePage() {
     mutationFn: (values: PasswordFormValues) => changePassword(values.newPassword),
     onSuccess: () => {
       passwordForm.reset();
+      setEditingPassword(false);
       toast.success("Password updated.");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const emailForm = useForm<EmailFormValues>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: { newEmail: "" },
-  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Lock className="h-4 w-4 text-muted-foreground" />
+          Security
+        </CardTitle>
+        <CardDescription>Manage your sign-in email and password.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Email */}
+        <div>
+          {!editingEmail ? (
+            <div className="flex items-center justify-between gap-4">
+              <InfoRow icon={Mail} label="Email" value={email ?? "—"} />
+              <Button variant="outline" size="sm" onClick={() => setEditingEmail(true)} disabled={demo}>
+                Change
+              </Button>
+            </div>
+          ) : (
+            <Form {...emailForm}>
+              <form onSubmit={emailForm.handleSubmit((v) => updateEmail(v))} className="space-y-3">
+                <FormField
+                  control={emailForm.control}
+                  name="newEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Email Address</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="new@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <p className="text-xs text-muted-foreground">
+                  A confirmation link is sent to the new address — the change takes effect after you click it.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      emailForm.reset();
+                      setEditingEmail(false);
+                    }}
+                    disabled={savingEmail}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={savingEmail}>
+                    {savingEmail ? "Sending…" : "Send Confirmation"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
+        </div>
 
-  const { mutate: updateEmail, isPending: savingEmail } = useMutation({
-    mutationFn: (values: EmailFormValues) => changeEmail(values.newEmail),
-    onSuccess: () => {
-      emailForm.reset();
-      toast.success("Confirmation sent — check your new email address to confirm the change.");
+        <div className="h-px bg-border" />
+
+        {/* Password */}
+        <div>
+          {!editingPassword ? (
+            <div className="flex items-center justify-between gap-4">
+              <InfoRow icon={Lock} label="Password" value="••••••••" />
+              <Button variant="outline" size="sm" onClick={() => setEditingPassword(true)} disabled={demo}>
+                Change
+              </Button>
+            </div>
+          ) : (
+            <Form {...passwordForm}>
+              <form onSubmit={passwordForm.handleSubmit((v) => updatePassword(v))} className="space-y-3">
+                <FormField
+                  control={passwordForm.control}
+                  name="newPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Min. 8 characters" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={passwordForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Repeat new password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <p className="text-xs text-muted-foreground">You'll remain signed in on this device.</p>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      passwordForm.reset();
+                      setEditingPassword(false);
+                    }}
+                    disabled={savingPassword}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={savingPassword}>
+                    {savingPassword ? "Updating…" : "Update Password"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Preferences card ────────────────────────────────────────────────────────────
+
+const THEME_OPTIONS = [
+  { value: "light" as const, label: "Light", icon: Sun },
+  { value: "dark" as const, label: "Dark", icon: Moon },
+  { value: "system" as const, label: "System", icon: Monitor },
+];
+
+function PreferencesCard({
+  userId,
+  profile,
+  demo,
+  onSaved,
+}: {
+  userId: string;
+  profile: UserProfile | null;
+  demo: boolean;
+  onSaved: (profile: UserProfile) => void;
+}) {
+  const { theme, setTheme } = useTheme();
+  const prefs = resolveNotificationPrefs(profile);
+
+  const { mutate: saveEmailPref, isPending } = useMutation({
+    mutationFn: (email_enabled: boolean) =>
+      updateUserProfile(userId, { notification_prefs: { ...prefs, email_enabled } }),
+    onSuccess: (updated) => {
+      onSaved(updated);
+      toast.success("Preferences saved.");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   return (
-    <div className="p-4 lg:p-6 space-y-8 max-w-2xl mx-auto">
-      <h1 className="font-display text-2xl font-bold">My Profile</h1>
-
-      {/* Avatar */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">Photo</h2>
-        </div>
-        {demo ? (
-          <div className="flex items-center gap-4">
-            <div className="h-20 w-20 rounded-full border-2 border-border bg-muted flex items-center justify-center text-xl font-semibold text-muted-foreground">
-              DM
-            </div>
-            <p className="text-sm text-muted-foreground">Avatar upload is disabled in demo mode.</p>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Preferences</CardTitle>
+        <CardDescription>Appearance and notifications.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Theme */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">Theme</p>
+            <p className="text-sm text-muted-foreground">Choose how the app looks.</p>
           </div>
-        ) : (
-          <AvatarSection
-            userId={user!.id}
-            avatarUrl={userProfile?.avatar_url ?? null}
-            fullName={userProfile?.full_name ?? null}
-            onUploaded={(updated) => {
-              setProfile(updated);
-              queryClient.setQueryData(["userProfile", user?.id], updated);
-            }}
+          <div className="inline-flex rounded-lg border border-border p-0.5">
+            {THEME_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setTheme(opt.value)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  theme === opt.value
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-pressed={theme === opt.value}
+              >
+                <opt.icon className="h-3.5 w-3.5" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="h-px bg-border" />
+
+        {/* Email notifications */}
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Bell className="h-3.5 w-3.5 text-muted-foreground" />
+              Email notifications
+            </p>
+            <p className="text-sm text-muted-foreground">Receive alert and report emails.</p>
+          </div>
+          <Switch
+            checked={prefs.email_enabled}
+            disabled={demo || isPending}
+            onCheckedChange={(checked) => saveEmailPref(checked)}
+            aria-label="Email notifications"
           />
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Personal info */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">Personal Information</h2>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-        {/* Email — read-only display */}
-        <div className="mb-4">
-          <label className="text-sm font-medium leading-none">Current Email</label>
-          <div className="mt-1.5 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-            {user?.email ?? "—"}
-          </div>
-        </div>
+// ─── Sites & roles card ──────────────────────────────────────────────────────────
 
-        <Form {...profileForm}>
-          <form
-            onSubmit={profileForm.handleSubmit((v) => saveProfile(v))}
-            className="space-y-4"
-          >
-            <FormField
-              control={profileForm.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Jane Smith" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={profileForm.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    <span className="flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                      Phone
-                      <span className="text-muted-foreground font-normal">(optional)</span>
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input placeholder="+1 555 000 0000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end">
-              <Button type="submit" disabled={savingProfile || demo}>
-                {savingProfile ? "Saving…" : "Save Changes"}
-              </Button>
-            </div>
-            {demo && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 text-right">
-                Profile edits are disabled in demo mode.
-              </p>
-            )}
-          </form>
-        </Form>
-      </div>
-
-      <Separator />
-
-      {/* Password */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Lock className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">Change Password</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Choose a new password. You'll remain signed in on this device.
-        </p>
-        <Form {...passwordForm}>
-          <form
-            onSubmit={passwordForm.handleSubmit((v) => updatePassword(v))}
-            className="space-y-4"
-          >
-            <FormField
-              control={passwordForm.control}
-              name="newPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Min. 8 characters" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={passwordForm.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Repeat new password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end">
-              <Button type="submit" variant="outline" disabled={savingPassword || demo}>
-                {savingPassword ? "Updating…" : "Update Password"}
-              </Button>
-            </div>
-            {demo && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 text-right">
-                Password changes are disabled in demo mode.
-              </p>
-            )}
-          </form>
-        </Form>
-      </div>
-
-      <Separator />
-
-      {/* Change email */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Mail className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">Change Email</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Enter a new email address. A confirmation link will be sent to the new address — the change takes effect after you click it.
-        </p>
-        <Form {...emailForm}>
-          <form onSubmit={emailForm.handleSubmit((v) => updateEmail(v))} className="space-y-4">
-            <FormField
-              control={emailForm.control}
-              name="newEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Email Address</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="new@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end">
-              <Button type="submit" variant="outline" disabled={savingEmail || demo}>
-                {savingEmail ? "Sending…" : "Send Confirmation"}
-              </Button>
-            </div>
-            {demo && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 text-right">
-                Email changes are disabled in demo mode.
-              </p>
-            )}
-          </form>
-        </Form>
-      </div>
-
-      <Separator />
-
-      {/* Sites & roles */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
+function SitesRolesCard({ sites }: { sites: { id: string; name: string; location: string | null; role: string }[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
           <Shield className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">Sites & Roles</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Your access level on each site you belong to. Contact an admin to change roles.
-        </p>
+          Sites & Roles
+        </CardTitle>
+        <CardDescription>Your access level on each site. Contact an admin to change roles.</CardDescription>
+      </CardHeader>
+      <CardContent>
         {sites.length === 0 ? (
           <p className="text-sm text-muted-foreground">No site assignments found.</p>
         ) : (
@@ -438,37 +666,127 @@ export default function ProfilePage() {
             {sites.map((site) => (
               <div
                 key={site.id}
-                className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+                className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3"
               >
-                <div>
-                  <p className="text-sm font-medium">{site.name}</p>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{site.name}</p>
                   {site.location && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{site.location}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{site.location}</p>
                   )}
                 </div>
-                <RoleBadge role={site.role} />
+                <SiteRoleBadge role={site.role} />
               </div>
             ))}
           </div>
         )}
-      </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-      <Separator />
+// ─── Danger zone card ────────────────────────────────────────────────────────────
 
-      {/* Sign out */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <LogOut className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">Session</h2>
+function DangerZoneCard({ userId }: { userId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function copyId() {
+    navigator.clipboard.writeText(userId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  return (
+    <Card className="border-destructive/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base text-destructive">
+          <AlertTriangle className="h-4 w-4" />
+          Danger Zone
+        </CardTitle>
+        <CardDescription>Irreversible account actions. These require backend setup and are not yet enabled.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
+          <div>
+            <p className="text-sm font-medium">Leave organization</p>
+            <p className="text-sm text-muted-foreground">Remove yourself from this organization.</p>
+          </div>
+          <Button variant="outline" size="sm" disabled title="Requires backend setup">
+            Leave
+          </Button>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Sign out of FW Mining OS on this device.
-        </p>
-        <Button variant="destructive" onClick={signOut}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-destructive/40 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-destructive">Delete account</p>
+            <p className="text-sm text-muted-foreground">Permanently delete your account and data.</p>
+          </div>
+          <Button variant="destructive" size="sm" disabled title="Requires backend setup">
+            Delete
+          </Button>
+        </div>
+        <button
+          type="button"
+          onClick={copyId}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          title="Copy user ID"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          <span className="font-mono">{userId}</span>
+        </button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function ProfilePage() {
+  const { user, userProfile, sites, orgRole, signOut, setProfile } = useAuth();
+  const queryClient = useQueryClient();
+  const demo = isDemoMode();
+
+  // Single place to push a freshly-returned profile into context + query cache.
+  function applyProfile(updated: UserProfile) {
+    setProfile(updated);
+    queryClient.setQueryData(["userProfile", user?.id], updated);
+  }
+
+  const userId = user!.id;
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-6 p-4 lg:p-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold">My Profile</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Manage your account, security, and preferences.</p>
       </div>
+
+      <IdentityCard
+        userId={userId}
+        profile={userProfile}
+        email={user?.email ?? null}
+        orgRole={orgRole}
+        memberSince={user?.created_at ?? null}
+        lastSignIn={user?.last_sign_in_at ?? null}
+        demo={demo}
+        onUploaded={applyProfile}
+        onSignOut={signOut}
+      />
+
+      {demo && (
+        <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-400">
+          You're in demo mode — profile changes are disabled.
+        </p>
+      )}
+
+      <AccountCard userId={userId} profile={userProfile} demo={demo} onSaved={applyProfile} />
+
+      <SecurityCard email={user?.email ?? null} demo={demo} />
+
+      <PreferencesCard userId={userId} profile={userProfile} demo={demo} onSaved={applyProfile} />
+
+      <SitesRolesCard sites={sites} />
+
+      <DangerZoneCard userId={userId} />
     </div>
   );
 }
