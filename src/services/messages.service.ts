@@ -35,6 +35,8 @@ export async function sendMessage(
   content: string,
   channel: MessageChannel
 ): Promise<Message> {
+  if (isDemoMode())
+    throw new Error("Sending messages is not available in demo mode.");
   if (isRestActive())
     return restPost<Message>("/messages", {
       site_id: siteId,

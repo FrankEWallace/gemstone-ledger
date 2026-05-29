@@ -5,7 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pickaxe, Loader2, FlaskConical } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { enterDemoMode } from "@/lib/demo";
+import { enterDemoMode, exitDemoMode } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,9 @@ export default function Login() {
     if (error) {
       setServerError(error.message);
     } else {
+      // A real sign-in always wins over a leftover demo flag — otherwise the
+      // app would keep showing sample data and silently block every write.
+      exitDemoMode();
       // Full page reload instead of a SPA navigation — guarantees the JS module
       // graph, React Query cache, and any service worker state all start fresh
       // for the newly authenticated user. Prevents partially-hydrated UI.

@@ -13,6 +13,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { exitDemoMode } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,6 +95,9 @@ export default function Register() {
       setServerError(authError?.message ?? "Sign up failed");
       return;
     }
+
+    // A new real account always wins over a leftover demo flag.
+    exitDemoMode();
 
     const needsConfirmation = !authData.session;
 

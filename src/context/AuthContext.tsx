@@ -124,6 +124,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         log.info(`onAuthStateChange: ${event}`, session ? `user=${session.user.email}` : "no session");
 
+        // Auto-heal a stuck demo flag: if a real session is present alongside
+        // the demo flag (e.g. user tapped "Try Demo" then later signed in), the
+        // real session wins. Without this the app keeps rendering sample data
+        // and silently blocks every write. Reload once so isDemoMode() is false
+        // on the next pass — exitDemoMode() makes this self-terminating.
+        if (session?.user && isDemoMode()) {
+          exitDemoMode();
+          window.location.reload();
+          return;
+        }
+
         if (event === "INITIAL_SESSION") {
           // Startup check — fires once, immediately after subscription is set up.
           // Treat exactly like a getSession() call: resolve initial loading state.
