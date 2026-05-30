@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +8,6 @@ import {
   Phone,
   Lock,
   Shield,
-  Camera,
   Mail,
   LogOut,
   Sun,
@@ -21,17 +20,28 @@ import {
   Pencil,
   Calendar,
   Clock,
+  Shuffle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 import {
   updateUserProfile,
-  uploadUserAvatar,
   changePassword,
   changeEmail,
   resolveNotificationPrefs,
 } from "@/services/profile.service";
+import {
+  avatarSrc,
+  renderAvatar,
+  parseAvatarConfig,
+  defaultAvatarConfig,
+  serializeAvatarConfig,
+  randomSeed,
+  AVATAR_STYLES,
+  AVATAR_STYLE_LABELS,
+  type AvatarStyle,
+} from "@/lib/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -51,6 +61,14 @@ import {
   CardAction,
 } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -153,6 +171,128 @@ function InfoRow({
 
 // ─── Identity card ──────────────────────────────────────────────────────────────
 
+/** Modal for choosing an illustrated avatar: pick a style, shuffle for new
+ *  options, select one, save. Persists a { style, seed } recipe — no upload. */
+function AvatarPicker({
+  userId,
+  profile,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  userId: string;
+  profile: UserProfile | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: (profile: UserProfile) => void;
+}) {
+  const current = parseAvatarConfig(profile?.avatar_url) ?? defaultAvatarConfig(userId);
+  const [style, setStyle] = useState<AvatarStyle>(current.style);
+  const [selectedSeed, setSelectedSeed] = useState(current.seed);
+  // The current seed is always pinned first so the active choice never scrolls away.
+  const [seeds, setSeeds] = useState<string[]>(() => [
+    current.seed,
+    ...Array.from({ length: 7 }, () => randomSeed()),
+  ]);
+
+  // Re-sync when re-opened against the latest saved profile.
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      const cfg = parseAvatarConfig(profile?.avatar_url) ?? defaultAvatarConfig(userId);
+      setStyle(cfg.style);
+      setSelectedSeed(cfg.seed);
+      setSeeds([cfg.seed, ...Array.from({ length: 7 }, () => randomSeed())]);
+    }
+    onOpenChange(next);
+  }
+
+  function shuffle() {
+    setSeeds([selectedSeed, ...Array.from({ length: 7 }, () => randomSeed())]);
+  }
+
+  const { mutate: save, isPending } = useMutation({
+    mutationFn: () =>
+      updateUserProfile(userId, {
+        avatar_url: serializeAvatarConfig({ style, seed: selectedSeed }),
+      }),
+    onSuccess: (updated) => {
+      onSaved(updated);
+      onOpenChange(false);
+      toast.success("Avatar updated.");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Choose your avatar</DialogTitle>
+          <DialogDescription>Pick a style, then choose a character.</DialogDescription>
+        </DialogHeader>
+
+        {/* Style selector */}
+        <div className="inline-flex self-start rounded-lg border border-border p-0.5">
+          {AVATAR_STYLES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStyle(s)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                style === s
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-pressed={style === s}
+            >
+              {AVATAR_STYLE_LABELS[s]}
+            </button>
+          ))}
+        </div>
+
+        {/* Options grid */}
+        <div className="grid grid-cols-4 gap-3">
+          {seeds.map((seed) => {
+            const active = seed === selectedSeed;
+            return (
+              <button
+                key={seed}
+                type="button"
+                onClick={() => setSelectedSeed(seed)}
+                className={cn(
+                  "rounded-full p-0.5 transition-colors",
+                  active ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:bg-muted"
+                )}
+                aria-label="Select avatar"
+                aria-pressed={active}
+              >
+                <img
+                  src={renderAvatar({ style, seed })}
+                  alt=""
+                  className="h-14 w-14 rounded-full"
+                />
+              </button>
+            );
+          })}
+        </div>
+
+        <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
+          <Button type="button" variant="outline" onClick={shuffle} disabled={isPending}>
+            <Shuffle className="mr-2 h-4 w-4" />
+            Shuffle
+          </Button>
+          <Button type="button" onClick={() => save()} disabled={isPending}>
+            {isPending ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Identity card ──────────────────────────────────────────────────────────────
+
 function IdentityCard({
   userId,
   profile,
@@ -161,7 +301,7 @@ function IdentityCard({
   memberSince,
   lastSignIn,
   demo,
-  onUploaded,
+  onSaved,
   onSignOut,
 }: {
   userId: string;
@@ -171,41 +311,14 @@ function IdentityCard({
   memberSince: string | null;
   lastSignIn: string | null;
   demo: boolean;
-  onUploaded: (profile: UserProfile) => void;
+  onSaved: (profile: UserProfile) => void;
   onSignOut: () => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-
+  const [picking, setPicking] = useState(false);
   const fullName = profile?.full_name ?? null;
-  const src = preview ?? profile?.avatar_url ?? undefined;
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be under 2MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-
-    setUploading(true);
-    try {
-      const url = await uploadUserAvatar(userId, file);
-      const updated = await updateUserProfile(userId, { avatar_url: url });
-      onUploaded(updated);
-      toast.success("Avatar updated.");
-    } catch (err) {
-      toast.error((err as Error).message);
-      setPreview(null);
-    } finally {
-      setUploading(false);
-    }
-  }
+  // A real uploaded photo wins if one is ever stored; otherwise the chosen (or
+  // default) illustrated avatar, generated locally — no upload, instant.
+  const src = avatarSrc(profile?.avatar_url, userId);
 
   return (
     <Card>
@@ -213,28 +326,29 @@ function IdentityCard({
         {/* Avatar */}
         <div className="relative shrink-0 self-start sm:self-center">
           <Avatar className="h-20 w-20 border-2 border-border">
-            {src && <AvatarImage src={src} alt={fullName ?? "Avatar"} className="object-cover" />}
+            <AvatarImage src={src} alt={fullName ?? "Avatar"} className="object-cover" />
             <AvatarFallback className="text-xl font-semibold">{initialsOf(fullName)}</AvatarFallback>
           </Avatar>
           {!demo && (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card shadow transition-colors hover:bg-muted disabled:opacity-50"
-              title="Change photo"
-              aria-label="Change photo"
-            >
-              <Camera className="h-3.5 w-3.5" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setPicking(true)}
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card shadow transition-colors hover:bg-muted"
+                title="Change avatar"
+                aria-label="Change avatar"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <AvatarPicker
+                userId={userId}
+                profile={profile}
+                open={picking}
+                onOpenChange={setPicking}
+                onSaved={onSaved}
+              />
+            </>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg"
-            className="hidden"
-            onChange={handleFileChange}
-          />
         </div>
 
         {/* Identity */}
@@ -269,7 +383,6 @@ function IdentityCard({
               </span>
             )}
           </div>
-          {uploading && <p className="mt-2 text-xs text-muted-foreground">Uploading photo…</p>}
         </div>
 
         {/* Sign out */}
@@ -313,12 +426,25 @@ function AccountCard({
         full_name: values.full_name,
         phone: values.phone || null,
       }),
-    onSuccess: (updated) => {
-      onSaved(updated);
+    // Apply the change immediately and close the form — the server round-trip
+    // happens in the background, so saving feels instant despite the latency.
+    onMutate: (values: ProfileFormValues) => {
+      const previous = profile;
+      if (previous) {
+        onSaved({ ...previous, full_name: values.full_name, phone: values.phone || null });
+      }
       setEditing(false);
+      return { previous };
+    },
+    onSuccess: (updated) => {
+      onSaved(updated); // reconcile with the authoritative row
       toast.success("Profile saved.");
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error, _values, ctx) => {
+      if (ctx?.previous) onSaved(ctx.previous); // roll back the optimistic patch
+      setEditing(true);
+      toast.error(err.message);
+    },
   });
 
   return (
@@ -768,7 +894,7 @@ export default function ProfilePage() {
         memberSince={user?.created_at ?? null}
         lastSignIn={user?.last_sign_in_at ?? null}
         demo={demo}
-        onUploaded={applyProfile}
+        onSaved={applyProfile}
         onSignOut={signOut}
       />
 

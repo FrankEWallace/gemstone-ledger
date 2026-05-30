@@ -37,26 +37,6 @@ export async function updateUserProfile(
   return data;
 }
 
-/**
- * Upload a user avatar to the `user-avatars` storage bucket.
- * Returns the public URL of the uploaded file.
- *
- * Requires the `user-avatars` bucket to be created in Supabase Storage
- * with public access enabled.
- */
-export async function uploadUserAvatar(userId: string, file: File): Promise<string> {
-  const ext = file.name.split(".").pop();
-  const path = `${userId}/avatar.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("user-avatars")
-    .upload(path, file, { upsert: true });
-  if (uploadError) throw uploadError;
-
-  const { data } = supabase.storage.from("user-avatars").getPublicUrl(path);
-  return data.publicUrl;
-}
-
 export async function changePassword(newPassword: string): Promise<void> {
   if (isDemoMode()) throw new Error("Password changes are not available in demo mode.");
   const { error } = await supabase.auth.updateUser({ password: newPassword });
