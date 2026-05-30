@@ -22,7 +22,6 @@ import {
   Activity,
   Pickaxe,
   Clock,
-  Users,
 } from "lucide-react";
 import { useSite } from "@/hooks/useSite";
 import { supabase } from "@/lib/supabase";
