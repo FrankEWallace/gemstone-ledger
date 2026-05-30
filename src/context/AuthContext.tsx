@@ -238,14 +238,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     log.info("signOut — clearing all session state");
-    await supabase.auth.signOut();
 
+    // Clear local state FIRST so sign-out always succeeds — even when the
+    // server call would hang or reject (e.g. an already-expired token on a slow
+    // connection, which previously left the button doing nothing).
     localStorage.removeItem("activeSiteId");
     localStorage.removeItem("lastUserId");
     sessionStorage.removeItem("fwmining_rest_token");
     sessionStorage.clear();
 
+    // `scope: "local"` drops the stored session without the network revocation
+    // round-trip that can stall. Best-effort — never let it block the redirect.
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch (err) {
+      log.warn("supabase signOut failed (continuing):", err);
+    }
+
     await clearAllCaches();
+
+    // Hard-redirect so we never linger in a half-signed-out state.
+    window.location.href = "/login";
   }, []);
 
   const refreshProfile = useCallback(async () => {
