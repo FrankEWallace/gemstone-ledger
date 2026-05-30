@@ -1,5 +1,9 @@
 /// <reference lib="WebWorker" />
-import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+} from "workbox-precaching";
 import { registerRoute, NavigationRoute } from "workbox-routing";
 import {
   StaleWhileRevalidate,
@@ -53,12 +57,17 @@ registerRoute(
   })
 );
 
-// SPA navigation fallback — serve app shell for all nav requests
+// SPA navigation fallback — serve the freshly-precached index.html.
+// IMPORTANT: bind to the precached shell (not a CacheFirst runtime cache). A
+// CacheFirst "app-shell" cache is never revalidated and isn't touched by
+// cleanupOutdatedCaches(), so it pins the old HTML — and its now-deleted JS
+// chunks — across deploys, leaving users stuck on stale code. The precache is
+// replaced on every SW activation, so this always serves the latest shell while
+// still working offline.
 registerRoute(
-  new NavigationRoute(
-    new CacheFirst({ cacheName: "app-shell" }),
-    { denylist: [/^\/(api|supabase)/] }
-  )
+  new NavigationRoute(createHandlerBoundToURL("index.html"), {
+    denylist: [/^\/(api|supabase)/],
+  })
 );
 
 // ─── Service Worker lifecycle ─────────────────────────────────────────────────
