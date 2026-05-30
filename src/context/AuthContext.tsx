@@ -143,60 +143,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }, 8000);
 
+    // NOTE: this callback is intentionally NOT async, and never calls Supabase
+    // directly. supabase-js holds the auth LockManager lock while invoking it;
+    // any Supabase query inside (loadUserData reads the token → needs the same
+    // lock) deadlocks, so the requests never fire — leaving the user "logged in"
+    // with no profile or sites on every page load (INITIAL_SESSION). We defer
+    // data loading to a macrotask (setTimeout 0) so the lock is released first.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (cancelled) return;
 
         log.info(`onAuthStateChange: ${event}`, session ? `user=${session.user.email}` : "no session");
 
-        // Auto-heal a stuck demo flag: if a real session is present alongside
-        // the demo flag (e.g. user tapped "Try Demo" then later signed in), the
-        // real session wins. Without this the app keeps rendering sample data
-        // and silently blocks every write. Reload once so isDemoMode() is false
-        // on the next pass — exitDemoMode() makes this self-terminating.
+        // Auto-heal a stuck demo flag: a real session present alongside the demo
+        // flag means the real session wins. Reload once so isDemoMode() is false
+        // next pass — exitDemoMode() makes this self-terminating.
         if (session?.user && isDemoMode()) {
           exitDemoMode();
           window.location.reload();
           return;
         }
 
-        if (event === "INITIAL_SESSION") {
-          // Startup check — fires once, immediately after subscription is set up.
-          // Treat exactly like a getSession() call: resolve initial loading state.
-          clearTimeout(loadingTimeout);
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            try {
-              await loadUserData(session.user.id);
-            } catch (err) {
-              log.error("loadUserData failed on INITIAL_SESSION:", err);
-            }
-          }
-          if (!cancelled) setIsLoading(false);
-          return;
-        }
-
-        // ── Subsequent events ───────────────────────────────────────────────
-
+        // Synchronous state only — safe inside the callback.
         setSession(session);
         setUser(session?.user ?? null);
 
         if (event === "SIGNED_OUT") {
-          // Caches already cleared by signOut(); just reset React state.
           setUserProfile(null);
           setSites([]);
           setActiveSiteId(null);
-        } else if (session?.user) {
-          // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED, MFA_CHALLENGE_VERIFIED
-          try {
-            await loadUserData(session.user.id);
-          } catch (err) {
-            log.error(`loadUserData failed on ${event}:`, err);
-          }
+          clearTimeout(loadingTimeout);
+          setIsLoading(false);
+          return;
         }
 
-        if (!cancelled) setIsLoading(false);
+        clearTimeout(loadingTimeout);
+
+        if (session?.user) {
+          // INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED, …
+          const userId = session.user.id;
+          setTimeout(() => {
+            if (cancelled) return;
+            loadUserData(userId)
+              .catch((err) => log.error(`loadUserData failed on ${event}:`, err))
+              .finally(() => {
+                if (!cancelled) setIsLoading(false);
+              });
+          }, 0);
+        } else {
+          // INITIAL_SESSION with no stored session, etc.
+          setIsLoading(false);
+        }
       }
     );
 
