@@ -16,6 +16,15 @@ const log = {
   error: (...args: unknown[]) => console.error("[Auth]", ...args),
 };
 
+// A Supabase/PostgREST error caused by an expired or invalid JWT. When this
+// happens every authenticated request 401s, so we must refresh or re-auth
+// rather than treat it like a transient network blip.
+function isAuthError(err: { code?: string; message?: string } | null | undefined): boolean {
+  if (!err) return false;
+  if (err.code === "PGRST301" || err.code === "401") return true;
+  return /jwt|token|expired|unauthor/i.test(err.message ?? "");
+}
+
 // ─── Cache helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -73,6 +82,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       supabase.from("user_profiles").select("*").eq("id", userId).single(),
       supabase.from("user_site_roles").select("site_id, role, sites(*)").eq("user_id", userId),
     ]);
+
+    // Expired/invalid JWT → both queries 401. Don't leave the user "logged in"
+    // with no profile or sites (every write then silently fails because there's
+    // no active site). Try to refresh the session; on success TOKEN_REFRESHED
+    // re-invokes this with a valid token, on failure force a clean re-login.
+    if (isAuthError(profileResult.error) || isAuthError(roleResult.error)) {
+      log.warn("Auth error during loadUserData — refreshing session");
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session) {
+        log.warn("Session refresh failed — forcing sign-out");
+        window.dispatchEvent(
+          new CustomEvent("auth:unauthorized", { detail: { source: "loadUserData" } })
+        );
+      }
+      return;
+    }
 
     // Only update state on success — a network failure must not overwrite
     // valid cached state with nulls, which would blank the UI.

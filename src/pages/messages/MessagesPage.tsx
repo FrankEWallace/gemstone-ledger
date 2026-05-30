@@ -141,7 +141,11 @@ export default function MessagesPage() {
 
   async function handleSend() {
     const content = draft.trim();
-    if (!content || !activeSiteId || !user?.id) return;
+    if (!content || !user?.id) return;
+    if (!activeSiteId) {
+      toast.error("No active site loaded — reload the page, then try again.");
+      return;
+    }
 
     // Optimistically show the message immediately so sending feels instant even
     // on a high-latency connection; reconcile with the saved row on success and
