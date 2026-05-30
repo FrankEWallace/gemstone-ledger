@@ -140,14 +140,31 @@ export default function MessagesPage() {
   }, [messages, resolveSenderName, senderCache]);
 
   async function handleSend() {
-    if (!draft.trim() || !activeSiteId || !user?.id) return;
+    const content = draft.trim();
+    if (!content || !activeSiteId || !user?.id) return;
+
+    // Optimistically show the message immediately so sending feels instant even
+    // on a high-latency connection; reconcile with the saved row on success and
+    // roll back (restoring the draft) on failure.
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const optimistic: Message = {
+      id: tempId,
+      site_id: activeSiteId,
+      sender_id: user.id,
+      content,
+      channel: activeChannel,
+      created_at: new Date().toISOString(),
+    };
+    setDraft("");
+    setMessages((prev) => [...prev, optimistic]);
     setIsSending(true);
     try {
-      await sendMessage(activeSiteId, user.id, draft.trim(), activeChannel);
-      setDraft("");
-      // Invalidate so unread counts elsewhere update
-      queryClient.invalidateQueries({ queryKey: ["messages", activeSiteId] });
+      const saved = await sendMessage(activeSiteId, user.id, content, activeChannel);
+      // Swap the temp row for the real one; the realtime echo dedupes by id.
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? saved : m)));
     } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setDraft(content);
       toast.error((err as Error).message);
     } finally {
       setIsSending(false);
