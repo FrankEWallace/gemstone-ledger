@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, X, ChevronDown, Pickaxe, Search } from "lucide-react";
+import { FlaskConical, X, ChevronDown, Pickaxe, Search, Plus } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import CommandPalette from "@/components/shared/CommandPalette";
 import OnboardingWizard from "@/components/shared/OnboardingWizard";
+import FirstSiteSetup from "@/components/shared/FirstSiteSetup";
+import CreateSiteDialog from "@/components/shared/CreateSiteDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { isDemoMode, exitDemoMode } from "@/lib/demo";
@@ -19,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -61,10 +64,14 @@ function getSidebarDefaultOpen(): boolean {
 
 function SiteSwitcher() {
   const { activeSite, sites, setActiveSite } = useSite();
+  const { orgRole } = useAuth();
+  const [createOpen, setCreateOpen] = useState(false);
+  const canCreate = orgRole === "owner" || orgRole === "admin";
 
   if (!activeSite) return null;
 
-  if (sites.length <= 1) {
+  // Plain label only when there's nothing to switch to and nothing to add.
+  if (sites.length <= 1 && !canCreate) {
     return (
       <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground">
         <Pickaxe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -74,36 +81,50 @@ function SiteSwitcher() {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors">
-          <Pickaxe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span className="truncate max-w-32">{activeSite.name}</span>
-          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48">
-        {sites.map((s) => (
-          <DropdownMenuItem
-            key={s.id}
-            onClick={() => setActiveSite(s.id)}
-            className={cn("gap-2", s.id === activeSite.id && "font-medium text-primary")}
-          >
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-primary text-[10px] font-bold">
-              {s.name.slice(0, 2).toUpperCase()}
-            </div>
-            <span className="truncate">{s.name}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors">
+            <Pickaxe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="truncate max-w-32">{activeSite.name}</span>
+            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-48">
+          {sites.map((s) => (
+            <DropdownMenuItem
+              key={s.id}
+              onClick={() => setActiveSite(s.id)}
+              className={cn("gap-2", s.id === activeSite.id && "font-medium text-primary")}
+            >
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-primary text-[10px] font-bold">
+                {s.name.slice(0, 2).toUpperCase()}
+              </div>
+              <span className="truncate">{s.name}</span>
+            </DropdownMenuItem>
+          ))}
+          {canCreate && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCreateOpen(true)} className="gap-2">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
+                  <Plus className="h-3.5 w-3.5" />
+                </div>
+                <span>New site</span>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {canCreate && <CreateSiteDialog open={createOpen} onOpenChange={setCreateOpen} />}
+    </>
   );
 }
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function AppLayout() {
-  const { userProfile, refreshProfile } = useAuth();
+  const { userProfile, sites, isLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [cmdOpen, setCmdOpen] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -137,6 +158,13 @@ export default function AppLayout() {
     (location.pathname.startsWith("/settings")
       ? { breadcrumb: "Settings", title: "" }
       : { breadcrumb: "", title: "" });
+
+  // A signed-in user with no site can't use any site-scoped feature, so guide
+  // them through creating one first. Gated on !isLoading so it never flashes
+  // during the initial profile/site load.
+  if (!demoActive && !isLoading && userProfile && sites.length === 0) {
+    return <FirstSiteSetup />;
+  }
 
   return (
     <SidebarProvider defaultOpen={getSidebarDefaultOpen()}>
