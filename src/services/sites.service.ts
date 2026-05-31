@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { isRestActive } from "@/lib/providers/backendConfig";
+import { restPost } from "@/lib/providers/rest/client";
 
 /**
  * Create a new site for the current user's organization and return its id.
@@ -7,6 +9,13 @@ import { supabase } from "@/lib/supabase";
  * `admin` site role in one transaction.
  */
 export async function createSite(name: string, location?: string): Promise<string> {
+  if (isRestActive()) {
+    return restPost<string>("/sites", {
+      name: name.trim(),
+      location: location?.trim() || null,
+    });
+  }
+
   // `create_site` isn't in the generated Database types, so call it untyped.
   const { data, error } = await (supabase.rpc as (
     fn: string,
