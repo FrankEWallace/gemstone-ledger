@@ -48,8 +48,15 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       injectManifest: {
-        // Precache all built assets
+        // Precache all built assets...
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // ...except the heavy, export-only chunks. react-pdf (~1.6 MB) and
+        // xlsx (~430 KB) are only pulled in via dynamic import() when a user
+        // exports a PDF/spreadsheet. Precaching them forces every installed
+        // PWA to download ~2 MB on each service-worker update for features
+        // most sessions never touch. They are instead fetched on demand and
+        // runtime-cached (CacheFirst) by sw.ts the first time they are used.
+        globIgnores: ["**/react-pdf.browser-*.js", "**/xlsx-*.js"],
       },
       devOptions: {
         enabled: false, // disable SW in dev to avoid caching issues
