@@ -30,6 +30,9 @@ jobs:
       - name: Type-check
         run: npx tsc -p tsconfig.app.json --noEmit
 
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
         env:
