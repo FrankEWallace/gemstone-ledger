@@ -63,7 +63,7 @@ const FAQ_SECTIONS = [
       },
       {
         q: "Can I export transactions to my accounting software?",
-        a: "Yes — click 'Export CSV' on the Transactions page to download a CSV file. This can be imported into Xero, QuickBooks, or any spreadsheet tool. Native integrations with accounting platforms are configurable from the Integrations page.",
+        a: "Yes — click 'Export CSV' on the Transactions page to download a CSV file. This can be imported into Xero, QuickBooks, or any spreadsheet tool.",
       },
     ],
   },
