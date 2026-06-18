@@ -20,6 +20,20 @@ cleanupOutdatedCaches();
 
 // ─── Runtime caching ──────────────────────────────────────────────────────────
 
+// Heavy export-only chunks (react-pdf, xlsx) are excluded from the precache
+// manifest (see vite.config.ts) so the SW install stays small. Cache them
+// CacheFirst the first time they're fetched on demand — the filenames are
+// content-hashed, so a cached chunk is always safe to reuse, and a new deploy
+// produces new filenames (old ones age out via the entry cap).
+registerRoute(
+  ({ url, sameOrigin }) =>
+    sameOrigin && /\/assets\/(react-pdf\.browser|xlsx)-[^/]*\.js$/.test(url.pathname),
+  new CacheFirst({
+    cacheName: "heavy-export-chunks",
+    plugins: [new ExpirationPlugin({ maxEntries: 8, maxAgeSeconds: 30 * 24 * 60 * 60 })],
+  })
+);
+
 // Supabase auth — NetworkFirst, short timeout
 registerRoute(
   ({ url }) => url.hostname.endsWith(".supabase.co") && url.pathname.startsWith("/auth/"),
