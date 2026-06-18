@@ -54,5 +54,7 @@ export async function getPendingCount(): Promise<number> {
 
 /** Remove items that have exceeded the max retry limit. */
 export async function purgeFailed(maxRetries = 5): Promise<void> {
-  await offlineDB.sync_queue.where("retries").aboveOrEqual(maxRetries).delete();
+  // `retries` is not part of the Dexie index, so filter in-memory rather than
+  // using .where() (which throws SchemaError on an unindexed keyPath).
+  await offlineDB.sync_queue.filter((item) => item.retries >= maxRetries).delete();
 }
