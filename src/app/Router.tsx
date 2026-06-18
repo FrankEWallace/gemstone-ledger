@@ -128,7 +128,6 @@ export default function Router() {
           <Route path="/management/roles"        element={<BoundedRoute element={<RolesPermissionsPage />} />} />
           <Route path="/management/audit"        element={<BoundedRoute element={<AuditLogPage />} />} />
           {/* Legacy redirects — keep old bookmarks working */}
-          <Route path="/management/integrations" element={<Navigate to="/settings/system" replace />} />
           <Route path="/management/billing"      element={<Navigate to="/settings/profile" replace />} />
 
           {/* Settings — nested under SettingsLayout for the tab bar */}
@@ -146,7 +145,6 @@ export default function Router() {
             <Route path="help"         element={<Navigate to="/settings/help-support" replace />} />
             <Route path="support"      element={<Navigate to="/settings/help-support" replace />} />
             <Route path="billing"      element={<Navigate to="/settings/profile" replace />} />
-            <Route path="integrations" element={<Navigate to="/settings/profile" replace />} />
           </Route>
           <Route path="/production"       element={<BoundedRoute element={<ProductionLogPage />} />} />
           <Route path="/team/timesheet"   element={<BoundedRoute element={<TimesheetPage />} />} />

@@ -45,7 +45,6 @@ const CATEGORIES = [
   "Bug Report",
   "Feature Request",
   "Data & Exports",
-  "Integrations",
   "Performance",
   "Other",
 ];
