@@ -39,20 +39,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-  db-push:
-    name: Supabase DB Push
-    runs-on: ubuntu-latest
-    needs: lint-type-build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Push migrations to production
-        run: supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}"
+# NOTE: Database migrations are applied through the Supabase tooling (MCP /
+# CLI) directly against the project, not from CI. A previous "Supabase DB
+# Push" job was removed because the local migration files use short numeric
+# prefixes (001_, 024_) while the remote migration history records them under
+# 14-digit timestamp versions, so `supabase db push` could not reconcile the
+# two and would attempt to re-apply 001_initial_schema onto the live DB.
