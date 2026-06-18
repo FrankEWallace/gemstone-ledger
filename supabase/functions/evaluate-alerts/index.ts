@@ -4,10 +4,28 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
 const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
+  SUPABASE_URL,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
+
+// Authorize a request: true for the Vault-backed cron secret (scheduled calls)
+// or a valid user JWT (the in-app "Run now" trigger). verify_jwt is disabled on
+// this function so the non-JWT cron secret reaches the handler.
+async function authorize(req: Request): Promise<boolean> {
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return false;
+  const { data: isCron } = await supabase.rpc("is_cron_secret", { p_token: token });
+  if (isCron === true) return true;
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: { user } } = await userClient.auth.getUser();
+  return !!user;
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -17,17 +35,11 @@ const CORS = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
-  // Require a shared secret so only the Supabase cron system (or an admin)
-  // can trigger this function. Set CRON_SECRET in Supabase Edge Function secrets.
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (cronSecret) {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...CORS, "Content-Type": "application/json" },
-      });
-    }
+  if (!(await authorize(req))) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -45,9 +57,7 @@ Deno.serve(async (req) => {
     for (const rule of rules) {
       let value: number | null = null;
 
-      // ── Evaluate rule ────────────────────────────────────────────────────
       if (rule.entity_type === "inventory_item" && rule.field === "quantity") {
-        // Find any item in this site where quantity satisfies operator vs threshold
         const { data: items } = await supabase
           .from("inventory_items")
           .select("id, name, quantity")
@@ -90,13 +100,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // ── Cooldown: don't spam — only trigger once per hour ─────────────────
+      // Cooldown: only trigger once per hour
       if (rule.last_triggered_at) {
         const diff = Date.now() - new Date(rule.last_triggered_at).getTime();
         if (diff < 60 * 60 * 1000) continue;
       }
 
-      // ── Get all admins/managers for this site ─────────────────────────────
       const { data: recipients } = await supabase
         .from("user_site_roles")
         .select("user_id")
@@ -105,7 +114,6 @@ Deno.serve(async (req) => {
 
       if (!recipients?.length) continue;
 
-      // ── Insert notifications ──────────────────────────────────────────────
       const notifications = recipients.map((r: { user_id: string }) => ({
         user_id: r.user_id,
         title: rule.notification_title,
@@ -116,7 +124,6 @@ Deno.serve(async (req) => {
 
       await supabase.from("notifications").insert(notifications);
 
-      // ── Update last_triggered_at ──────────────────────────────────────────
       await supabase
         .from("alert_rules")
         .update({ last_triggered_at: new Date().toISOString() })
