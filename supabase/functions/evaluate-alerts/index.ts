@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
 
       // ── Get all admins/managers for this site ─────────────────────────────
       const { data: recipients } = await supabase
-        .from("site_roles")
+        .from("user_site_roles")
         .select("user_id")
         .eq("site_id", rule.site_id)
         .in("role", ["admin", "site_manager"]);

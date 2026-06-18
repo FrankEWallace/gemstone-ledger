@@ -110,22 +110,23 @@ export async function getInventoryConsumptionRates(
 
   const since = new Date();
   since.setDate(since.getDate() - 30);
-  // NOTE: `inventory_transactions` is not part of the current schema, so this
-  // query errors at runtime and consumption rates fall back to {}. Cast keeps
-  // the build green; the movement source needs wiring (e.g. inventory_write_offs
-  // or transactions) before consumption analytics work on the Supabase backend.
-  const { data, error } = await (supabase.from("inventory_transactions" as never) as any)
-    .select("inventory_item_id, quantity_change")
+  const sinceDate = since.toISOString().slice(0, 10);
+  // Consumption is recorded as `source: 'inventory'` expense transactions (see
+  // consumeInventoryItem), so derive per-item daily usage from there.
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("inventory_item_id, quantity")
     .eq("site_id", siteId)
-    .lt("quantity_change", 0)
-    .gte("created_at", since.toISOString());
+    .eq("source", "inventory")
+    .not("inventory_item_id", "is", null)
+    .gte("transaction_date", sinceDate);
   if (error) return {};
 
   const rates: Record<string, number> = {};
-  const rows = (data ?? []) as Array<{ inventory_item_id: string; quantity_change: number }>;
-  for (const row of rows) {
+  for (const row of data ?? []) {
+    if (!row.inventory_item_id) continue;
     rates[row.inventory_item_id] =
-      (rates[row.inventory_item_id] ?? 0) + Math.abs(row.quantity_change);
+      (rates[row.inventory_item_id] ?? 0) + Number(row.quantity ?? 0);
   }
   for (const key in rates) rates[key] = rates[key] / 30;
   return rates;
@@ -137,15 +138,11 @@ export async function receiveInventoryStock(
   qty: number,
   notes?: string
 ): Promise<void> {
+  // Receiving stock only adjusts the on-hand quantity. (There is no inventory
+  // movement-ledger table; usage/consumption is tracked via `source: 'inventory'`
+  // transactions, and reductions via inventory_write_offs.)
+  void notes;
   await updateInventoryItem(item.id, { quantity: item.quantity + qty });
-
-  await supabase.from("inventory_transactions" as any).insert({
-    site_id: siteId,
-    inventory_item_id: item.id,
-    quantity_change: qty,
-    notes: notes || null,
-    type: "received",
-  });
 }
 
 /**

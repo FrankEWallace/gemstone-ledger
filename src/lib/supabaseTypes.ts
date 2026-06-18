@@ -1438,6 +1438,18 @@ export type Database = {
       }
       current_org_id: { Args: never; Returns: string }
       current_org_role: { Args: never; Returns: string }
+      get_org_users: {
+        Args: { p_org_id: string }
+        Returns: {
+          id: string
+          full_name: string
+          email: string
+          avatar_url: string
+          created_at: string
+          org_role: string
+          site_roles: Json
+        }[]
+      }
       handle_invited_user_signup: {
         Args: { p_full_name: string; p_user_id: string }
         Returns: undefined
