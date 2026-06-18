@@ -15,7 +15,7 @@ export type CustomerPayload = {
   contract_end?: string;
   daily_rate?: number;
   notes?: string;
-  status?: "active" | "inactive" | "completed";
+  status?: "active" | "inactive" | "completed" | "prospect";
 };
 
 export async function getCustomers(siteId: string): Promise<Customer[]> {

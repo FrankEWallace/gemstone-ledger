@@ -5,6 +5,7 @@ import { isDemoMode } from "@/lib/demo";
 import {
   DEFAULT_NOTIFICATION_PREFS,
   type NotificationPrefs,
+  type TablesUpdate,
   type UserProfile,
 } from "@/lib/supabaseTypes";
 
@@ -35,7 +36,8 @@ export async function updateUserProfile(
 
   const { data, error } = await supabase
     .from("user_profiles")
-    .update(payload)
+    // notification_prefs is a typed interface stored in a JSONB column.
+    .update(payload as unknown as TablesUpdate<"user_profiles">)
     .eq("id", userId)
     .select()
     .single();

@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
-import type { Transaction, TransactionType, TransactionStatus, TransactionSource } from "@/lib/supabaseTypes";
+import type { Transaction, TransactionType, TransactionStatus, TransactionSource, TablesInsert } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_TRANSACTIONS } from "@/lib/demo/data";
 import { enqueue } from "@/lib/offline/syncQueue";
@@ -150,7 +150,7 @@ export async function deleteTransaction(id: string): Promise<void> {
 // ─── Sync handlers ────────────────────────────────────────────────────────────
 
 registerHandler("transactions", "create", async (item) => {
-  await supabase.from("transactions").insert(item.payload as object);
+  await supabase.from("transactions").insert(item.payload as TablesInsert<"transactions">);
 });
 registerHandler("transactions", "update", async (item) => {
   const { id, ...rest } = item.payload as { id: string; status: TransactionStatus };

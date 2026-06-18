@@ -138,7 +138,7 @@ function EquipmentModal({
   const form = useForm<EquipFormValues>({
     resolver: zodResolver(equipSchema),
     values: editing
-      ? {
+      ? ({
           name:              editing.name,
           type:              editing.type ?? "",
           serial_number:     editing.serial_number ?? "",
@@ -146,7 +146,7 @@ function EquipmentModal({
           last_service_date: editing.last_service_date ?? "",
           next_service_date: editing.next_service_date ?? "",
           notes:             editing.notes ?? "",
-        }
+        } as EquipFormValues)
       : { name: "", type: "", serial_number: "", status: "operational", last_service_date: "", next_service_date: "", notes: "" },
   });
 

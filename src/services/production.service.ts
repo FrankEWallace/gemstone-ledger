@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost, restDel } from "@/lib/providers/rest/client";
-import type { ProductionLog } from "@/lib/supabaseTypes";
+import type { ProductionLog, TablesInsert } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_PRODUCTION_LOGS } from "@/lib/demo/data";
 import { enqueue } from "@/lib/offline/syncQueue";
@@ -92,7 +92,7 @@ registerHandler("production_logs", "create", async (item) => {
   }
   await supabase
     .from("production_logs")
-    .upsert(item.payload as object, { onConflict: "site_id,log_date" });
+    .upsert(item.payload as TablesInsert<"production_logs">, { onConflict: "site_id,log_date" });
 });
 registerHandler("production_logs", "delete", async (item) => {
   const { id } = item.payload as { id: string };

@@ -127,13 +127,13 @@ function WorkerModal({ open, onClose, siteId, editing }: WorkerModalProps) {
   const form = useForm<WorkerFormValues>({
     resolver: zodResolver(workerSchema),
     values: editing
-      ? {
+      ? ({
           full_name: editing.full_name,
           position: editing.position ?? "",
           department: editing.department ?? "",
           hire_date: editing.hire_date ?? "",
           status: editing.status,
-        }
+        } as WorkerFormValues)
       : { full_name: "", position: "", department: "", hire_date: "", status: "active" },
   });
 
