@@ -82,7 +82,7 @@ function SupplierModal({ open, onClose, orgId, editing }: SupplierModalProps) {
   const form = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierSchema),
     values: editing
-      ? {
+      ? ({
           name: editing.name,
           contact_name: editing.contact_name ?? "",
           email: editing.email ?? "",
@@ -90,7 +90,7 @@ function SupplierModal({ open, onClose, orgId, editing }: SupplierModalProps) {
           address: editing.address ?? "",
           category: editing.category ?? "",
           status: editing.status,
-        }
+        } as SupplierFormValues)
       : { name: "", contact_name: "", email: "", phone: "", address: "", category: "", status: "active" },
   });
 

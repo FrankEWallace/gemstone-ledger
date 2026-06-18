@@ -506,7 +506,7 @@ export default function SystemSettingsPage() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: (values: SettingsFormValues) =>
-      updateOrganization(orgId!, { name: values.name, slug: values.slug }),
+      updateOrganization(orgId!, { name: values.name, slug: values.slug, currency: values.currency }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org", orgId] });
       toast.success("Settings saved.");

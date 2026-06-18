@@ -82,12 +82,12 @@ function CategoryModal({ open, onClose, orgId, editing, defaultType }: CategoryM
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     values: editing
-      ? {
+      ? ({
           name: editing.name,
           description: editing.description ?? "",
           color: editing.color ?? "",
           type: editing.type ?? defaultType,
-        }
+        } as CategoryFormValues)
       : { name: "", description: "", color: COLOR_PRESETS[0], type: defaultType },
   });
 

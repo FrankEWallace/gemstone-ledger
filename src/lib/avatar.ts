@@ -27,7 +27,7 @@ export function renderAvatar({ style, seed }: AvatarConfig): string {
   const key = `${style}|${seed}`;
   const cached = cache.get(key);
   if (cached) return cached;
-  const uri = createAvatar(COLLECTIONS[style], {
+  const uri = createAvatar(COLLECTIONS[style] as Parameters<typeof createAvatar>[0], {
     seed,
     radius: 50,
     backgroundColor: ["transparent"],

@@ -3,6 +3,7 @@ import { getPendingItems, getPendingCount, dequeue, incrementRetry, purgeFailed 
 import type { SyncQueueItem, SyncLogEntry } from "./db";
 import { offlineDB } from "./db";
 import { supabase } from "@/lib/supabase";
+import type { Database } from "@/lib/supabaseTypes";
 
 // ─── Handler registry ─────────────────────────────────────────────────────────
 // Each key is `${entity}.${operation}`.
@@ -33,16 +34,19 @@ async function checkConflict(item: SyncQueueItem): Promise<boolean> {
   const payload = item.payload as { id?: string };
   if (!payload?.id || payload.id.startsWith("offline-")) return false;
 
-  // Fetch the server record's updated_at (or created_at as fallback)
+  // Fetch the server record's updated_at (or created_at as fallback).
+  // `item.entity` is a runtime string, so this dynamic query is intentionally
+  // untyped against the per-table column unions.
   const { data } = await supabase
-    .from(item.entity)
+    .from(item.entity as keyof Database["public"]["Tables"])
     .select("updated_at, created_at")
     .eq("id", payload.id)
     .maybeSingle();
 
-  if (!data) return false; // record deleted on server — let the operation proceed
+  const row = data as { updated_at?: string | null; created_at?: string | null } | null;
+  if (!row) return false; // record deleted on server — let the operation proceed
 
-  const serverTs = new Date(data.updated_at ?? data.created_at).getTime();
+  const serverTs = new Date(row.updated_at ?? row.created_at ?? 0).getTime();
   return serverTs > item.timestamp;
 }
 
@@ -177,13 +181,15 @@ export function usePendingCount(): number {
 
     refresh();
 
-    const addSub = offlineDB.sync_queue.hook("creating", () => { refresh(); });
-    const delSub = offlineDB.sync_queue.hook("deleting", () => { refresh(); });
+    const onCreate = () => { refresh(); };
+    const onDelete = () => { refresh(); };
+    offlineDB.sync_queue.hook("creating", onCreate);
+    offlineDB.sync_queue.hook("deleting", onDelete);
 
     return () => {
       cancelled = true;
-      addSub.unsubscribe();
-      delSub.unsubscribe();
+      offlineDB.sync_queue.hook("creating").unsubscribe(onCreate);
+      offlineDB.sync_queue.hook("deleting").unsubscribe(onDelete);
     };
   }, []);
 
@@ -207,13 +213,15 @@ export function useSyncLog(limit = 50): SyncLogEntry[] {
 
     refresh();
 
-    const addSub = offlineDB.sync_log.hook("creating", () => { refresh(); });
-    const delSub = offlineDB.sync_log.hook("deleting", () => { refresh(); });
+    const onCreate = () => { refresh(); };
+    const onDelete = () => { refresh(); };
+    offlineDB.sync_log.hook("creating", onCreate);
+    offlineDB.sync_log.hook("deleting", onDelete);
 
     return () => {
       cancelled = true;
-      addSub.unsubscribe();
-      delSub.unsubscribe();
+      offlineDB.sync_log.hook("creating").unsubscribe(onCreate);
+      offlineDB.sync_log.hook("deleting").unsubscribe(onDelete);
     };
   }, [limit]);
 

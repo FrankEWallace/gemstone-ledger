@@ -227,7 +227,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     values: editing
-      ? {
+      ? ({
           name: editing.name,
           type: editing.type,
           status: editing.status,
@@ -238,7 +238,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
           contract_end: editing.contract_end ?? "",
           daily_rate: editing.daily_rate ?? "",
           notes: editing.notes ?? "",
-        }
+        } as CustomerFormValues)
       : {
           name: "",
           type: "external",

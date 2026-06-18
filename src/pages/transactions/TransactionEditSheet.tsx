@@ -343,8 +343,8 @@ function txToForm(tx: Transaction | null): FormValues {
     reference_no:     tx?.reference_no ?? "",
     category:         tx?.category ?? "",
     customer_id:      tx?.customer_id ?? null,
-    type:             (tx?.type as TransactionType) ?? "income",
-    status:           (tx?.status as TransactionStatus) ?? "pending",
+    type:             (tx?.type as FormValues["type"]) ?? "income",
+    status:           (tx?.status as FormValues["status"]) ?? "pending",
     quantity:         tx?.quantity ?? 1,
     unit_price:       tx?.unit_price ?? 0,
   };

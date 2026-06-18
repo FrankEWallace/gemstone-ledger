@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import type { TablesInsert } from "@/lib/supabaseTypes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -164,7 +165,7 @@ function RuleModal({
 
   const form = useForm<RuleFormValues>({
     resolver: zodResolver(ruleSchema),
-    defaultValues: preset
+    defaultValues: (preset
       ? { ...preset, name: preset.label }
       : {
           name: "",
@@ -174,19 +175,21 @@ function RuleModal({
           threshold: 10,
           notification_title: "",
           notification_body: "",
-        },
+        }) as RuleFormValues,
   });
 
   const entityType = form.watch("entity_type");
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (values: RuleFormValues) =>
-      supabase.from("alert_rules").insert({
+    mutationFn: async (values: RuleFormValues) => {
+      const { error } = await supabase.from("alert_rules").insert({
         ...values,
         site_id: siteId,
         created_by: user?.id ?? null,
         enabled: true,
-      }).select().single(),
+      } as TablesInsert<"alert_rules">);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alert-rules", siteId] });
       toast.success("Alert rule created.");
@@ -318,14 +321,19 @@ export default function AlertRulesPage() {
   });
 
   const { mutate: toggleRule } = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      supabase.from("alert_rules").update({ enabled }).eq("id", id),
+    mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
+      const { error } = await supabase.from("alert_rules").update({ enabled }).eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["alert-rules", activeSiteId] }),
     onError: (err: Error) => toast.error(err.message),
   });
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
-    mutationFn: (id: string) => supabase.from("alert_rules").delete().eq("id", id),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("alert_rules").delete().eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alert-rules", activeSiteId] });
       toast.success("Rule deleted.");

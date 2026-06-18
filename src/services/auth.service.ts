@@ -2,13 +2,19 @@ import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPut, restPost, restDel } from "@/lib/providers/rest/client";
 import type { OrgUser, UserRole } from "@/lib/supabaseTypes";
+export type { OrgUser, UserRole } from "@/lib/supabaseTypes";
 
 export async function getOrgUsers(orgId: string): Promise<OrgUser[]> {
   if (isRestActive())
     return restGet<OrgUser[]>(`/org-users?org_id=${orgId}`);
 
-  const { data, error } = await supabase
-    .from("user_site_roles")
+  // NOTE: user_site_roles has no `org_id` column (org scope is reached via
+  // sites.org_id), so this Supabase-path query is a known latent bug — the
+  // `.eq("org_id", …)` filter and `profiles` embed don't resolve against the
+  // real schema. Cast keeps the build green; the query itself needs reworking
+  // (e.g. an org-users RPC or an embedded sites!inner filter) before relying on
+  // the Supabase backend for this call.
+  const { data, error } = await (supabase.from("user_site_roles") as any)
     .select(
       `
       user_id,

@@ -251,7 +251,7 @@ export default function AuditLogPage() {
 
       <DataTable
         data={logs as unknown as Record<string, unknown>[]}
-        columns={columns as DataTableColumn<Record<string, unknown>>[]}
+        columns={columns as unknown as DataTableColumn<Record<string, unknown>>[]}
         keyField="id"
         searchable={false}
         pageSize={25}

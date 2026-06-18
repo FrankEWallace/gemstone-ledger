@@ -322,6 +322,57 @@ export type Database = {
           },
         ]
       }
+      equipment_maintenance_logs: {
+        Row: {
+          cost: number | null
+          created_at: string
+          description: string
+          equipment_id: string
+          id: string
+          next_service_date: string | null
+          performed_by: string | null
+          service_date: string
+          site_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          description: string
+          equipment_id: string
+          id?: string
+          next_service_date?: string | null
+          performed_by?: string | null
+          service_date: string
+          site_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          description?: string
+          equipment_id?: string
+          id?: string
+          next_service_date?: string | null
+          performed_by?: string | null
+          service_date?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_maintenance_logs_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_maintenance_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           color: string | null
@@ -460,51 +511,51 @@ export type Database = {
       }
       inventory_write_offs: {
         Row: {
+          created_at: string
           id: string
-          site_id: string
           inventory_item_id: string
+          notes: string | null
           quantity: number
           reason: string
-          notes: string | null
+          site_id: string
           written_off_at: string
           written_off_by: string | null
-          created_at: string
         }
         Insert: {
+          created_at?: string
           id?: string
-          site_id: string
           inventory_item_id: string
+          notes?: string | null
           quantity: number
           reason: string
-          notes?: string | null
+          site_id: string
           written_off_at?: string
           written_off_by?: string | null
-          created_at?: string
         }
         Update: {
+          created_at?: string
           id?: string
-          site_id?: string
           inventory_item_id?: string
+          notes?: string | null
           quantity?: number
           reason?: string
-          notes?: string | null
+          site_id?: string
           written_off_at?: string
           written_off_by?: string | null
-          created_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "inventory_write_offs_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "inventory_write_offs_inventory_item_id_fkey"
             columns: ["inventory_item_id"]
             isOneToOne: false
             referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_write_offs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
@@ -768,6 +819,7 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
+          currency: string
           disabled_modules: Json
           id: string
           logo_url: string | null
@@ -778,6 +830,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency?: string
           disabled_modules?: Json
           id?: string
           logo_url?: string | null
@@ -788,6 +841,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency?: string
           disabled_modules?: Json
           id?: string
           logo_url?: string | null
@@ -853,6 +907,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          customer_id: string | null
           grade_g_t: number | null
           id: string
           log_date: string
@@ -866,6 +921,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           grade_g_t?: number | null
           id?: string
           log_date: string
@@ -879,6 +935,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           grade_g_t?: number | null
           id?: string
           log_date?: string
@@ -890,6 +947,13 @@ export type Database = {
           water_m3?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "production_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_logs_site_id_fkey"
             columns: ["site_id"]
@@ -906,6 +970,8 @@ export type Database = {
           description: string | null
           id: string
           reported_by: string | null
+          resolution_notes: string | null
+          resolution_status: string
           resolved_at: string | null
           severity: string
           site_id: string
@@ -919,6 +985,8 @@ export type Database = {
           description?: string | null
           id?: string
           reported_by?: string | null
+          resolution_notes?: string | null
+          resolution_status?: string
           resolved_at?: string | null
           severity?: string
           site_id: string
@@ -932,6 +1000,8 @@ export type Database = {
           description?: string | null
           id?: string
           reported_by?: string | null
+          resolution_notes?: string | null
+          resolution_status?: string
           resolved_at?: string | null
           severity?: string
           site_id?: string
@@ -1362,7 +1432,12 @@ export type Database = {
     }
     Functions: {
       accessible_site_ids: { Args: never; Returns: string[] }
+      create_site: {
+        Args: { p_location?: string; p_name: string }
+        Returns: string
+      }
       current_org_id: { Args: never; Returns: string }
+      current_org_role: { Args: never; Returns: string }
       handle_invited_user_signup: {
         Args: { p_full_name: string; p_user_id: string }
         Returns: undefined

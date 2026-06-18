@@ -16,11 +16,7 @@ export async function createSite(name: string, location?: string): Promise<strin
     });
   }
 
-  // `create_site` isn't in the generated Database types, so call it untyped.
-  const { data, error } = await (supabase.rpc as (
-    fn: string,
-    args: Record<string, unknown>
-  ) => Promise<{ data: string | null; error: { message: string } | null }>)("create_site", {
+  const { data, error } = await supabase.rpc("create_site", {
     p_name: name.trim(),
     p_location: location?.trim() ? location.trim() : null,
   });

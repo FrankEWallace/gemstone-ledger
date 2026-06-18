@@ -92,7 +92,7 @@ export async function getMaintenanceLogs(equipmentId: string): Promise<Maintenan
     .eq("equipment_id", equipmentId)
     .order("service_date", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as MaintenanceLog[];
+  return (data ?? []) as unknown as MaintenanceLog[];
 }
 
 export async function addMaintenanceLog(
@@ -110,7 +110,7 @@ export async function addMaintenanceLog(
     .select()
     .single();
   if (error) throw error;
-  return data as MaintenanceLog;
+  return data as unknown as MaintenanceLog;
 }
 
 export async function deleteMaintenanceLog(id: string): Promise<void> {
