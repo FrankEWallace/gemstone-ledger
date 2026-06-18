@@ -107,13 +107,17 @@ serve(async (req) => {
     if (isCron === true) {
       authed = true;
     } else {
+      // Manual trigger: require an authenticated org owner/admin.
       const supabaseClient = createClient(
         SUPABASE_URL,
         ANON_KEY,
         { global: { headers: { Authorization: `Bearer ${token}` } } }
       );
       const { data: { user } } = await supabaseClient.auth.getUser();
-      authed = !!user;
+      if (user) {
+        const { data: role } = await supabaseClient.rpc("current_org_role");
+        authed = role === "owner" || role === "admin";
+      }
     }
   }
 

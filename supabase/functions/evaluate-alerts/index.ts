@@ -13,18 +13,21 @@ const supabase = createClient(
 );
 
 // Authorize a request: true for the Vault-backed cron secret (scheduled calls)
-// or a valid user JWT (the in-app "Run now" trigger). verify_jwt is disabled on
-// this function so the non-JWT cron secret reaches the handler.
+// or a signed-in org owner/admin (the in-app "Run now" trigger). verify_jwt is
+// disabled on this function so the non-JWT cron secret reaches the handler.
 async function authorize(req: Request): Promise<boolean> {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) return false;
   const { data: isCron } = await supabase.rpc("is_cron_secret", { p_token: token });
   if (isCron === true) return true;
+  // Manual trigger: require an authenticated org owner/admin.
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user } } = await userClient.auth.getUser();
-  return !!user;
+  if (!user) return false;
+  const { data: role } = await userClient.rpc("current_org_role");
+  return role === "owner" || role === "admin";
 }
 
 const CORS = {
