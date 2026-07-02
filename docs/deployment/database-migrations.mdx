@@ -1,53 +1,40 @@
 ---
 title: Database Migrations
-description: Applying Supabase Postgres migrations in the correct order.
+description: How schema changes are managed and applied to the Supabase project.
 ---
 
-All database schema is managed via migration files in `supabase/migrations/`. Apply them in numeric order.
-
-## Migration list
-
-| File | Description |
-|---|---|
-| `001_initial_schema.sql` | Core tables: organisations, users, inventory, transactions |
-| `002_fix_rls_insert_policies.sql` | RLS policy corrections for insert operations |
-| `003_fix_rls_circular_deps.sql` | Resolves circular dependency in RLS policies |
-| `004_low_stock_notification_trigger.sql` | Postgres trigger for low-stock events |
-| `005_rls_audit.sql` | Audit table and RLS policies |
-| `006_phase6_schema.sql` | Team, equipment, safety, documents modules |
-| `007_audit_log.sql` | Full audit log table and triggers |
-| `008_alert_rules.sql` | Alert rules table and evaluation logic |
-| `009_phase8_schema.sql` | Supply chain, campaigns modules |
-| `010_customers_schema.sql` | Customers module |
-| `011_org_module_config.sql` | Per-organisation module visibility config |
-| `012_signup_rpc.sql` | RPC function for safe user signup flow |
-| `013_inventory_write_offs.sql` | Write-offs table and inventory adjustment logic |
-
-## Applying migrations
-
-### Via Supabase CLI (recommended)
-
-```bash
-supabase db push
-```
-
-This applies all pending migrations against your linked remote project.
-
-### Via Supabase dashboard
-
-1. Open your project in the [Supabase dashboard](https://supabase.com/dashboard)
-2. Navigate to **SQL Editor**
-3. Paste and run each migration file in order
+All schema lives in `supabase/migrations/`, numbered `001`–`025`. The files are the source of truth for *what* the schema is, but they are **not** applied with `supabase db push`.
 
 <Warning>
-  Always apply migrations in numeric order. Skipping or reordering migrations will break the schema.
+  Do not run `supabase db push` against the production project. The remote migration history records these files under 14-digit timestamp versions while the local files use short numeric prefixes, so the CLI cannot reconcile the two and will attempt to re-apply `001_initial_schema.sql` onto the live database. (A CI job that did this was removed for exactly this reason.)
 </Warning>
 
-## Local development
+## Applying a new migration
 
-To run a local Supabase stack:
+New migrations are applied directly to the remote project, then the same SQL is committed to `supabase/migrations/` as a mirror:
+
+1. Write the migration SQL as an idempotent script (guards like `if not exists`, `drop ... if exists`, `create or replace`).
+2. Apply it via the Supabase MCP tooling or the dashboard **SQL Editor**.
+3. Commit the file with the next number so the repo history matches production.
+
+Before writing a migration that touches existing objects, verify the actual production state first (columns, function grants, policies) — the deployed schema has diverged from the numbered files in the past.
+
+## Migration history
+
+| Range | What it covers |
+|---|---|
+| 001–005 | Core schema (orgs, sites, users, inventory, transactions), RLS fixes, audit |
+| 006–010 | Team/equipment/safety/documents, audit log, alert rules, supply chain, campaigns, customers |
+| 011–016 | Module config, signup RPC, write-offs, maintenance logs, incident resolution, documents storage bucket |
+| 017–021 | Org-level roles (owner/admin/member), notification prefs, owner-on-signup trigger, currency reconciliation, org users RPC |
+| 022–023 | Scheduled edge functions (pg_cron) and Vault-backed cron secret lockdown |
+| 024–025 | Security-advisor hardening: pinned search_path, dropped over-permissive policies, closed a role self-escalation hole, locked down the signup RPC surface |
+
+## Fresh local stack
+
+For a brand-new local database the numbered files do apply cleanly in order:
 
 ```bash
 supabase start
-supabase db reset  # applies all migrations from scratch
+supabase db reset   # applies supabase/migrations/ from scratch
 ```

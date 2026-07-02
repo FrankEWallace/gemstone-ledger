@@ -1,24 +1,32 @@
 ---
 title: Campaigns
-description: Marketing campaign tracking for your gemstone business.
+description: Org-wide operational campaigns targeted at specific sites.
 ---
 
-The Campaigns module tracks marketing and sales campaigns — what you ran, when, and how it performed.
+Campaigns are org-level initiatives — a safety drive, an equipment inspection push, a production sprint — that can target one or more of your sites. Unlike most modules, campaigns belong to the **organization**, not a single site, so the page shows the same list regardless of the active site.
 
 ## Creating a campaign
 
-Each campaign record includes:
+Each campaign has:
 
-- **Name** and description
-- **Start and end dates**
-- **Budget** allocated
-- **Status** — Draft / Active / Completed / Cancelled
-- **Notes** and outcome summary
+- **Title** and optional description
+- **Start and end dates** (optional)
+- **Target sites** — pick which of your sites the campaign applies to, or leave empty for all
 
-## Performance tracking
-
-Link income transactions to a campaign to track revenue attributed to it. Compare spend (budget) against attributed revenue to evaluate ROI.
+New campaigns start in **Draft** status.
 
 ## Status workflow
 
-Campaigns move from Draft → Active → Completed as they progress. Cancelled campaigns are preserved for historical reference.
+Campaigns move through three states:
+
+| Status | Meaning |
+|---|---|
+| **Draft** | Being planned — visible but not yet running |
+| **Active** | In progress (use the play action to activate) |
+| **Completed** | Finished (use the complete action to close it out) |
+
+Campaigns can also be deleted; deletion is permanent.
+
+## Enabling the module
+
+Campaigns is a toggleable module. Org owners/admins can turn it on or off for the whole organization from **Settings → System → Module Configuration**. When disabled it disappears from the sidebar for everyone.
