@@ -1,31 +1,41 @@
 ---
 title: Roles & Permissions
-description: Role-based access control per organisation.
+description: Two-tier access control — organization roles plus per-site roles.
 ---
 
-Gemstone Ledger uses role-based access control (RBAC) scoped per organisation. Every user has a single role within their organisation that controls what they can see and do.
+Access control works on two levels: every user has one **organization role**, and separately a **role on each site** they've been given access to. A user with no role on a site cannot see that site at all.
 
-## Built-in roles
+## Organization roles
 
 | Role | Description |
 |---|---|
-| **Owner** | Full access — all modules, settings, and user management |
-| **Admin** | Full access to all modules; can manage team members but not billing/org settings |
-| **Manager** | Read/write access to all operational modules; no access to Settings or Admin |
-| **Viewer** | Read-only access across all modules |
+| **Owner** | Full control — sites, members, org settings, module configuration. The person who registers the organization becomes its owner. |
+| **Admin** | Same day-to-day powers as owner: create sites, manage members and roles. |
+| **Member** | Default for invited users. Access is determined entirely by their per-site roles. |
 
-## Module-level permissions
+<Warning>
+  An organization must always have at least one owner. The database blocks demoting or deleting the last owner.
+</Warning>
 
-Permissions are enforced at both the UI layer (components are hidden or disabled) and the database layer (Supabase RLS policies). Client-side permission checks are not the sole enforcement mechanism.
+## Site roles
+
+| Role | Description |
+|---|---|
+| **Admin** | Full access to everything in the site, including inviting users to it |
+| **Site manager** | Manages operations and can invite users to the site |
+| **Worker** | Records day-to-day data (transactions, production, incidents) |
+| **Viewer** | Read-only |
+
+Site creators automatically get the site **admin** role, so a new site is immediately visible and manageable by whoever created it.
+
+## Where enforcement happens
+
+Permissions are enforced in the database with Postgres Row Level Security — every query is filtered to the sites the user has a role on, and privileged operations (creating sites, listing org members, inviting users) go through server-side functions that re-check the caller's role. The UI hides what you can't do, but the UI is never the only gate.
 
 ## Inviting users
 
-Owners and Admins can invite new users from **Settings → Team**. An invitation email is sent; the recipient signs up and is automatically placed in the organisation with the assigned role.
+Site admins and site managers can invite users from the **Team** page. The invite email is sent by a server-side function that first verifies the inviter's role on the target site; the recipient follows the link, sets a password, and lands in the org as a **member** with the site role the inviter chose.
 
-## Changing roles
+## The Roles page
 
-An Owner can change any member's role from **Settings → Team**. Role changes take effect immediately.
-
-<Warning>
-  There must always be at least one Owner in an organisation. You cannot demote or remove the last Owner.
-</Warning>
+**Management → Roles** lists every member of your organization with their org role and all their site roles in one place, so owners/admins can audit who has access to what.

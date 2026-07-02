@@ -37,15 +37,13 @@ Get these from your [Supabase dashboard](https://supabase.com/dashboard) → pro
   Never commit `.env.local` to version control. It's already in `.gitignore`.
 </Tip>
 
-## 3. Run database migrations
+## 3. Set up the database
 
-Apply migrations in order using the Supabase CLI or the SQL editor in your Supabase dashboard.
+For a **fresh** Supabase project, apply each file in `supabase/migrations/` in numeric order via the dashboard **SQL Editor**, or run a local stack with `supabase start && supabase db reset`.
 
-```bash
-supabase db push
-```
-
-Or apply each file manually from `supabase/migrations/` in numeric order. See [Database Migrations](/deployment/database-migrations) for the full list.
+<Warning>
+  Do not run `supabase db push` against the existing production project — its migration history uses different version identifiers and the CLI will try to re-apply the initial schema. See [Database Migrations](/deployment/database-migrations).
+</Warning>
 
 ## 4. Start the dev server
 
@@ -54,6 +52,12 @@ npm run dev
 ```
 
 The app runs at `http://localhost:5173` by default.
+
+## 5. Create your account
+
+Register from the app. Signup provisions everything server-side in one step: your **organization**, your profile as its **owner**, a default **Main Site**, and the site-admin role. If email confirmation is enabled on your Supabase project you'll land on a "check your email" page — confirm, then sign in.
+
+Just exploring? Click **Try the demo** on the login page for a fully local sandbox with sample data — no account needed.
 
 ## Available scripts
 

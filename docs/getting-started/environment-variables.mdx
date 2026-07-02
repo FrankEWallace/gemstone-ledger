@@ -12,6 +12,13 @@ description: All environment variables required to run Gemstone Ledger.
 
 Both values are available in your Supabase dashboard under **Settings → API**.
 
+## Optional variables
+
+| Variable | Description |
+|---|---|
+| `VITE_BACKEND_PROVIDER` | `supabase` (default) or `rest`. Selects the backend at build time — this is a deployment decision, not a runtime user setting |
+| `VITE_REST_BASE_URL` | Required only when the provider is `rest`. Base URL of the alternative REST API — must be HTTPS in production, no trailing slash |
+
 ## Local development
 
 Copy the example file and fill in your values:

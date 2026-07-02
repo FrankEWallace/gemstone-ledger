@@ -10,7 +10,8 @@ export type ModuleKey =
   | "reports"
   | "team"
   | "supply_chain"
-  | "operations";
+  | "operations"
+  | "campaigns";
 
 export function useOrgModules() {
   const { orgId } = useAuthContext();

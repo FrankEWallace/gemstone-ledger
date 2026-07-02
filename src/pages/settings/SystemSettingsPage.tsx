@@ -212,6 +212,7 @@ const MODULE_CONFIG: { key: ModuleKey; label: string; description: string }[] = 
   { key: "team",         label: "Team & Scheduling",   description: "Team performance, shift scheduling, and timesheets" },
   { key: "supply_chain", label: "Supply Chain",        description: "Supplier list, distribution channels, and order management" },
   { key: "operations",   label: "Operations",          description: "Equipment, safety incidents, production logs, and documents" },
+  { key: "campaigns",    label: "Campaigns",           description: "Org-wide operational campaigns targeted at specific sites" },
 ];
 
 function ModuleConfigSection() {
