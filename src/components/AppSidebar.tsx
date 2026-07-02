@@ -24,6 +24,7 @@ import {
   SlidersHorizontal,
   Eye,
   EyeOff,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SitePicker from "@/components/shared/SitePicker";
@@ -64,6 +65,7 @@ const coreItems: NavItem[] = [
   { label: "Inventory",    icon: Package,         to: "/inventory" },
   { label: "Reports",      icon: BarChart3,       to: "/reports",       module: "reports" },
   { label: "Messages",     icon: MessageSquare,   to: "/messages",      module: "messages" },
+  { label: "Campaigns",    icon: Megaphone,       to: "/campaigns",     module: "campaigns" },
 ];
 
 const operationsItems: NavItem[] = [
