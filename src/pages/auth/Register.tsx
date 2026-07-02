@@ -102,7 +102,7 @@ export default function Register() {
     const needsConfirmation = !authData.session;
 
     if (needsConfirmation) {
-      navigate("/check-email", { replace: true });
+      navigate("/check-email", { replace: true, state: { email: step1Data.email } });
     } else {
       navigate("/", { replace: true });
     }
