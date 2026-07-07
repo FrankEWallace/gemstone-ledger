@@ -98,7 +98,15 @@ serve(async (req: Request) => {
       );
     }
 
-    // Send invitation — user_metadata carries org/site/role for handle_invited_user_signup
+    // site_manager may only invite worker/viewer; only admin may invite admin/site_manager
+    if (roleRow.role === "site_manager" && !["worker", "viewer"].includes(role)) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: site managers may only invite workers or viewers" }),
+        { status: 403, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Send invitation — user_metadata carries org/site/role for display only
     const appUrl = Deno.env.get("APP_URL") ?? "http://localhost:5173";
     const { data, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       redirectTo: `${appUrl}/accept-invite`,
@@ -114,6 +122,21 @@ serve(async (req: Request) => {
         status: 400,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       });
+    }
+
+    // Stamp the authorization-bearing copy into app_metadata, which is
+    // writable only via the service-role admin API (never by the user).
+    // handle_invited_user_signup reads from here, not from user_metadata.
+    if (data.user) {
+      const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(data.user.id, {
+        app_metadata: { org_id, invited_to_site: site_id, invited_role: role },
+      });
+      if (metaErr) {
+        return new Response(
+          JSON.stringify({ error: `Invite created but metadata stamp failed: ${metaErr.message}` }),
+          { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     return new Response(
