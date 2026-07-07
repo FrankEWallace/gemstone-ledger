@@ -13,14 +13,7 @@ import {
   DEMO_EXPENSES_BY_CUSTOMER,
   DEMO_INCOME_BY_CUSTOMER,
 } from "@/lib/demo/data";
-import {
-  aggregateMonthlyTrend,
-  aggregateCategoryBreakdown,
-  aggregateReportSummary,
-  aggregateProductionByDay,
-  aggregateCustomerTotals,
-  aggregateCustomerSummaries,
-} from "@/services/reports.aggregators";
+import { aggregateProductionByDay } from "@/services/reports.aggregators";
 import type {
   MonthlyTrend,
   CategoryBreakdown,
@@ -43,15 +36,18 @@ export async function getMonthlyTrend(
       `/reports/monthly-trend?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("type, unit_price, quantity, transaction_date")
-    .eq("site_id", siteId)
-    .gte("transaction_date", dateFrom)
-    .lte("transaction_date", dateTo);
+  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // until report_monthly_trend is present in the generated Database type.
+  const { data, error } = await supabase.rpc("report_monthly_trend" as never, {
+    p_site_id: siteId,
+    p_from: dateFrom,
+    p_to: dateTo,
+  } as never);
   if (error) throw error;
 
-  return aggregateMonthlyTrend(data ?? []);
+  return ((data ?? []) as Array<{ month: string; income: number | string; expenses: number | string }>).map(
+    (r) => ({ month: r.month, income: Number(r.income), expenses: Number(r.expenses) })
+  );
 }
 
 export async function getExpensesByCategory(
@@ -66,20 +62,21 @@ export async function getExpensesByCategory(
       `/reports/expenses-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`
     );
 
-  let query = supabase
-    .from("transactions")
-    .select("category, unit_price, quantity")
-    .eq("site_id", siteId)
-    .eq("type", "expense")
-    .gte("transaction_date", dateFrom)
-    .lte("transaction_date", dateTo);
-
-  if (customerId) query = query.eq("customer_id", customerId);
-
-  const { data, error } = await query;
+  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // until report_category_breakdown is present in the generated Database type.
+  const { data, error } = await supabase.rpc("report_category_breakdown" as never, {
+    p_site_id: siteId,
+    p_from: dateFrom,
+    p_to: dateTo,
+    p_type: "expense",
+    p_customer_id: customerId ?? null,
+  } as never);
   if (error) throw error;
 
-  return aggregateCategoryBreakdown(data ?? []);
+  return ((data ?? []) as Array<{ category: string; total: number | string }>).map((r) => ({
+    category: r.category,
+    total: Number(r.total),
+  }));
 }
 
 export async function getIncomeByCategory(
@@ -94,20 +91,21 @@ export async function getIncomeByCategory(
       `/reports/income-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`
     );
 
-  let query = supabase
-    .from("transactions")
-    .select("category, unit_price, quantity")
-    .eq("site_id", siteId)
-    .eq("type", "income")
-    .gte("transaction_date", dateFrom)
-    .lte("transaction_date", dateTo);
-
-  if (customerId) query = query.eq("customer_id", customerId);
-
-  const { data, error } = await query;
+  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // until report_category_breakdown is present in the generated Database type.
+  const { data, error } = await supabase.rpc("report_category_breakdown" as never, {
+    p_site_id: siteId,
+    p_from: dateFrom,
+    p_to: dateTo,
+    p_type: "income",
+    p_customer_id: customerId ?? null,
+  } as never);
   if (error) throw error;
 
-  return aggregateCategoryBreakdown(data ?? []);
+  return ((data ?? []) as Array<{ category: string; total: number | string }>).map((r) => ({
+    category: r.category,
+    total: Number(r.total),
+  }));
 }
 
 export async function getReportSummary(
@@ -121,22 +119,34 @@ export async function getReportSummary(
       `/reports/summary?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  const [{ data: txData }, { data: shiftData }] = await Promise.all([
-    supabase
-      .from("transactions")
-      .select("type, unit_price, quantity")
-      .eq("site_id", siteId)
-      .gte("transaction_date", dateFrom)
-      .lte("transaction_date", dateTo),
-    supabase
-      .from("shift_records")
-      .select("hours_worked")
-      .eq("site_id", siteId)
-      .gte("shift_date", dateFrom)
-      .lte("shift_date", dateTo),
-  ]);
+  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // until report_summary is present in the generated Database type.
+  const { data, error } = await supabase.rpc("report_summary" as never, {
+    p_site_id: siteId,
+    p_from: dateFrom,
+    p_to: dateTo,
+  } as never);
+  if (error) throw error;
 
-  return aggregateReportSummary(txData ?? [], shiftData ?? []);
+  const row = (data ?? [])[0] as
+    | {
+        total_income: number | string;
+        total_expenses: number | string;
+        net_revenue: number | string;
+        transaction_count: number;
+        total_shifts_logged: number;
+        total_hours_worked: number | string;
+      }
+    | undefined;
+
+  return {
+    totalIncome: Number(row?.total_income ?? 0),
+    totalExpenses: Number(row?.total_expenses ?? 0),
+    netRevenue: Number(row?.net_revenue ?? 0),
+    transactionCount: row?.transaction_count ?? 0,
+    totalShiftsLogged: row?.total_shifts_logged ?? 0,
+    totalHoursWorked: Number(row?.total_hours_worked ?? 0),
+  };
 }
 
 export async function getProductionByDay(
@@ -174,20 +184,21 @@ export async function getExpensesByCustomer(
       `/reports/expenses-by-customer?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("unit_price, quantity, customer_id, customers(name)")
-    .eq("site_id", siteId)
-    .eq("type", "expense")
-    .neq("status", "cancelled")
-    .not("customer_id", "is", null)
-    .gte("transaction_date", dateFrom)
-    .lte("transaction_date", dateTo);
+  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // until report_customer_totals is present in the generated Database type.
+  const { data, error } = await supabase.rpc("report_customer_totals" as never, {
+    p_site_id: siteId,
+    p_from: dateFrom,
+    p_to: dateTo,
+    p_type: "expense",
+  } as never);
   if (error) throw error;
 
-  return aggregateCustomerTotals(
-    (data ?? []) as Array<{ unit_price: number; quantity: number; customer_id: string | null; customers: { name: string } | null }>
-  );
+  return ((data ?? []) as Array<{ customer_id: string; customer_name: string; total: number | string }>).map((r) => ({
+    customerId: r.customer_id,
+    customerName: r.customer_name,
+    total: Number(r.total),
+  }));
 }
 
 export async function getIncomeByCustomer(
@@ -201,20 +212,21 @@ export async function getIncomeByCustomer(
       `/reports/income-by-customer?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("unit_price, quantity, customer_id, customers(name)")
-    .eq("site_id", siteId)
-    .eq("type", "income")
-    .neq("status", "cancelled")
-    .not("customer_id", "is", null)
-    .gte("transaction_date", dateFrom)
-    .lte("transaction_date", dateTo);
+  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // until report_customer_totals is present in the generated Database type.
+  const { data, error } = await supabase.rpc("report_customer_totals" as never, {
+    p_site_id: siteId,
+    p_from: dateFrom,
+    p_to: dateTo,
+    p_type: "income",
+  } as never);
   if (error) throw error;
 
-  return aggregateCustomerTotals(
-    (data ?? []) as Array<{ unit_price: number; quantity: number; customer_id: string | null; customers: { name: string } | null }>
-  );
+  return ((data ?? []) as Array<{ customer_id: string; customer_name: string; total: number | string }>).map((r) => ({
+    customerId: r.customer_id,
+    customerName: r.customer_name,
+    total: Number(r.total),
+  }));
 }
 
 // ─── Customer summary mapping helper ─────────────────────────────────────────
@@ -249,27 +261,37 @@ export async function getCustomerSummaries(
     return raw.map(mapCustomerSummary);
   }
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("type, unit_price, quantity, category, customer_id, expense_category_id, customers(name, type), expense_categories(name)")
-    .eq("site_id", siteId)
-    .neq("status", "cancelled")
-    .not("customer_id", "is", null)
-    .gte("transaction_date", dateFrom)
-    .lte("transaction_date", dateTo);
+  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // until report_customer_summaries is present in the generated Database type.
+  const { data, error } = await supabase.rpc("report_customer_summaries" as never, {
+    p_site_id: siteId,
+    p_from: dateFrom,
+    p_to: dateTo,
+  } as never);
   if (error) throw error;
 
-  return aggregateCustomerSummaries(
-    (data ?? []) as Array<{
-      type: string;
-      unit_price: number;
-      quantity: number;
-      category: string | null;
-      customer_id: string | null;
-      customers: { name: string; type: string } | null;
-      expense_categories: { name: string } | null;
-    }>
-  );
+  return ((data ?? []) as Array<{
+    customer_id: string;
+    customer_name: string;
+    customer_type: string;
+    total_income: number | string;
+    total_expenses: number | string;
+    net_profit: number | string;
+    transaction_count: number;
+    expenses_by_category: { category: string; total: number | string }[];
+  }>).map((r) => ({
+    customerId: r.customer_id,
+    customerName: r.customer_name,
+    customerType: r.customer_type as "external" | "internal",
+    totalIncome: Number(r.total_income),
+    totalExpenses: Number(r.total_expenses),
+    netProfit: Number(r.net_profit),
+    transactionCount: r.transaction_count,
+    expensesByCategory: (r.expenses_by_category ?? []).map((c) => ({
+      category: c.category,
+      total: Number(c.total),
+    })),
+  }));
 }
 
 export async function getCustomerDetail(
