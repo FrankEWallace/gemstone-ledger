@@ -70,6 +70,18 @@ const C = {
   loss: "var(--destructive)",
 } as const;
 
+// ─── KPI derivation ───────────────────────────────────────────────────────────
+// Counts only status === "success" rows — a third status convention distinct
+// from the report aggregates (no filter) and the per-customer report
+// functions (excludes "cancelled"). Left as-is; out of scope to unify.
+
+function sumKpis(rows: Array<{ status: string; type: string; quantity: number; unit_price: number; customer_id: string | null }>) {
+  const success = rows.filter((t) => t.status === "success");
+  const revenue = success.filter((t) => t.type === "income").reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  const expenses = success.filter((t) => t.type === "expense").reduce((s, t) => s + t.quantity * t.unit_price, 0);
+  return { revenue, expenses, net: revenue - expenses };
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -113,15 +125,8 @@ export default function Dashboard() {
     [txs, selectedCustomerId]
   );
 
-  function sumKpis(rows: typeof txs) {
-    const success = rows.filter((t) => t.status === "success");
-    const revenue = success.filter((t) => t.type === "income").reduce((s, t) => s + t.quantity * t.unit_price, 0);
-    const expenses = success.filter((t) => t.type === "expense").reduce((s, t) => s + t.quantity * t.unit_price, 0);
-    return { revenue, expenses, net: revenue - expenses };
-  }
-
-  const curr = sumKpis(filteredTxs);
-  const prev = sumKpis(prevTxs);
+  const curr = useMemo(() => sumKpis(filteredTxs), [filteredTxs]);
+  const prev = useMemo(() => sumKpis(prevTxs), [prevTxs]);
 
   const trendPct = (cur: number, pre: number) =>
     pre > 0 ? Math.round(((cur - pre) / pre) * 1000) / 10 : null;
