@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Pickaxe,
   ArrowRight,
   Loader2,
   ChevronLeft,
@@ -12,6 +11,7 @@ import {
   Users,
   BarChart3,
 } from "lucide-react";
+import BrandMark from "@/components/shared/BrandMark";
 import { supabase } from "@/lib/supabase";
 import { exitDemoMode } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
@@ -118,7 +118,7 @@ export default function Register() {
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <Pickaxe className="h-5 w-5 text-primary-foreground" />
+            <BrandMark className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-lg tracking-tight">FW Mining OS</span>
         </div>
@@ -154,7 +154,7 @@ export default function Register() {
         {/* Mobile logo */}
         <div className="flex items-center gap-2 mb-8 lg:hidden">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Pickaxe className="h-4 w-4 text-primary-foreground" />
+            <BrandMark className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="font-display font-bold">FW Mining OS</span>
         </div>

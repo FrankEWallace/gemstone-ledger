@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pickaxe, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import BrandMark from "@/components/shared/BrandMark";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,7 +77,7 @@ export default function AcceptInvite() {
         {/* Logo */}
         <div className="flex flex-col items-center gap-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Pickaxe className="h-6 w-6" />
+            <BrandMark className="h-6 w-6" />
           </div>
           <h1 className="text-xl font-semibold tracking-tight">You've been invited</h1>
           <p className="text-sm text-muted-foreground text-center">

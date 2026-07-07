@@ -27,6 +27,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import BrandMark from "@/components/shared/BrandMark";
 import SitePicker from "@/components/shared/SitePicker";
 import { useSite } from "@/hooks/useSite";
 import { getChannelMessageCounts } from "@/services/messages.service";
@@ -265,13 +266,13 @@ export default function AppSidebar({
       <SidebarHeader className="border-b border-sidebar-border py-[14px] px-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-2">
         <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shrink-0 shadow-sm">
-            <Pickaxe className="h-4 w-4" />
+            <BrandMark />
           </div>
           <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="font-display font-semibold text-sm leading-tight truncate text-sidebar-foreground">
               FW Mining OS
             </p>
-            <p className="text-xs text-sidebar-foreground/45 leading-tight">Mining Co.</p>
+            <p className="text-xs text-sidebar-foreground/45 leading-tight">Operations Platform</p>
           </div>
         </div>
       </SidebarHeader>

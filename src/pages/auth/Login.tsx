@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pickaxe, Loader2, FlaskConical } from "lucide-react";
+import { Loader2, FlaskConical } from "lucide-react";
+import BrandMark from "@/components/shared/BrandMark";
 import { supabase } from "@/lib/supabase";
 import { enterDemoMode, exitDemoMode } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export default function Login() {
     <div className="space-y-6">
       <div className="flex flex-col items-center gap-2">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Pickaxe className="h-6 w-6" />
+          <BrandMark className="h-6 w-6" />
         </div>
         <h1 className="font-display text-2xl font-bold">Sign in</h1>
         <p className="text-sm text-muted-foreground">Welcome back to FW Mining OS</p>
