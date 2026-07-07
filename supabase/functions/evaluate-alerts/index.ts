@@ -15,19 +15,25 @@ const supabase = createClient(
 // Authorize a request: true for the Vault-backed cron secret (scheduled calls)
 // or a signed-in org owner/admin (the in-app "Run now" trigger). verify_jwt is
 // disabled on this function so the non-JWT cron secret reaches the handler.
-async function authorize(req: Request): Promise<boolean> {
+// Returns whether the request is authorized, and the caller's org id when the
+// request came from a manual (user-JWT) trigger — null means the cron secret
+// was used and every org's rules should be evaluated.
+async function authorize(req: Request): Promise<{ authed: boolean; callerOrgId: string | null }> {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!token) return false;
+  if (!token) return { authed: false, callerOrgId: null };
   const { data: isCron } = await supabase.rpc("is_cron_secret", { p_token: token });
-  if (isCron === true) return true;
+  if (isCron === true) return { authed: true, callerOrgId: null };
   // Manual trigger: require an authenticated org owner/admin.
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user } } = await userClient.auth.getUser();
-  if (!user) return false;
+  if (!user) return { authed: false, callerOrgId: null };
   const { data: role } = await userClient.rpc("current_org_role");
-  return role === "owner" || role === "admin";
+  if (role !== "owner" && role !== "admin") return { authed: false, callerOrgId: null };
+  const { data: orgId } = await userClient.rpc("current_org_id");
+  if (!orgId) return { authed: false, callerOrgId: null };
+  return { authed: true, callerOrgId: orgId };
 }
 
 const CORS = {
@@ -38,7 +44,8 @@ const CORS = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
-  if (!(await authorize(req))) {
+  const { authed, callerOrgId } = await authorize(req);
+  if (!authed) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...CORS, "Content-Type": "application/json" },
@@ -46,11 +53,30 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Fetch all enabled rules
-    const { data: rules, error: rulesError } = await supabase
+    // Manual (user-JWT) triggers only evaluate the caller's own org. The
+    // cron path (callerOrgId === null) evaluates every org's rules.
+    let siteIds: string[] | null = null;
+    if (callerOrgId !== null) {
+      const { data: sites, error: sitesError } = await supabase
+        .from("sites")
+        .select("id")
+        .eq("org_id", callerOrgId);
+      if (sitesError) throw sitesError;
+      siteIds = (sites ?? []).map((s: { id: string }) => s.id);
+      if (siteIds.length === 0) {
+        return new Response(JSON.stringify({ triggered: 0 }), { headers: CORS });
+      }
+    }
+
+    // Fetch all enabled rules (scoped to the caller's sites on manual triggers)
+    let rulesQuery = supabase
       .from("alert_rules")
       .select("*")
       .eq("enabled", true);
+    if (siteIds !== null) {
+      rulesQuery = rulesQuery.in("site_id", siteIds);
+    }
+    const { data: rules, error: rulesError } = await rulesQuery;
 
     if (rulesError) throw rulesError;
     if (!rules?.length) return new Response(JSON.stringify({ triggered: 0 }), { headers: CORS });

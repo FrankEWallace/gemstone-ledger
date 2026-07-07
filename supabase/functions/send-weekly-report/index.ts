@@ -102,6 +102,7 @@ serve(async (req) => {
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
 
   let authed = false;
+  let callerOrgId: string | null = null; // null = cron (all orgs)
   if (token) {
     const { data: isCron } = await supabase.rpc("is_cron_secret", { p_token: token });
     if (isCron === true) {
@@ -116,7 +117,13 @@ serve(async (req) => {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (user) {
         const { data: role } = await supabaseClient.rpc("current_org_role");
-        authed = role === "owner" || role === "admin";
+        if (role === "owner" || role === "admin") {
+          const { data: orgId } = await supabaseClient.rpc("current_org_id");
+          if (orgId) {
+            authed = true;
+            callerOrgId = orgId;
+          }
+        }
       }
     }
   }
@@ -134,6 +141,12 @@ serve(async (req) => {
       const body = await req.json();
       targetOrgId = body?.org_id ?? null;
     } catch { /* no body */ }
+  }
+
+  // Manual (user-JWT) triggers can only target their own org, regardless of
+  // what the request body says. Only the cron path may fan out across orgs.
+  if (callerOrgId !== null) {
+    targetOrgId = callerOrgId;
   }
 
   if (!RESEND_KEY) {
