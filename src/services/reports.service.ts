@@ -36,7 +36,7 @@ export async function getMonthlyTrend(
       `/reports/monthly-trend?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // TODO: regenerate supabaseTypes after migration 027 — casting rpc name/args as `never`
   // until report_monthly_trend is present in the generated Database type.
   const { data, error } = await supabase.rpc("report_monthly_trend" as never, {
     p_site_id: siteId,
@@ -62,7 +62,7 @@ export async function getExpensesByCategory(
       `/reports/expenses-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`
     );
 
-  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // TODO: regenerate supabaseTypes after migration 027 — casting rpc name/args as `never`
   // until report_category_breakdown is present in the generated Database type.
   const { data, error } = await supabase.rpc("report_category_breakdown" as never, {
     p_site_id: siteId,
@@ -91,7 +91,7 @@ export async function getIncomeByCategory(
       `/reports/income-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`
     );
 
-  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // TODO: regenerate supabaseTypes after migration 027 — casting rpc name/args as `never`
   // until report_category_breakdown is present in the generated Database type.
   const { data, error } = await supabase.rpc("report_category_breakdown" as never, {
     p_site_id: siteId,
@@ -119,7 +119,7 @@ export async function getReportSummary(
       `/reports/summary?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // TODO: regenerate supabaseTypes after migration 027 — casting rpc name/args as `never`
   // until report_summary is present in the generated Database type.
   const { data, error } = await supabase.rpc("report_summary" as never, {
     p_site_id: siteId,
@@ -184,7 +184,7 @@ export async function getExpensesByCustomer(
       `/reports/expenses-by-customer?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // TODO: regenerate supabaseTypes after migration 027 — casting rpc name/args as `never`
   // until report_customer_totals is present in the generated Database type.
   const { data, error } = await supabase.rpc("report_customer_totals" as never, {
     p_site_id: siteId,
@@ -212,7 +212,7 @@ export async function getIncomeByCustomer(
       `/reports/income-by-customer?site_id=${siteId}&from=${dateFrom}&to=${dateTo}`
     );
 
-  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // TODO: regenerate supabaseTypes after migration 027 — casting rpc name/args as `never`
   // until report_customer_totals is present in the generated Database type.
   const { data, error } = await supabase.rpc("report_customer_totals" as never, {
     p_site_id: siteId,
@@ -261,7 +261,7 @@ export async function getCustomerSummaries(
     return raw.map(mapCustomerSummary);
   }
 
-  // TODO: regenerate supabaseTypes after migration 026 — casting rpc name/args as `never`
+  // TODO: regenerate supabaseTypes after migration 027 — casting rpc name/args as `never`
   // until report_customer_summaries is present in the generated Database type.
   const { data, error } = await supabase.rpc("report_customer_summaries" as never, {
     p_site_id: siteId,

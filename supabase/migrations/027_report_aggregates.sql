@@ -1,4 +1,4 @@
--- 026: Server-side report aggregates.
+-- 027: Server-side report aggregates.
 --
 -- Background: every report page and the dashboard fetched every matching
 -- transaction row into the browser and reduced them in JS loops (monthly
