@@ -13,25 +13,24 @@ import {
   DEMO_EXPENSES_BY_CUSTOMER,
   DEMO_INCOME_BY_CUSTOMER,
 } from "@/lib/demo/data";
+import {
+  aggregateMonthlyTrend,
+  aggregateCategoryBreakdown,
+  aggregateReportSummary,
+  aggregateProductionByDay,
+  aggregateCustomerTotals,
+  aggregateCustomerSummaries,
+} from "@/services/reports.aggregators";
+import type {
+  MonthlyTrend,
+  CategoryBreakdown,
+  CustomerTotal,
+  ReportSummary,
+  ProductionSummary,
+} from "@/services/reports.aggregators";
 
 export type { CustomerSummary };
-export type MonthlyTrend = { month: string; income: number; expenses: number };
-export type CategoryBreakdown = { category: string; total: number };
-export type CustomerTotal = { customerId: string; customerName: string; total: number };
-export type ReportSummary = {
-  totalIncome: number;
-  totalExpenses: number;
-  netRevenue: number;
-  transactionCount: number;
-  totalShiftsLogged: number;
-  totalHoursWorked: number;
-};
-export type ProductionSummary = {
-  date: string;
-  totalHours: number;
-  totalOutput: number;
-  shiftsLogged: number;
-};
+export type { MonthlyTrend, CategoryBreakdown, CustomerTotal, ReportSummary, ProductionSummary };
 
 export async function getMonthlyTrend(
   siteId: string,
@@ -52,18 +51,7 @@ export async function getMonthlyTrend(
     .lte("transaction_date", dateTo);
   if (error) throw error;
 
-  const map: Record<string, { income: number; expenses: number }> = {};
-  for (const row of data ?? []) {
-    const month = row.transaction_date.slice(0, 7);
-    if (!map[month]) map[month] = { income: 0, expenses: 0 };
-    const amount = row.unit_price * row.quantity;
-    if (row.type === "income") map[month].income += amount;
-    else map[month].expenses += amount;
-  }
-
-  return Object.entries(map)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, v]) => ({ month, ...v }));
+  return aggregateMonthlyTrend(data ?? []);
 }
 
 export async function getExpensesByCategory(
@@ -91,15 +79,7 @@ export async function getExpensesByCategory(
   const { data, error } = await query;
   if (error) throw error;
 
-  const map: Record<string, number> = {};
-  for (const row of data ?? []) {
-    const cat = row.category ?? "Uncategorised";
-    map[cat] = (map[cat] ?? 0) + row.unit_price * row.quantity;
-  }
-
-  return Object.entries(map)
-    .sort(([, a], [, b]) => b - a)
-    .map(([category, total]) => ({ category, total }));
+  return aggregateCategoryBreakdown(data ?? []);
 }
 
 export async function getIncomeByCategory(
@@ -127,15 +107,7 @@ export async function getIncomeByCategory(
   const { data, error } = await query;
   if (error) throw error;
 
-  const map: Record<string, number> = {};
-  for (const row of data ?? []) {
-    const cat = row.category ?? "Uncategorised";
-    map[cat] = (map[cat] ?? 0) + row.unit_price * row.quantity;
-  }
-
-  return Object.entries(map)
-    .sort(([, a], [, b]) => b - a)
-    .map(([category, total]) => ({ category, total }));
+  return aggregateCategoryBreakdown(data ?? []);
 }
 
 export async function getReportSummary(
@@ -164,28 +136,7 @@ export async function getReportSummary(
       .lte("shift_date", dateTo),
   ]);
 
-  let totalIncome = 0;
-  let totalExpenses = 0;
-  for (const row of txData ?? []) {
-    const amount = row.unit_price * row.quantity;
-    if (row.type === "income") totalIncome += amount;
-    else totalExpenses += amount;
-  }
-
-  const totalShiftsLogged = shiftData?.length ?? 0;
-  const totalHoursWorked = (shiftData ?? []).reduce(
-    (sum, r) => sum + (r.hours_worked ?? 0),
-    0
-  );
-
-  return {
-    totalIncome,
-    totalExpenses,
-    netRevenue: totalIncome - totalExpenses,
-    transactionCount: txData?.length ?? 0,
-    totalShiftsLogged,
-    totalHoursWorked,
-  };
+  return aggregateReportSummary(txData ?? [], shiftData ?? []);
 }
 
 export async function getProductionByDay(
@@ -207,16 +158,7 @@ export async function getProductionByDay(
     .lte("shift_date", dateTo);
   if (error) throw error;
 
-  const map: Record<string, ProductionSummary> = {};
-  for (const row of data ?? []) {
-    if (!map[row.shift_date])
-      map[row.shift_date] = { date: row.shift_date, totalHours: 0, totalOutput: 0, shiftsLogged: 0 };
-    map[row.shift_date].totalHours += row.hours_worked ?? 0;
-    map[row.shift_date].totalOutput += row.output_metric ?? 0;
-    map[row.shift_date].shiftsLogged += 1;
-  }
-
-  return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  return aggregateProductionByDay(data ?? []);
 }
 
 // ─── Per-customer totals (type-specific) ─────────────────────────────────────
@@ -243,16 +185,9 @@ export async function getExpensesByCustomer(
     .lte("transaction_date", dateTo);
   if (error) throw error;
 
-  const map: Record<string, { customerName: string; total: number }> = {};
-  for (const row of data ?? []) {
-    const cid = row.customer_id as string;
-    if (!map[cid]) map[cid] = { customerName: (row.customers as { name: string } | null)?.name ?? "Unknown", total: 0 };
-    map[cid].total += (row.unit_price as number) * (row.quantity as number);
-  }
-
-  return Object.entries(map)
-    .sort(([, a], [, b]) => b.total - a.total)
-    .map(([customerId, v]) => ({ customerId, customerName: v.customerName, total: Math.round(v.total * 100) / 100 }));
+  return aggregateCustomerTotals(
+    (data ?? []) as Array<{ unit_price: number; quantity: number; customer_id: string | null; customers: { name: string } | null }>
+  );
 }
 
 export async function getIncomeByCustomer(
@@ -277,16 +212,9 @@ export async function getIncomeByCustomer(
     .lte("transaction_date", dateTo);
   if (error) throw error;
 
-  const map: Record<string, { customerName: string; total: number }> = {};
-  for (const row of data ?? []) {
-    const cid = row.customer_id as string;
-    if (!map[cid]) map[cid] = { customerName: (row.customers as { name: string } | null)?.name ?? "Unknown", total: 0 };
-    map[cid].total += (row.unit_price as number) * (row.quantity as number);
-  }
-
-  return Object.entries(map)
-    .sort(([, a], [, b]) => b.total - a.total)
-    .map(([customerId, v]) => ({ customerId, customerName: v.customerName, total: Math.round(v.total * 100) / 100 }));
+  return aggregateCustomerTotals(
+    (data ?? []) as Array<{ unit_price: number; quantity: number; customer_id: string | null; customers: { name: string } | null }>
+  );
 }
 
 // ─── Customer summary mapping helper ─────────────────────────────────────────
@@ -331,47 +259,17 @@ export async function getCustomerSummaries(
     .lte("transaction_date", dateTo);
   if (error) throw error;
 
-  const map: Record<string, CustomerSummary> = {};
-  for (const row of data ?? []) {
-    const cid = row.customer_id as string;
-    if (!map[cid]) {
-      map[cid] = {
-        customerId:         cid,
-        customerName:       (row.customers as { name: string } | null)?.name ?? "Unknown",
-        customerType:       ((row.customers as { type: string } | null)?.type ?? "external") as "external" | "internal",
-        totalIncome:        0,
-        totalExpenses:      0,
-        netProfit:          0,
-        transactionCount:   0,
-        expensesByCategory: [],
-      };
-    }
-    const amount = (row.unit_price as number) * (row.quantity as number);
-    const entry = map[cid];
-    entry.transactionCount += 1;
-    if (row.type === "income") {
-      entry.totalIncome += amount;
-    } else {
-      entry.totalExpenses += amount;
-      const catName = (row.expense_categories as { name: string } | null)?.name
-        ?? (row.category as string | null)
-        ?? "Uncategorized";
-      const catEntry = entry.expensesByCategory.find((c) => c.category === catName);
-      if (catEntry) catEntry.total += amount;
-      else entry.expensesByCategory.push({ category: catName, total: amount });
-    }
-  }
-
-  return Object.values(map).map((s) => ({
-    ...s,
-    totalIncome:    Math.round(s.totalIncome * 100) / 100,
-    totalExpenses:  Math.round(s.totalExpenses * 100) / 100,
-    netProfit:      Math.round((s.totalIncome - s.totalExpenses) * 100) / 100,
-    expensesByCategory: s.expensesByCategory.map((c) => ({
-      ...c,
-      total: Math.round(c.total * 100) / 100,
-    })).sort((a, b) => b.total - a.total),
-  }));
+  return aggregateCustomerSummaries(
+    (data ?? []) as Array<{
+      type: string;
+      unit_price: number;
+      quantity: number;
+      category: string | null;
+      customer_id: string | null;
+      customers: { name: string; type: string } | null;
+      expense_categories: { name: string } | null;
+    }>
+  );
 }
 
 export async function getCustomerDetail(
