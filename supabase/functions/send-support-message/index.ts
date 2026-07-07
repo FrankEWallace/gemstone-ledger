@@ -50,14 +50,12 @@ serve(async (req: Request) => {
       );
     }
 
-    // Log to notifications table as a record for admins
-    // In production, replace this with Resend / SendGrid / SMTP call
+    // Log metadata only — never log the requester's name, email, or message
+    // body (PII in function logs is a retention problem).
     const logEntry = {
       submitted_at: new Date().toISOString(),
-      from_name: name,
-      from_email: email,
-      subject,
-      message,
+      subject_length: subject.length,
+      message_length: message.length,
     };
 
     console.log("Support request received:", JSON.stringify(logEntry));
