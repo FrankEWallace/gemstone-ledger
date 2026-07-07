@@ -15,6 +15,7 @@ export interface SyncQueueItem {
   siteId: string;
   timestamp: number;
   retries: number;
+  status?: "pending" | "dead";
 }
 
 // ─── Cached entity shapes (mirrors Supabase row types, kept flat) ─────────────
@@ -155,6 +156,22 @@ class MiningOfflineDB extends Dexie {
     this.version(2).stores({
       kv_store: "key",
       sync_queue: "++id, entity, operation, siteId, timestamp",
+      sync_log: "++id, entity, status, syncedAt",
+      safety_incidents: "id, site_id, severity, resolved_at, created_at",
+      inventory_items: "id, site_id, category, created_at",
+      transactions: "id, site_id, type, category, transaction_date",
+      equipment: "id, site_id, status, created_at",
+      workers: "id, site_id, role, status",
+      shift_records: "id, site_id, worker_id, shift_date",
+      suppliers: "id, site_id, status",
+      notifications: "id, user_id, read, created_at",
+    });
+
+    // Version 3 — add `status` to sync_queue so exhausted items can be
+    // moved to a visible dead-letter state instead of being deleted.
+    this.version(3).stores({
+      kv_store: "key",
+      sync_queue: "++id, entity, operation, siteId, timestamp, status",
       sync_log: "++id, entity, status, syncedAt",
       safety_incidents: "id, site_id, severity, resolved_at, created_at",
       inventory_items: "id, site_id, category, created_at",

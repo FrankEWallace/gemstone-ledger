@@ -7,6 +7,7 @@ import {
   incrementRetry,
   getPendingItems,
   getPendingCount,
+  getDeadItems,
   purgeFailed,
 } from "./syncQueue";
 
@@ -20,6 +21,7 @@ const baseItem = {
 describe("offline sync queue", () => {
   beforeEach(async () => {
     await offlineDB.sync_queue.clear();
+    await offlineDB.sync_log.clear();
   });
 
   it("enqueue adds an item with retries=0 and returns its id", async () => {
@@ -76,5 +78,42 @@ describe("offline sync queue", () => {
     const remaining = await getPendingItems();
     expect(remaining).toHaveLength(1);
     expect(remaining[0].id).toBe(keep);
+  });
+
+  it("purgeFailed marks items dead instead of deleting", async () => {
+    const drop = await enqueue({ ...baseItem, timestamp: 1 });
+    for (let i = 0; i < 5; i++) await incrementRetry(drop);
+
+    await purgeFailed(5);
+
+    // The row still exists in the table — it wasn't deleted.
+    const row = await offlineDB.sync_queue.get(drop);
+    expect(row).toBeDefined();
+    expect(row?.status).toBe("dead");
+
+    // A sync_log entry was recorded for the dead-lettered item.
+    const log = await offlineDB.sync_log.toArray();
+    expect(
+      log.some(
+        (e) => e.status === "failed" && e.error === "exceeded max retries — moved to dead letter"
+      )
+    ).toBe(true);
+  });
+
+  it("dead items are excluded from getPendingItems and getPendingCount", async () => {
+    const keep = await enqueue({ ...baseItem, timestamp: 1 });
+    const drop = await enqueue({ ...baseItem, timestamp: 2 });
+    for (let i = 0; i < 5; i++) await incrementRetry(drop);
+
+    await purgeFailed(5);
+
+    expect(await getPendingCount()).toBe(1);
+    const pending = await getPendingItems();
+    expect(pending).toHaveLength(1);
+    expect(pending[0].id).toBe(keep);
+
+    const dead = await getDeadItems();
+    expect(dead).toHaveLength(1);
+    expect(dead[0].id).toBe(drop);
   });
 });

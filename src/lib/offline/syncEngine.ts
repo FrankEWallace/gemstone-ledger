@@ -78,7 +78,17 @@ async function logSync(
 
 const MAX_RETRIES = 5;
 
-export async function drainQueue(
+let drainInFlight: Promise<void> | null = null;
+
+export function drainQueue(onProgress?: (remaining: number) => void): Promise<void> {
+  if (drainInFlight) return drainInFlight;
+  drainInFlight = doDrain(onProgress).finally(() => {
+    drainInFlight = null;
+  });
+  return drainInFlight;
+}
+
+async function doDrain(
   onProgress?: (remaining: number) => void
 ): Promise<void> {
   await purgeFailed(MAX_RETRIES);
@@ -103,8 +113,14 @@ export async function drainQueue(
         continue;
       }
     } catch {
-      // If conflict check itself fails (e.g. offline), stop draining
-      break;
+      if (!navigator.onLine) {
+        // Genuinely offline — stop draining, nothing else will succeed either.
+        break;
+      }
+      // Transient failure (e.g. a flaky read) — leave this item queued
+      // without penalizing its retry count, and keep draining the rest.
+      console.warn(`[SyncEngine] Conflict check failed for ${key} — leaving queued, continuing drain`);
+      continue;
     }
 
     try {

@@ -128,13 +128,16 @@ export async function resolveSafetyIncident(id: string): Promise<SafetyIncident>
 
 registerHandler("safety_incidents", "create", async (item) => {
   const p = item.payload as SafetyIncidentPayload & { site_id: string; reported_by: string | null; reported_at: string };
-  await supabase.from("safety_incidents").insert(p);
+  const { error } = await supabase.from("safety_incidents").insert(p);
+  if (error) throw error;
 });
 registerHandler("safety_incidents", "update", async (item) => {
   const { id, ...rest } = item.payload as { id: string } & Partial<SafetyIncidentPayload>;
-  await supabase.from("safety_incidents").update(rest).eq("id", id);
+  const { error } = await supabase.from("safety_incidents").update(rest).eq("id", id);
+  if (error) throw error;
 });
 registerHandler("safety_incidents", "delete", async (item) => {
   const { id } = item.payload as { id: string };
-  await supabase.from("safety_incidents").delete().eq("id", id);
+  const { error } = await supabase.from("safety_incidents").delete().eq("id", id);
+  if (error) throw error;
 });
