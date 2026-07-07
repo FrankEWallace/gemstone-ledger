@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import {
   CheckCircle2,
@@ -18,8 +18,9 @@ import { Separator } from "@/components/ui/separator";
 
 import { usePendingCount, useSyncLog, drainQueue } from "@/lib/offline/syncEngine";
 import { offlineDB } from "@/lib/offline/db";
+import { getDeadItems, discardDeadItem } from "@/lib/offline/syncQueue";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
-import type { SyncLogEntry } from "@/lib/offline/db";
+import type { SyncLogEntry, SyncQueueItem } from "@/lib/offline/db";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,8 +47,32 @@ export default function SyncHistoryPage() {
   const pending = usePendingCount();
   const log = useSyncLog(100);
   const [syncing, setSyncing] = useState(false);
+  const [deadItems, setDeadItems] = useState<SyncQueueItem[]>([]);
 
   const lastSync = log.find((e) => e.status === "success");
+
+  async function refreshDeadItems() {
+    setDeadItems(await getDeadItems());
+  }
+
+  useEffect(() => {
+    refreshDeadItems();
+    const onChange = () => { refreshDeadItems(); };
+    offlineDB.sync_queue.hook("creating", onChange);
+    offlineDB.sync_queue.hook("updating", onChange);
+    offlineDB.sync_queue.hook("deleting", onChange);
+    return () => {
+      offlineDB.sync_queue.hook("creating").unsubscribe(onChange);
+      offlineDB.sync_queue.hook("updating").unsubscribe(onChange);
+      offlineDB.sync_queue.hook("deleting").unsubscribe(onChange);
+    };
+  }, []);
+
+  async function handleDiscardDeadItem(id?: number) {
+    if (id == null) return;
+    await discardDeadItem(id);
+    toast.success("Discarded.");
+  }
 
   async function handleManualSync() {
     if (isOffline) {
@@ -145,6 +170,49 @@ export default function SyncHistoryPage() {
           </Button>
         )}
       </div>
+
+      {/* Dead-letter items */}
+      {deadItems.length > 0 && (
+        <>
+          <Separator />
+          <div>
+            <h2 className="text-sm font-semibold mb-3 text-red-600 uppercase tracking-wide">
+              Failed permanently ({deadItems.length})
+            </h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              These changes could not be synced after repeated attempts and were
+              removed from the retry queue. Discard them or contact support if
+              this data matters.
+            </p>
+            <div className="space-y-1">
+              {deadItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-lg border border-red-200 dark:border-red-900/40 bg-card px-4 py-3"
+                >
+                  <XCircle className="h-4 w-4 text-red-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{entityLabel(item.entity)}</span>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {item.operation}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDiscardDeadItem(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Discard
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <Separator />
 

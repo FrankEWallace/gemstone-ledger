@@ -90,15 +90,18 @@ export async function deleteInventoryItem(id: string): Promise<void> {
 // ─── Sync handlers ────────────────────────────────────────────────────────────
 
 registerHandler("inventory_items", "create", async (item) => {
-  await supabase.from("inventory_items").insert(item.payload as TablesInsert<"inventory_items">);
+  const { error } = await supabase.from("inventory_items").insert(item.payload as TablesInsert<"inventory_items">);
+  if (error) throw error;
 });
 registerHandler("inventory_items", "update", async (item) => {
   const { id, ...rest } = item.payload as { id: string } & Partial<InventoryItemPayload>;
-  await supabase.from("inventory_items").update(rest).eq("id", id);
+  const { error } = await supabase.from("inventory_items").update(rest).eq("id", id);
+  if (error) throw error;
 });
 registerHandler("inventory_items", "delete", async (item) => {
   const { id } = item.payload as { id: string };
-  await supabase.from("inventory_items").delete().eq("id", id);
+  const { error } = await supabase.from("inventory_items").delete().eq("id", id);
+  if (error) throw error;
 });
 
 export async function getInventoryConsumptionRates(

@@ -90,9 +90,10 @@ registerHandler("production_logs", "create", async (item) => {
     await restPost("/production-logs/upsert", item.payload);
     return;
   }
-  await supabase
+  const { error } = await supabase
     .from("production_logs")
     .upsert(item.payload as TablesInsert<"production_logs">, { onConflict: "site_id,log_date" });
+  if (error) throw error;
 });
 registerHandler("production_logs", "delete", async (item) => {
   const { id } = item.payload as { id: string };
@@ -100,5 +101,6 @@ registerHandler("production_logs", "delete", async (item) => {
     await restDel(`/production-logs/${id}`);
     return;
   }
-  await supabase.from("production_logs").delete().eq("id", id);
+  const { error } = await supabase.from("production_logs").delete().eq("id", id);
+  if (error) throw error;
 });
