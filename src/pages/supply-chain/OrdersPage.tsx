@@ -20,6 +20,7 @@ import { useSite } from "@/hooks/useSite";
 import { fmtCurrency } from "@/lib/formatCurrency";
 import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import SharedStatusBadge from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -95,20 +96,8 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   cancelled: "Cancelled",
 };
 
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  draft: "bg-muted text-muted-foreground",
-  sent: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  confirmed: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  received: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  cancelled: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-};
-
 function StatusBadge({ status }: { status: OrderStatus }) {
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
-      {STATUS_LABELS[status]}
-    </span>
-  );
+  return <SharedStatusBadge status={status} label={STATUS_LABELS[status]} />;
 }
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -576,7 +565,7 @@ function OrderDetailSheet({
                     size="sm"
                     onClick={() => advance(order)}
                     disabled={isAdvancing}
-                    className={nextStatus === "received" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                    className={nextStatus === "received" ? "bg-success hover:bg-success/90 text-success-foreground" : ""}
                   >
                     {nextIcon[nextStatus]}
                     {nextLabel[nextStatus]}
@@ -665,7 +654,7 @@ function OrderDetailSheet({
             </div>
 
             {nextStatus === "received" && (
-              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+              <div className="rounded-lg bg-success/10 border border-success/20 p-3 text-sm text-success">
                 <PackageCheck className="h-4 w-4 inline mr-1.5" />
                 Receiving this order will automatically increment inventory quantities for all line items.
               </div>
