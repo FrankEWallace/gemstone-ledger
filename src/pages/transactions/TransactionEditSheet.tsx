@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   Sheet,
@@ -34,6 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
 import type { Customer } from "@/lib/supabaseTypes";
 import { updateTransaction } from "@/services/transactions.service";
+import { getProductionPhases } from "@/services/production-phases.service";
 import { useSite } from "@/hooks/useSite";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ const schema = z.object({
   reference_no:     z.string().optional(),
   category:         z.string().optional(),
   customer_id:      z.string().nullable().optional(),
+  phase_id:         z.string().nullable().optional(),
   type:             z.enum(["income", "expense", "refund"]),
   status:           z.enum(["success", "pending", "refunded", "cancelled"]),
   quantity:         z.coerce.number().min(0.001, "Must be > 0"),
@@ -74,6 +76,12 @@ export default function TransactionEditSheet({
   const { activeSiteId } = useSite();
   const queryClient = useQueryClient();
 
+  const { data: phases = [] } = useQuery({
+    queryKey: ["production-phases", activeSiteId],
+    queryFn: () => getProductionPhases(activeSiteId!),
+    enabled: open && !!activeSiteId,
+  });
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: txToForm(transaction),
@@ -88,6 +96,7 @@ export default function TransactionEditSheet({
       updateTransaction(transaction!.id, {
         ...values,
         customer_id: values.customer_id || null,
+        phase_id: values.phase_id || null,
         description: values.description || undefined,
         reference_no: values.reference_no || undefined,
         category: values.category || undefined,
@@ -231,6 +240,36 @@ export default function TransactionEditSheet({
               )}
             />
 
+            {/* Phase */}
+            {phases.length > 0 && (
+              <FormField
+                control={form.control}
+                name="phase_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phase</FormLabel>
+                    <Select
+                      value={field.value ?? "__none__"}
+                      onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="text-sm">
+                          <SelectValue placeholder="None" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">None</SelectItem>
+                        {phases.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <Separator />
 
             {/* Type + Status */}
@@ -343,6 +382,7 @@ function txToForm(tx: Transaction | null): FormValues {
     reference_no:     tx?.reference_no ?? "",
     category:         tx?.category ?? "",
     customer_id:      tx?.customer_id ?? null,
+    phase_id:         tx?.phase_id ?? null,
     type:             (tx?.type as FormValues["type"]) ?? "income",
     status:           (tx?.status as FormValues["status"]) ?? "pending",
     quantity:         tx?.quantity ?? 1,

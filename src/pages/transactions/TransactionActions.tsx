@@ -43,6 +43,7 @@ import { fmtCurrency } from "@/lib/formatCurrency";
 
 import { createTransaction } from "@/services/transactions.service";
 import { consumeInventoryItem, getInventoryItems } from "@/services/inventory.service";
+import { getProductionPhases } from "@/services/production-phases.service";
 import type { InventoryItem } from "@/lib/supabaseTypes";
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
@@ -383,6 +384,7 @@ const expenseSchema = z.object({
   description: z.string().min(1, "Description is required"),
   reference_no: z.string().optional(),
   category: z.string().optional(),
+  phase_id: z.string().optional(),
   quantity: z.coerce.number().min(1, "Must be ≥ 1"),
   unit_price: z.coerce.number().min(0, "Must be ≥ 0"),
   currency: z.string().min(1),
@@ -415,6 +417,7 @@ export function RecordExpenseModal({
       description: "",
       reference_no: "",
       category: "",
+      phase_id: "",
       quantity: 1,
       unit_price: 0,
       currency: "TZS",
@@ -422,6 +425,13 @@ export function RecordExpenseModal({
       status: "pending",
     },
   });
+
+  const { data: phases = [] } = useQuery({
+    queryKey: ["production-phases", siteId],
+    queryFn: () => getProductionPhases(siteId),
+    enabled: open && !!siteId,
+  });
+  const openPhases = phases.filter((p) => p.status === "open");
 
   const { mutate, isPending } = useMutation({
     mutationFn: (v: ExpenseForm) =>
@@ -433,6 +443,7 @@ export function RecordExpenseModal({
           description: v.description,
           reference_no: v.reference_no || undefined,
           category: v.category || undefined,
+          phase_id: v.phase_id || null,
           quantity: v.quantity,
           unit_price: v.unit_price,
           currency: v.currency,
@@ -523,6 +534,36 @@ export function RecordExpenseModal({
                   </FormItem>
                 )}
               />
+
+              {/* Phase */}
+              {openPhases.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="phase_id"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Phase</FormLabel>
+                      <Select
+                        value={field.value || "__none__"}
+                        onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="None" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">None</SelectItem>
+                          {openPhases.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Quantity */}
               <FormField

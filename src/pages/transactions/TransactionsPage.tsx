@@ -44,6 +44,7 @@ import {
   type TransactionPayload,
 } from "@/services/transactions.service";
 import { getCustomers } from "@/services/customers.service";
+import { getProductionPhases } from "@/services/production-phases.service";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
 import StatCard from "@/components/shared/StatCard";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -78,8 +79,8 @@ function statusBadge(status: TransactionStatus) {
   return <StatusBadge status={status} className="capitalize" />;
 }
 
-function exportCSV(txs: Transaction[], customerMap: Map<string, string>) {
-  const header = "Date,Reference,Description,Category,Customer,Type,Status,Qty,Unit Price,Total";
+function exportCSV(txs: Transaction[], customerMap: Map<string, string>, phaseMap: Map<string, string>) {
+  const header = "Date,Reference,Description,Category,Customer,Phase,Type,Status,Qty,Unit Price,Total";
   const rows = txs.map((t) =>
     [
       t.transaction_date,
@@ -87,6 +88,7 @@ function exportCSV(txs: Transaction[], customerMap: Map<string, string>) {
       `"${(t.description ?? "").replace(/"/g, '""')}"`,
       t.category ?? "",
       `"${customerMap.get(t.customer_id ?? "") ?? ""}"`,
+      `"${phaseMap.get(t.phase_id ?? "") ?? ""}"`,
       t.type,
       t.status,
       t.quantity,
@@ -169,6 +171,7 @@ export default function TransactionsPage() {
     statusFilter:   "all",
     categoryFilter: "all",
     customerFilter: "all",
+    phaseFilter:    "all",
     dateFrom:       "",
     dateTo:         "",
   });
@@ -183,10 +186,19 @@ export default function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [editTarget, setEditTarget] = useState<Transaction | null>(null);
 
+  const { data: phases = [] } = useQuery({
+    queryKey: ["production-phases", activeSiteId],
+    queryFn: () => getProductionPhases(activeSiteId!),
+    enabled: !!activeSiteId,
+  });
+
+  const phaseNameToId = new Map(phases.map((p) => [p.name.trim().toLowerCase(), p.id]));
+
   const txCsvColumns: CsvColumn<TransactionPayload>[] = [
     { header: "Description",      key: "description" },
     { header: "Reference No",     key: "reference_no" },
     { header: "Category",         key: "category" },
+    { header: "Phase",            key: "phase_id",         transform: (v) => { if (!v) return undefined; const id = phaseNameToId.get(v.trim().toLowerCase()); if (!id) throw new Error(`no phase named "${v}" — create it first under Settings > Phases`); return id; } },
     { header: "Type",             key: "type",             required: true, transform: (v) => { if (!["income","expense","refund"].includes(v)) throw new Error("must be income/expense/refund"); return v as TransactionType; } },
     { header: "Status",           key: "status",           required: true, transform: (v) => { if (!["success","pending","refunded","cancelled"].includes(v)) throw new Error("must be success/pending/refunded/cancelled"); return v as TransactionStatus; } },
     { header: "Quantity",         key: "quantity",         required: true, transform: (v) => { const n = Number(v); if (isNaN(n) || n < 1) throw new Error("must be ≥ 1"); return n; } },
@@ -210,6 +222,7 @@ export default function TransactionsPage() {
         status:     filters.statusFilter,
         category:   filters.categoryFilter,
         customerId: filters.customerFilter,
+        phaseId:    filters.phaseFilter,
         dateFrom:   filters.dateFrom || undefined,
         dateTo:     filters.dateTo   || undefined,
       }),
@@ -229,6 +242,7 @@ export default function TransactionsPage() {
   });
 
   const customerMap = new Map(customers.map((c) => [c.id, c.name]));
+  const phaseMap = new Map(phases.map((p) => [p.id, p.name]));
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
     mutationFn: (id: string) => deleteTransaction(id),
@@ -390,7 +404,7 @@ export default function TransactionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-display">Transactions</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportCSV(transactions, customerMap)}>
+          <Button variant="outline" size="sm" onClick={() => exportCSV(transactions, customerMap, phaseMap)}>
             <Download className="h-4 w-4 mr-1.5" />
             Export CSV
           </Button>
@@ -469,6 +483,7 @@ export default function TransactionsPage() {
             onChange={updateFilters}
             categories={categories}
             customers={customers}
+            phases={phases}
           />
         }
       />
@@ -480,8 +495,8 @@ export default function TransactionsPage() {
         entityName="Transactions"
         columns={txCsvColumns as CsvColumn<Record<string, unknown>>[]}
         onImport={handleTxCsvImport}
-        templateHeaders="Description,Reference No,Category,Type,Status,Quantity,Unit Price,Transaction Date"
-        exampleRow='Diesel fuel,INV-001,Fuel,expense,success,1,450.00,2026-03-15'
+        templateHeaders="Description,Reference No,Category,Phase,Type,Status,Quantity,Unit Price,Transaction Date"
+        exampleRow='Diesel fuel,INV-001,Fuel,Awamu ya Pili (Phase 2),expense,success,1,450.00,2026-03-15'
       />
 
       {/* Action Modals */}

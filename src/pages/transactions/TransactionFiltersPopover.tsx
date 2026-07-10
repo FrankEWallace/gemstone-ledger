@@ -15,7 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import DateRangePicker from "@/components/shared/DateRangePicker";
 import type { TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
-import type { Customer } from "@/lib/supabaseTypes";
+import type { Customer, ProductionPhase } from "@/lib/supabaseTypes";
 
 const TYPES: TransactionType[]   = ["income", "expense", "refund"];
 const STATUSES: TransactionStatus[] = ["success", "pending", "refunded", "cancelled"];
@@ -25,6 +25,7 @@ export interface TransactionFilters {
   statusFilter:   TransactionStatus | "all";
   categoryFilter: string;
   customerFilter: string;
+  phaseFilter:    string;
   dateFrom:       string;
   dateTo:         string;
 }
@@ -34,6 +35,7 @@ interface Props {
   onChange: (f: Partial<TransactionFilters>) => void;
   categories: string[];
   customers: Customer[];
+  phases: ProductionPhase[];
 }
 
 function activeCount(f: TransactionFilters): number {
@@ -42,6 +44,7 @@ function activeCount(f: TransactionFilters): number {
   if (f.statusFilter   !== "all") n++;
   if (f.categoryFilter !== "all") n++;
   if (f.customerFilter !== "all") n++;
+  if (f.phaseFilter    !== "all") n++;
   if (f.dateFrom || f.dateTo)     n++;
   return n;
 }
@@ -51,6 +54,7 @@ export default function TransactionFiltersPopover({
   onChange,
   categories,
   customers,
+  phases,
 }: Props) {
   const count = activeCount(filters);
 
@@ -60,6 +64,7 @@ export default function TransactionFiltersPopover({
       statusFilter:   "all",
       categoryFilter: "all",
       customerFilter: "all",
+      phaseFilter:    "all",
       dateFrom:       "",
       dateTo:         "",
     });
@@ -158,6 +163,27 @@ export default function TransactionFiltersPopover({
                 <SelectItem value="all">All categories</SelectItem>
                 {categories.map((c) => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Phase */}
+        {phases.length > 0 && (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Phase</Label>
+            <Select
+              value={filters.phaseFilter}
+              onValueChange={(v) => onChange({ phaseFilter: v })}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="All phases" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All phases</SelectItem>
+                {phases.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

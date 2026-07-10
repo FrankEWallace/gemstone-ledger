@@ -963,6 +963,60 @@ export type Database = {
           },
         ]
       }
+      production_phases: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          org_id: string
+          site_id: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          org_id: string
+          site_id: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          org_id?: string
+          site_id?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_phases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_phases_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safety_incidents: {
         Row: {
           actions_taken: string | null
@@ -1210,6 +1264,7 @@ export type Database = {
           expense_category_id: string | null
           id: string
           inventory_item_id: string | null
+          phase_id: string | null
           quantity: number
           reference_no: string | null
           site_id: string
@@ -1229,6 +1284,7 @@ export type Database = {
           expense_category_id?: string | null
           id?: string
           inventory_item_id?: string | null
+          phase_id?: string | null
           quantity?: number
           reference_no?: string | null
           site_id: string
@@ -1248,6 +1304,7 @@ export type Database = {
           expense_category_id?: string | null
           id?: string
           inventory_item_id?: string | null
+          phase_id?: string | null
           quantity?: number
           reference_no?: string | null
           site_id?: string
@@ -1284,6 +1341,13 @@ export type Database = {
             columns: ["inventory_item_id"]
             isOneToOne: false
             referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "production_phases"
             referencedColumns: ["id"]
           },
           {
@@ -1612,6 +1676,8 @@ export type Supplier          = Database["public"]["Tables"]["suppliers"]["Row"]
 export type InventoryItem     = Database["public"]["Tables"]["inventory_items"]["Row"]
 export type InventoryWriteOff = Database["public"]["Tables"]["inventory_write_offs"]["Row"]
 export type Transaction       = Database["public"]["Tables"]["transactions"]["Row"]
+export type ProductionPhase   = Database["public"]["Tables"]["production_phases"]["Row"]
+export type ProductionPhaseStatus = ProductionPhase["status"]
 export type Channel           = Database["public"]["Tables"]["channels"]["Row"]
 export type Order             = Database["public"]["Tables"]["orders"]["Row"]
 export type OrderItem         = Database["public"]["Tables"]["order_items"]["Row"]
