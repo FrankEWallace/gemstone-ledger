@@ -36,9 +36,9 @@ const STATUS_LABELS: Record<string, string> = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function statusDot(status: Transaction["status"]) {
-  if (status === "success") return "bg-emerald-500";
-  if (status === "pending") return "bg-yellow-500";
-  if (status === "refunded") return "bg-blue-400";
+  if (status === "success") return "bg-success";
+  if (status === "pending") return "bg-warning";
+  if (status === "refunded") return "bg-info";
   return "bg-muted-foreground";
 }
 

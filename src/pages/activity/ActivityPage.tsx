@@ -314,7 +314,7 @@ function CloseActivityModal({
         </div>
 
         {net < 0 && (
-          <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">
+          <p className="text-xs text-warning bg-warning/10 px-3 py-2 rounded-lg">
             Expenses exceed income for this period.
           </p>
         )}
@@ -421,7 +421,7 @@ export default function ActivityPage() {
                       className={cn(
                         "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wide",
                         customer.type === "internal"
-                          ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                          ? "bg-info/10 text-info"
                           : "bg-muted text-muted-foreground"
                       )}
                     >
@@ -484,7 +484,7 @@ export default function ActivityPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-blue-600 border-blue-200"
+                      className="text-info border-info/20"
                       onClick={() => setUseInvCustomer(customer)}
                     >
                       <Package className="h-3.5 w-3.5 mr-1" />

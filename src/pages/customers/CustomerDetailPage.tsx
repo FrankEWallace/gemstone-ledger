@@ -45,6 +45,7 @@ import { fmtCurrency, fmtTick } from "@/lib/formatCurrency";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import SharedStatusBadge from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -145,17 +146,7 @@ function BarTooltip({ active, payload, label }: { active?: boolean; payload?: an
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    prospect:  "text-violet-600 border-violet-200",
-    active:    "text-blue-600 border-blue-200",
-    inactive:  "text-muted-foreground",
-    completed: "text-blue-500 border-blue-100",
-  };
-  return (
-    <Badge variant="outline" className={`${map[status] ?? "text-muted-foreground"} capitalize`}>
-      {status}
-    </Badge>
-  );
+  return <SharedStatusBadge status={status} className="capitalize" />;
 }
 
 // ─── Quick Add Transaction Modal ─────────────────────────────────────────────
@@ -425,18 +416,7 @@ export default function CustomerDetailPage() {
       key: "status",
       header: "Status",
       render: (val) => {
-        const map: Record<string, string> = {
-          success:   "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-          pending:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-          refunded:  "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-          cancelled: "bg-muted text-muted-foreground",
-        };
-        const s = String(val);
-        return (
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${map[s] ?? ""}`}>
-            {s}
-          </span>
-        );
+        return <SharedStatusBadge status={String(val)} className="capitalize" />;
       },
     },
     {
@@ -544,7 +524,7 @@ export default function CustomerDetailPage() {
           </Button>
           <Button
             size="sm" variant="outline"
-            className="h-8 text-xs gap-1.5 text-blue-600 border-blue-200"
+            className="h-8 text-xs gap-1.5 text-info border-info/20"
             onClick={() => setUseInventoryOpen(true)}
           >
             <Package className="h-3.5 w-3.5" />
@@ -559,9 +539,9 @@ export default function CustomerDetailPage() {
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
-              customer.status === "active"    ? "bg-blue-100 text-blue-700"      :
-              customer.status === "prospect"  ? "bg-violet-100 text-violet-700"  :
-              customer.status === "completed" ? "bg-blue-100 text-blue-700"      :
+              customer.status === "active"    ? "bg-success/10 text-success" :
+              customer.status === "prospect"  ? "bg-info/10 text-info"       :
+              customer.status === "completed" ? "bg-info/10 text-info"       :
               "bg-muted text-muted-foreground"
             }`}>
               <span className="text-base font-bold uppercase">
@@ -575,7 +555,7 @@ export default function CustomerDetailPage() {
                 <h1 className="font-display text-xl font-bold tracking-tight leading-tight">{customer.name}</h1>
                 <Badge
                   variant="outline"
-                  className={customer.type === "external" ? "text-blue-600 border-blue-200" : "text-muted-foreground"}
+                  className={customer.type === "external" ? "text-info border-info/20" : "text-muted-foreground"}
                 >
                   {customer.type}
                 </Badge>

@@ -54,6 +54,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { fmtCurrency } from "@/lib/formatCurrency";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 import type { Equipment, EquipmentStatus } from "@/lib/supabaseTypes";
 import {
@@ -85,8 +86,8 @@ function getHealthLevel(e: Equipment): HealthLevel {
 
 const HEALTH_DOT: Record<HealthLevel, string> = {
   overdue: "bg-destructive",
-  soon:    "bg-yellow-500",
-  ok:      "bg-emerald-500",
+  soon:    "bg-warning",
+  ok:      "bg-success",
   neutral: "bg-muted-foreground/30",
 };
 
@@ -115,12 +116,6 @@ const STATUS_LABELS: Record<EquipmentStatus, string> = {
   operational: "Operational",
   maintenance: "Maintenance",
   retired:     "Retired",
-};
-
-const STATUS_COLORS: Record<EquipmentStatus, string> = {
-  operational: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  maintenance: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  retired:     "bg-muted text-muted-foreground",
 };
 
 // ─── Equipment Modal ──────────────────────────────────────────────────────────
@@ -575,9 +570,7 @@ export default function EquipmentPage() {
       header: "Status",
       sortable: true,
       render: (val) => (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[val as EquipmentStatus]}`}>
-          {STATUS_LABELS[val as EquipmentStatus]}
-        </span>
+        <StatusBadge status={String(val)} label={STATUS_LABELS[val as EquipmentStatus]} />
       ),
     },
     {
@@ -590,7 +583,7 @@ export default function EquipmentPage() {
         const overdue = isPast(date);
         const daysLeft = differenceInDays(date, new Date());
         return (
-          <span className={overdue ? "text-destructive font-medium" : daysLeft <= 7 ? "text-yellow-600 font-medium" : ""}>
+          <span className={overdue ? "text-destructive font-medium" : daysLeft <= 7 ? "text-warning font-medium" : ""}>
             {format(date, "MMM d, yyyy")}
             {overdue && <span className="ml-1 text-xs">(overdue)</span>}
             {!overdue && daysLeft <= 7 && <span className="ml-1 text-xs">({daysLeft}d)</span>}

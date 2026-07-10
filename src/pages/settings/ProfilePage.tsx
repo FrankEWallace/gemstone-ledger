@@ -137,9 +137,9 @@ function SiteRoleBadge({ role }: { role: string }) {
   const label = SITE_ROLE_LABELS[role] ?? role;
   const className =
     role === "admin"
-      ? "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300"
+      ? "bg-chart-3/10 text-chart-3"
       : role === "site_manager"
-      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+      ? "bg-chart-4/10 text-chart-4"
       : "bg-muted text-muted-foreground";
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>
@@ -899,7 +899,7 @@ export default function ProfilePage() {
       />
 
       {demo && (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-400">
+        <p className="rounded-lg border border-warning/20 bg-warning/10 px-4 py-2 text-xs text-warning">
           You're in demo mode — profile changes are disabled.
         </p>
       )}

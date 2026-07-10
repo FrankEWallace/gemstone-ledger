@@ -46,6 +46,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 import type { Campaign, CampaignStatus } from "@/lib/supabaseTypes";
 import {
@@ -54,23 +55,6 @@ import {
   updateCampaignStatus,
   deleteCampaign,
 } from "@/services/campaigns.service";
-
-// ─── Status helpers ───────────────────────────────────────────────────────────
-
-const STATUS_COLORS: Record<CampaignStatus, string> = {
-  draft: "bg-muted text-muted-foreground",
-  active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  completed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  cancelled: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-};
-
-function StatusBadge({ status }: { status: CampaignStatus }) {
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_COLORS[status]}`}>
-      {status}
-    </span>
-  );
-}
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 

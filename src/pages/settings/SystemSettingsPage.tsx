@@ -283,7 +283,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
       <div className="flex items-center gap-2 mb-1">
         <Database className="h-4 w-4 text-muted-foreground" />
         <h2 className="font-semibold text-sm">Backend Provider</h2>
-        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
+        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-warning/10 text-warning uppercase tracking-wide">
           Developer
         </span>
       </div>
@@ -303,7 +303,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Supabase</span>
               {!isRest && (
-                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-success/10 text-success">
                   Active
                 </span>
               )}
@@ -320,7 +320,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Custom REST API</span>
               {isRest && (
-                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-success/10 text-success">
                   Active
                 </span>
               )}
@@ -346,7 +346,7 @@ function BackendProviderSection({ role }: { role: string | null }) {
             {testing ? "Testing…" : "Test Connection"}
           </button>
           {testResult === "ok" && (
-            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+            <span className="flex items-center gap-1 text-xs text-success">
               <CheckCircle2 className="h-3.5 w-3.5" /> Connected
             </span>
           )}
@@ -593,7 +593,7 @@ export default function SystemSettingsPage() {
               {isUploadingLogo ? "Uploading…" : "Upload Logo"}
             </Button>
             <p className="text-xs text-muted-foreground mt-1">PNG, JPG or SVG · Max 2MB</p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+            <p className="text-xs text-warning mt-0.5">
               Requires the <code>org-assets</code> storage bucket to be created in Supabase.
             </p>
           </div>

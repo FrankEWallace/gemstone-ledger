@@ -51,13 +51,13 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 function fileIcon(mime: string | null) {
   if (!mime) return <File className="h-5 w-5 text-muted-foreground" />;
   if (mime.startsWith("image/"))
-    return <FileImage className="h-5 w-5 text-blue-500" />;
+    return <FileImage className="h-5 w-5 text-chart-4" />;
   if (mime.includes("pdf"))
-    return <FileText className="h-5 w-5 text-red-500" />;
+    return <FileText className="h-5 w-5 text-chart-2" />;
   if (mime.includes("sheet") || mime.includes("excel") || mime.includes("csv"))
-    return <FileSpreadsheet className="h-5 w-5 text-emerald-600" />;
+    return <FileSpreadsheet className="h-5 w-5 text-chart-1" />;
   if (mime.includes("word") || mime.includes("msword") || mime.includes("wordprocessingml"))
-    return <FileText className="h-5 w-5 text-blue-600" />;
+    return <FileText className="h-5 w-5 text-chart-5" />;
   return <File className="h-5 w-5 text-muted-foreground" />;
 }
 

@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/shared/StatusBadge";
 import {
   Select,
   SelectContent,
@@ -321,7 +322,7 @@ export default function SuppliersPage() {
       sortable: true,
       render: (val) =>
         val === "active" ? (
-          <Badge variant="outline" className="text-emerald-600 border-emerald-200">Active</Badge>
+          <StatusBadge status="active" label="Active" />
         ) : (
           <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
         ),

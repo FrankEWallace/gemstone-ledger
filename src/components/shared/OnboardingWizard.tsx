@@ -110,7 +110,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
               key={s.id}
               className={cn(
                 "h-[5px] w-5 rounded-full transition-colors duration-300",
-                completedIds.has(s.id) ? "bg-emerald-500" : "bg-muted"
+                completedIds.has(s.id) ? "bg-success" : "bg-muted"
               )}
             />
           ))}
@@ -148,7 +148,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
               >
                 {/* Indicator */}
                 {done ? (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-success">
                     <CheckCircle2 className="h-4 w-4 text-white" />
                   </div>
                 ) : (

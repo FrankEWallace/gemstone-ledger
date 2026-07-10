@@ -218,7 +218,7 @@ export default function AppLayout() {
         <OfflineBanner />
 
         {demoActive && (
-          <div className="flex items-center gap-3 bg-amber-500 dark:bg-amber-600 px-4 py-2 text-white text-sm">
+          <div className="flex items-center gap-3 bg-warning px-4 py-2 text-warning-foreground text-sm">
             <FlaskConical className="h-4 w-4 shrink-0" />
             <span className="flex-1 font-medium">
               Demo mode — you're exploring FW Mining OS with sample data. Nothing is saved.

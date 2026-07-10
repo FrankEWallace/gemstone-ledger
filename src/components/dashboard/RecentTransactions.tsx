@@ -80,9 +80,9 @@ export default function RecentTransactions({
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
                               t.status === "success"
-                                ? "bg-emerald-500"
+                                ? "bg-success"
                                 : t.status === "pending"
-                                ? "bg-yellow-500"
+                                ? "bg-warning"
                                 : "bg-muted-foreground"
                             }`}
                           />

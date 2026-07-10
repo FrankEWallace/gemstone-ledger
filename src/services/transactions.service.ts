@@ -32,12 +32,19 @@ export type TransactionFilters = {
   source?: TransactionSource | "all";
   dateFrom?: string;
   dateTo?: string;
+  limit?: number;
+  offset?: number;
 };
+
+const DEFAULT_TRANSACTIONS_LIMIT = 500;
 
 export async function getTransactions(
   siteId: string,
   filters?: TransactionFilters
 ): Promise<Transaction[]> {
+  const limit = filters?.limit ?? DEFAULT_TRANSACTIONS_LIMIT;
+  const offset = filters?.offset ?? 0;
+
   if (isDemoMode()) return DEMO_TRANSACTIONS as any;
   if (isRestActive()) {
     const params = new URLSearchParams({ site_id: siteId });
@@ -49,6 +56,8 @@ export async function getTransactions(
     if (filters?.source && filters.source !== "all") params.set("source", filters.source);
     if (filters?.dateFrom) params.set("from", filters.dateFrom);
     if (filters?.dateTo) params.set("to", filters.dateTo);
+    params.set("limit", String(limit));
+    params.set("offset", String(offset));
     return restGet<Transaction[]>(`/transactions?${params}`);
   }
 
@@ -66,6 +75,8 @@ export async function getTransactions(
   if (filters?.source && filters.source !== "all") query = query.eq("source", filters.source);
   if (filters?.dateFrom) query = query.gte("transaction_date", filters.dateFrom);
   if (filters?.dateTo) query = query.lte("transaction_date", filters.dateTo);
+
+  query = query.range(offset, offset + limit - 1);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -150,15 +161,18 @@ export async function deleteTransaction(id: string): Promise<void> {
 // ─── Sync handlers ────────────────────────────────────────────────────────────
 
 registerHandler("transactions", "create", async (item) => {
-  await supabase.from("transactions").insert(item.payload as TablesInsert<"transactions">);
+  const { error } = await supabase.from("transactions").insert(item.payload as TablesInsert<"transactions">);
+  if (error) throw error;
 });
 registerHandler("transactions", "update", async (item) => {
   const { id, ...rest } = item.payload as { id: string; status: TransactionStatus };
-  await supabase.from("transactions").update(rest).eq("id", id);
+  const { error } = await supabase.from("transactions").update(rest).eq("id", id);
+  if (error) throw error;
 });
 registerHandler("transactions", "delete", async (item) => {
   const { id } = item.payload as { id: string };
-  await supabase.from("transactions").delete().eq("id", id);
+  const { error } = await supabase.from("transactions").delete().eq("id", id);
+  if (error) throw error;
 });
 
 export async function getTransactionCategories(siteId: string): Promise<string[]> {

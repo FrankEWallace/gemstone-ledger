@@ -31,3 +31,9 @@ dist-ssr
 # Playwright
 test-results/
 playwright-report/
+
+# Local agent/skill tooling
+.agents/
+.claude/skills/
+.claude/worktrees/
+skills-lock.json

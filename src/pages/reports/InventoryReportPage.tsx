@@ -158,10 +158,10 @@ const CAT_COLORS = [
 ];
 
 const REASON_BADGE: Record<string, { label: string; className: string }> = {
-  Damaged:   { label: "Damaged",   className: "bg-orange-100 text-orange-700 border-orange-200" },
-  Expired:   { label: "Expired",   className: "bg-purple-100 text-purple-700 border-purple-200" },
-  Theft:     { label: "Theft",     className: "bg-red-100 text-red-700 border-red-200" },
-  Stocktake: { label: "Stocktake", className: "bg-blue-100 text-blue-700 border-blue-200" },
+  Damaged:   { label: "Damaged",   className: "bg-chart-8/10 text-chart-8 border-chart-8/20" },
+  Expired:   { label: "Expired",   className: "bg-chart-3/10 text-chart-3 border-chart-3/20" },
+  Theft:     { label: "Theft",     className: "bg-chart-2/10 text-chart-2 border-chart-2/20" },
+  Stocktake: { label: "Stocktake", className: "bg-chart-4/10 text-chart-4 border-chart-4/20" },
 };
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -1073,7 +1073,7 @@ export default function InventoryReportPage() {
                       <td className="px-5 py-3 font-medium">
                         <span className="flex items-center gap-2">
                           <AlertTriangle
-                            className={`h-3.5 w-3.5 shrink-0 ${isOut ? "text-red-500" : "text-amber-500"}`}
+                            className={`h-3.5 w-3.5 shrink-0 ${isOut ? "text-destructive" : "text-warning"}`}
                           />
                           {item.name}
                         </span>
@@ -1089,18 +1089,18 @@ export default function InventoryReportPage() {
                       </td>
                       <td className="px-3 py-3">
                         {isOut ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
                             Out of Stock
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-warning/10 text-warning border border-warning/20">
                             Low Stock
                           </span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
                         {daysLeft != null ? (
-                          <span className={daysLeft <= 3 ? "text-red-600 font-semibold" : ""}>
+                          <span className={daysLeft <= 3 ? "text-destructive font-semibold" : ""}>
                             {daysLeft}d
                           </span>
                         ) : (

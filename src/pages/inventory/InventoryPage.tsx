@@ -302,23 +302,23 @@ function StatusBadge({ quantity, reorderLevel }: { quantity: number; reorderLeve
   const status = getStockStatus(quantity, reorderLevel);
   if (status === "out") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-red-50 text-red-600 ring-1 ring-red-200 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-800">
-        <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-destructive/10 text-destructive ring-1 ring-destructive/20">
+        <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
         Out of Stock
       </span>
     );
   }
   if (status === "low") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-600 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-800">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-warning/10 text-warning ring-1 ring-warning/20">
+        <span className="h-1.5 w-1.5 rounded-full bg-warning shrink-0" />
         Low Stock
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-800">
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+    <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-success/10 text-success ring-1 ring-success/20">
+      <span className="h-1.5 w-1.5 rounded-full bg-success shrink-0" />
       In Stock
     </span>
   );
@@ -330,9 +330,9 @@ function DaysLeftChip({ daysLeft }: { daysLeft: number }) {
   const label = daysLeft < 1 ? "Stockout" : `${Math.round(daysLeft)}d left`;
   const color =
     daysLeft < 7
-      ? "text-red-500 dark:text-red-400"
+      ? "text-destructive"
       : daysLeft < 30
-      ? "text-amber-500 dark:text-amber-400"
+      ? "text-warning"
       : "text-muted-foreground";
   return (
     <span className={`text-xs font-medium tabular-nums ${color}`}>
@@ -664,7 +664,7 @@ function StockReceiveModal({ open, onClose, item, siteId }: StockReceiveModalPro
           <Button
             onClick={() => mutate()}
             disabled={isPending || qty < 1}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-success hover:bg-success/90 text-success-foreground"
           >
             {isPending ? "Saving…" : "Confirm Receipt"}
           </Button>
@@ -851,7 +851,7 @@ export default function InventoryPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 px-2 gap-1"
+            className="h-7 text-xs text-success hover:text-success hover:bg-success/10 px-2 gap-1"
             title="Receive stock — add incoming delivery"
             onClick={(e) => { e.stopPropagation(); setReceiveTarget(row as unknown as InventoryItem); }}
           >
@@ -861,7 +861,7 @@ export default function InventoryPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-2 gap-1"
+            className="h-7 text-xs text-warning hover:text-warning hover:bg-warning/10 px-2 gap-1"
             title="Log usage → auto-expense"
             onClick={(e) => { e.stopPropagation(); setLogUsageTarget(row as unknown as InventoryItem); }}
           >
@@ -963,17 +963,17 @@ export default function InventoryPage() {
           onClick={() => setStatusFilter(statusFilter === "out" ? "all" : "out")}
           className={`rounded-xl border p-4 flex flex-col gap-1.5 text-left transition-colors ${
             statusFilter === "out"
-              ? "border-red-400 bg-red-50 dark:bg-red-900/20"
+              ? "border-destructive/40 bg-destructive/10"
               : outOfStockCount > 0
-              ? "border-red-200 bg-red-50/50 dark:bg-red-900/10 hover:border-red-300"
+              ? "border-destructive/20 bg-destructive/5 hover:border-destructive/30"
               : "border-border bg-card hover:border-foreground/20"
           }`}
         >
-          <div className={`flex items-center gap-2 ${outOfStockCount > 0 ? "text-red-500 dark:text-red-400" : "text-muted-foreground"}`}>
+          <div className={`flex items-center gap-2 ${outOfStockCount > 0 ? "text-destructive" : "text-muted-foreground"}`}>
             <PackageX className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Out of Stock</span>
           </div>
-          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${outOfStockCount > 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${outOfStockCount > 0 ? "text-destructive" : ""}`}>
             {outOfStockCount}
           </p>
           <p className="text-xs text-muted-foreground">{statusFilter === "out" ? "click to clear filter" : "click to filter table"}</p>
@@ -985,17 +985,17 @@ export default function InventoryPage() {
           onClick={() => setStatusFilter(statusFilter === "low" ? "all" : "low")}
           className={`rounded-xl border p-4 flex flex-col gap-1.5 text-left transition-colors ${
             statusFilter === "low"
-              ? "border-amber-400 bg-amber-50 dark:bg-amber-900/20"
+              ? "border-warning/40 bg-warning/10"
               : lowStockCount > 0
-              ? "border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-300"
+              ? "border-warning/20 bg-warning/5 hover:border-warning/30"
               : "border-border bg-card hover:border-foreground/20"
           }`}
         >
-          <div className={`flex items-center gap-2 ${lowStockCount > 0 ? "text-amber-500 dark:text-amber-400" : "text-muted-foreground"}`}>
+          <div className={`flex items-center gap-2 ${lowStockCount > 0 ? "text-warning" : "text-muted-foreground"}`}>
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Low Stock</span>
           </div>
-          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${lowStockCount > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
+          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${lowStockCount > 0 ? "text-warning" : ""}`}>
             {lowStockCount}
           </p>
           <p className="text-xs text-muted-foreground">{statusFilter === "low" ? "click to clear filter" : "click to filter table"}</p>

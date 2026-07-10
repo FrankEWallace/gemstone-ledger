@@ -52,13 +52,13 @@ export default function SiteStatusStrip({ siteId }: { siteId: string }) {
             className="flex items-center gap-4 px-6 py-4 hover:bg-muted/30 transition-colors"
           >
             <cell.icon
-              className={`h-4 w-4 shrink-0 ${cell.alert ? "text-yellow-500" : "text-muted-foreground"}`}
+              className={`h-4 w-4 shrink-0 ${cell.alert ? "text-warning" : "text-muted-foreground"}`}
             />
             <div className="min-w-0 flex-1">
               <p className="text-xs text-muted-foreground">{cell.label}</p>
               <p className="text-sm font-semibold truncate mt-0.5">{cell.value}</p>
             </div>
-            {cell.alert && <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0" />}
+            {cell.alert && <AlertTriangle className="h-4 w-4 text-warning shrink-0" />}
           </Link>
         ))}
       </div>

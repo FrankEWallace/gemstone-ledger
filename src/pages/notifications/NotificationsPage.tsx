@@ -29,23 +29,23 @@ import type { Notification, NotificationType } from "@/lib/supabaseTypes";
 const LEVEL_META = {
   critical: {
     icon: AlertCircle,
-    color: "text-red-500",
-    bg: "bg-red-50 dark:bg-red-950/30",
-    border: "border-red-200 dark:border-red-800",
+    color: "text-destructive",
+    bg: "bg-destructive/10",
+    border: "border-destructive/20",
     label: "Critical",
   },
   warning: {
     icon: AlertTriangle,
-    color: "text-yellow-500",
-    bg: "bg-yellow-50 dark:bg-yellow-950/30",
-    border: "border-yellow-200 dark:border-yellow-800",
+    color: "text-warning",
+    bg: "bg-warning/10",
+    border: "border-warning/20",
     label: "Warning",
   },
   info: {
     icon: Info,
-    color: "text-blue-500",
-    bg: "bg-blue-50 dark:bg-blue-950/30",
-    border: "border-blue-200 dark:border-blue-800",
+    color: "text-info",
+    bg: "bg-info/10",
+    border: "border-info/20",
     label: "Info",
   },
 } as const;
@@ -58,9 +58,9 @@ const CATEGORY_META: Record<SystemAlertCategory, { icon: React.ElementType; labe
 };
 
 const NOTIF_TYPE_META: Record<NotificationType, { icon: React.ElementType; color: string }> = {
-  alert:   { icon: AlertCircle,   color: "text-red-500" },
-  warning: { icon: AlertTriangle, color: "text-yellow-500" },
-  info:    { icon: Info,          color: "text-blue-500" },
+  alert:   { icon: AlertCircle,   color: "text-destructive" },
+  warning: { icon: AlertTriangle, color: "text-warning" },
+  info:    { icon: Info,          color: "text-info" },
 };
 
 // ─── System Alert Card ────────────────────────────────────────────────────────

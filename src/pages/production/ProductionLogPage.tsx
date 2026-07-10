@@ -339,12 +339,12 @@ export default function ProductionLogPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: "Total Ore (t)",       value: totalOre.toLocaleString(undefined, { maximumFractionDigits: 1 }),                             icon: <Pickaxe className="h-4 w-4 text-yellow-500" /> },
+          { label: "Total Ore (t)",       value: totalOre.toLocaleString(undefined, { maximumFractionDigits: 1 }),                             icon: <Pickaxe className="h-4 w-4 text-chart-7" /> },
           { label: "Total Waste (t)",     value: totalWaste.toLocaleString(undefined, { maximumFractionDigits: 1 }),                           icon: <Mountain className="h-4 w-4 text-muted-foreground" /> },
           { label: "Avg Grade (g/t)",     value: avgGrade != null ? avgGrade.toFixed(3) : "—",                                                 icon: <FlaskConical className="h-4 w-4 text-primary" /> },
-          { label: "Contained Metal (g)", value: containedMetalG > 0 ? containedMetalG.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—", icon: <Scale className="h-4 w-4 text-amber-500" /> },
-          { label: "Strip Ratio",         value: stripRatio != null ? stripRatio.toFixed(2) : "—",                                             icon: <Mountain className="h-4 w-4 text-blue-400" /> },
-          { label: "Cost / Tonne",        value: costPerTonne != null ? `$${costPerTonne.toFixed(2)}` : "—",                                   icon: <Droplets className="h-4 w-4 text-red-400" /> },
+          { label: "Contained Metal (g)", value: containedMetalG > 0 ? containedMetalG.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—", icon: <Scale className="h-4 w-4 text-chart-8" /> },
+          { label: "Strip Ratio",         value: stripRatio != null ? stripRatio.toFixed(2) : "—",                                             icon: <Mountain className="h-4 w-4 text-chart-4" /> },
+          { label: "Cost / Tonne",        value: costPerTonne != null ? `$${costPerTonne.toFixed(2)}` : "—",                                   icon: <Droplets className="h-4 w-4 text-chart-2" /> },
         ].map(({ label, value, icon }) => (
           <div key={label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -447,7 +447,7 @@ export default function ProductionLogPage() {
                     <td className="px-4 py-3 text-right tabular-nums">
                       {log.grade_g_t != null ? log.grade_g_t.toFixed(3) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-amber-600 dark:text-amber-400 hidden md:table-cell">
+                    <td className="px-4 py-3 text-right tabular-nums text-chart-8 hidden md:table-cell">
                       {metalG > 0 ? metalG.toLocaleString(undefined, { maximumFractionDigits: 1 }) : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
