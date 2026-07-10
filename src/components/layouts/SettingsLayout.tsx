@@ -3,7 +3,6 @@ import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   UserCircle,
   Tag,
-  Layers,
   Target,
   Settings,
   HelpCircle,
@@ -14,7 +13,6 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { label: "Profile",          icon: UserCircle, to: "/settings/profile" },
   { label: "Categories",       icon: Tag,        to: "/settings/expense-categories" },
-  { label: "Phases",           icon: Layers,     to: "/settings/production-phases" },
   { label: "Targets & Alerts", icon: Target,     to: "/settings/targets-alerts" },
   { label: "Organization",     icon: Settings,   to: "/settings/system" },
   { label: "Help & Support",   icon: HelpCircle, to: "/settings/help-support" },

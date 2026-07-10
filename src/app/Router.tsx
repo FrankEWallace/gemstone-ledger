@@ -43,7 +43,6 @@ const CustomersPage                  = lazy(() => import("@/pages/customers/Cust
 const CustomerDetailPage             = lazy(() => import("@/pages/customers/CustomerDetailPage"));
 const CustomerExpenseBreakdownPage   = lazy(() => import("@/pages/customers/CustomerExpenseBreakdownPage"));
 const ExpenseCategoriesPage = lazy(() => import("@/pages/settings/ExpenseCategoriesPage"));
-const ProductionPhasesPage  = lazy(() => import("@/pages/settings/ProductionPhasesPage"));
 const ProductionLogPage   = lazy(() => import("@/pages/production/ProductionLogPage"));
 const TimesheetPage       = lazy(() => import("@/pages/team/TimesheetPage"));
 const EquipmentPage     = lazy(() => import("@/pages/equipment/EquipmentPage"));
@@ -139,12 +138,12 @@ export default function Router() {
             <Route index element={<Navigate to="/settings/profile" replace />} />
             <Route path="profile"            element={<BoundedRoute element={<ProfilePage />} />} />
             <Route path="expense-categories" element={<BoundedRoute element={<ExpenseCategoriesPage />} />} />
-            <Route path="production-phases"  element={<BoundedRoute element={<ProductionPhasesPage />} />} />
             <Route path="targets-alerts"     element={<BoundedRoute element={<TargetsAlertsPage />} />} />
             <Route path="system"             element={<BoundedRoute element={<SystemSettingsPage />} />} />
             <Route path="help-support"       element={<BoundedRoute element={<HelpSupportPage />} />} />
             <Route path="sync"               element={<BoundedRoute element={<SyncHistoryPage />} />} />
             {/* Legacy redirects */}
+            <Route path="production-phases" element={<Navigate to="/settings/targets-alerts" replace />} />
             <Route path="targets"      element={<Navigate to="/settings/targets-alerts" replace />} />
             <Route path="alerts"       element={<Navigate to="/settings/targets-alerts" replace />} />
             <Route path="help"         element={<Navigate to="/settings/help-support" replace />} />
