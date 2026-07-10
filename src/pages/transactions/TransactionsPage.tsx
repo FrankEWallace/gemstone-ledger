@@ -9,11 +9,11 @@ import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
+import * as SelectPrimitive from "@radix-ui/react-select";
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import TransactionFiltersPopover, { type TransactionFilters } from "./TransactionFiltersPopover";
@@ -139,9 +139,13 @@ function StatusSelect({ tx }: { tx: Transaction }) {
 
   return (
     <Select value={tx.status} onValueChange={(v) => mutate(v as TransactionStatus)}>
-      <SelectTrigger className="h-7 text-xs w-28 border-0 shadow-none focus:ring-0 p-1">
+      {/* Bare trigger: reads like the Type badge (no chevron/border), still opens inline */}
+      <SelectPrimitive.Trigger
+        aria-label="Change status"
+        className="inline-flex items-center rounded-md p-0.5 -m-0.5 outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring [&>svg]:hidden"
+      >
         <SelectValue>{statusBadge(tx.status)}</SelectValue>
-      </SelectTrigger>
+      </SelectPrimitive.Trigger>
       <SelectContent>
         {STATUSES.map((s) => (
           <SelectItem key={s} value={s}>
