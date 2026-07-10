@@ -109,7 +109,7 @@ export default function SupportPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-2xl">
       <div>
-        <h1 className="font-display text-2xl font-bold">Customer Support</h1>
+        <h1 className="text-display">Customer Support</h1>
         <p className="text-muted-foreground mt-1">
           Submit a support request and our team will get back to you.
         </p>

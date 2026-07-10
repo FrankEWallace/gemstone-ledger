@@ -38,7 +38,7 @@ export default function SalesTrendChart() {
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-sm text-muted-foreground">Total Revenue:</span>
-            <span className="font-display text-2xl font-bold">
+            <span className="text-display">
               ${(total / 1000).toFixed(0)}k
             </span>
           </div>
@@ -72,7 +72,7 @@ export default function SalesTrendChart() {
         </div>
       </div>
 
-      <div className="h-[300px]">
+      <div className="h-chart-lg">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} barGap={1} barSize={6}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />

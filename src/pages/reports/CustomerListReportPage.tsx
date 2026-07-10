@@ -79,7 +79,7 @@ export default function CustomerListReportPage() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Customer Reports</h1>
+        <h1 className="text-display">Customer Reports</h1>
         {sorted.length > 0 && (
           <button
             onClick={handleExportCSV}

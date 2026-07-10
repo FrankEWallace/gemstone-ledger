@@ -11,6 +11,7 @@ import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import EmptyState from "@/components/shared/EmptyState";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -159,7 +160,7 @@ export default function DocumentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Documents</h1>
+          <h1 className="text-display">Documents</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {documents.length} file{documents.length !== 1 ? "s" : ""} stored
           </p>
@@ -238,11 +239,11 @@ export default function DocumentsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
-          <FolderOpen className="h-12 w-12 mb-3 opacity-30" />
-          <p className="font-medium">No documents yet</p>
-          <p className="text-sm mt-1">Upload compliance, safety, and contract documents for this site.</p>
-        </div>
+        <EmptyState
+          icon={FolderOpen}
+          title="No documents yet"
+          description="Upload compliance, safety, and contract documents for this site."
+        />
       ) : (
         <div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
           {filtered.map((doc) => (

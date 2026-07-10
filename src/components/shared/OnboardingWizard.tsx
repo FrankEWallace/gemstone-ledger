@@ -104,12 +104,12 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         <span className="font-semibold text-sm flex-1 text-left">Getting started</span>
 
         {/* Segmented progress bar */}
-        <div className="flex items-center gap-[3px] mr-2">
+        <div className="flex items-center gap-0.5 mr-2">
           {STEPS.map((s) => (
             <div
               key={s.id}
               className={cn(
-                "h-[5px] w-5 rounded-full transition-colors duration-300",
+                "h-1 w-5 rounded-full transition-colors duration-300",
                 completedIds.has(s.id) ? "bg-success" : "bg-muted"
               )}
             />

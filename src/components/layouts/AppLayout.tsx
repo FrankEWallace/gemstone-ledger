@@ -97,7 +97,7 @@ function SiteSwitcher() {
               onClick={() => setActiveSite(s.id)}
               className={cn("gap-2", s.id === activeSite.id && "font-medium text-primary")}
             >
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-primary text-[10px] font-bold">
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-primary text-xs font-bold">
                 {s.name.slice(0, 2).toUpperCase()}
               </div>
               <span className="truncate">{s.name}</span>

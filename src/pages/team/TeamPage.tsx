@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CHART_H } from "@/lib/chartHeights";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -615,7 +616,7 @@ export default function TeamPage() {
     <div className="p-4 lg:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold">Team Performance</h1>
+        <h1 className="text-display">Team Performance</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => { setPreselectedWorkerId(undefined); setShiftModal(true); }}>
             <ClipboardList className="h-4 w-4 mr-1.5" />
@@ -663,7 +664,7 @@ export default function TeamPage() {
       {chartData.length > 0 && (
         <div className="rounded-lg border border-border p-4">
           <p className="text-sm font-medium mb-4">Hours by Worker (all-time)</p>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={CHART_H.sm}>
             <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
               <XAxis
                 dataKey="name"

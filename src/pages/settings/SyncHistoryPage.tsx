@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import StatusBadge from "@/components/shared/StatusBadge";
+import StatCard from "@/components/shared/StatCard";
+import EmptyState from "@/components/shared/EmptyState";
 
 import { usePendingCount, useSyncLog, drainQueue } from "@/lib/offline/syncEngine";
 import { offlineDB } from "@/lib/offline/db";
@@ -117,25 +119,25 @@ export default function SyncHistoryPage() {
           icon={isOffline ? <WifiOff className="h-4 w-4" /> : <Database className="h-4 w-4" />}
           label="Status"
           value={isOffline ? "Offline" : "Online"}
-          color={isOffline ? "text-warning" : "text-success"}
+          valueClassName={isOffline ? "text-warning" : "text-success"}
         />
         <StatCard
           icon={<Clock className="h-4 w-4" />}
           label="Pending"
           value={String(pending)}
-          color={pending > 0 ? "text-warning" : "text-muted-foreground"}
+          valueClassName={pending > 0 ? "text-warning" : "text-muted-foreground"}
         />
         <StatCard
           icon={<CheckCircle2 className="h-4 w-4" />}
           label="Synced"
           value={String(successCount)}
-          color="text-success"
+          valueClassName="text-success"
         />
         <StatCard
           icon={<XCircle className="h-4 w-4" />}
           label="Failed"
           value={String(failedCount + conflictCount)}
-          color={failedCount + conflictCount > 0 ? "text-destructive" : "text-muted-foreground"}
+          valueClassName={failedCount + conflictCount > 0 ? "text-destructive" : "text-muted-foreground"}
         />
       </div>
 
@@ -224,11 +226,11 @@ export default function SyncHistoryPage() {
         </h2>
 
         {log.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-            <Database className="h-8 w-8 mb-3 opacity-30" />
-            <p className="text-sm">No sync history yet.</p>
-            <p className="text-xs mt-1">Items will appear here after changes are synced.</p>
-          </div>
+          <EmptyState
+            icon={Database}
+            title="No sync history yet"
+            description="Items will appear here after changes are synced."
+          />
         ) : (
           <div className="space-y-1">
             {log.map((entry) => (
@@ -269,27 +271,6 @@ export default function SyncHistoryPage() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function StatCard({
-  icon, label, value, color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card px-4 py-3 space-y-1">
-      <div className={`flex items-center gap-1.5 text-xs text-muted-foreground`}>
-        {icon}
-        {label}
-      </div>
-      <p className={`text-xl font-bold ${color}`}>{value}</p>
     </div>
   );
 }

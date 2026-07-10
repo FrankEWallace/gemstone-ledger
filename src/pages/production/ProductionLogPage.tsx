@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { CHART_H } from "@/lib/chartHeights";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -303,7 +304,7 @@ export default function ProductionLogPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Pickaxe className="h-5 w-5 text-primary" />
-          <h1 className="font-display text-2xl font-bold">Production Log</h1>
+          <h1 className="text-display">Production Log</h1>
         </div>
         <Button className="hidden sm:inline-flex" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
           <Plus className="h-4 w-4 mr-1" /> Log Day
@@ -360,7 +361,7 @@ export default function ProductionLogPage() {
       {chartData.length > 1 && (
         <div className="rounded-xl border border-border bg-card p-4 lg:p-5">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Ore & Waste Trend</p>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={CHART_H.sm}>
             <BarChart data={chartData} barGap={2} barCategoryGap="30%">
               <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis

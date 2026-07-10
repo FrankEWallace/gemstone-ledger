@@ -882,7 +882,7 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 lg:p-6">
       <div>
-        <h1 className="font-display text-2xl font-bold">My Profile</h1>
+        <h1 className="text-display">My Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">Manage your account, security, and preferences.</p>
       </div>
 

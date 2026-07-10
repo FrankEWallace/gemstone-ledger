@@ -9,6 +9,7 @@ import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
 import { getCustomers } from "@/services/customers.service";
 import { fmtCurrency, fmtCompact, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
+import { CHART_H } from "@/lib/chartHeights";
 import type { Transaction } from "@/lib/supabaseTypes";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -336,7 +337,7 @@ export default function CustomerExpenseBreakdownPage() {
           <ArrowLeft className="h-3 w-3" />
           {customer?.name ?? "Customer"}
         </Link>
-        <h1 className="font-display text-2xl font-bold tracking-tight">Expense Breakdown</h1>
+        <h1 className="text-display">Expense Breakdown</h1>
         {customer && (
           <p className="text-sm text-muted-foreground">All expenses for {customer.name}, by category</p>
         )}
@@ -405,7 +406,7 @@ export default function CustomerExpenseBreakdownPage() {
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-6 items-center">
             <div className="flex justify-center">
-              <PieChart width={160} height={160}>
+              <PieChart width={CHART_H.sm} height={CHART_H.sm}>
                 <Pie
                   data={grouped.map((g) => ({ name: g.category, value: g.total }))}
                   cx={80}

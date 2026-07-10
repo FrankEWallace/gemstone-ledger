@@ -108,7 +108,7 @@ export default function HelpCenterPage() {
     <div className="p-4 lg:p-6 space-y-8 max-w-3xl">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-bold">Help Center</h1>
+        <h1 className="text-display">Help Center</h1>
         <p className="text-muted-foreground mt-1">
           Answers to frequently asked questions about FW Mining OS.
         </p>

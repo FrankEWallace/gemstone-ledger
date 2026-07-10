@@ -15,7 +15,7 @@ export default function RevenueBreakdown() {
         Expense Breakdown
       </h3>
       <div className="flex items-center justify-between mb-4">
-        <p className="font-display text-2xl font-bold">$148,500</p>
+        <p className="text-display">$148,500</p>
         <span className="text-xs text-muted-foreground">Jan 1 - Mar 24</span>
       </div>
 

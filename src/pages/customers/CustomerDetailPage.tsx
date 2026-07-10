@@ -42,6 +42,7 @@ import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtTick } from "@/lib/formatCurrency";
+import { CHART_H } from "@/lib/chartHeights";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -101,11 +102,11 @@ function typeIcon(type: TransactionType) {
 function SparkBars({ values, color }: { values: number[]; color?: string }) {
   const max = Math.max(...values, 1);
   return (
-    <div className="flex items-end gap-[2px] h-7 opacity-60 shrink-0">
+    <div className="flex items-end gap-0.5 h-7 opacity-60 shrink-0">
       {values.map((v, i) => (
         <div
           key={i}
-          className="w-[4px] rounded-[2px]"
+          className="w-1 rounded-sm"
           style={{ height: `${Math.max(12, (v / max) * 100)}%`, backgroundColor: color ?? "var(--foreground)" }}
         />
       ))}
@@ -293,7 +294,7 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: Qu
 
 function ChartEmpty({ message }: { message: string }) {
   return (
-    <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">
+    <div className="h-chart-md flex items-center justify-center text-sm text-muted-foreground">
       {message}
     </div>
   );
@@ -646,7 +647,7 @@ export default function CustomerDetailPage() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {kpis.map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2.5 overflow-hidden relative">
-              {s.color && <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-xl" style={{ backgroundColor: s.color }} />}
+              {s.color && <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-xl" style={{ backgroundColor: s.color }} />}
               <div className="flex items-center justify-between gap-2 pt-0.5">
                 <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground leading-tight">
                   {s.label}
@@ -683,7 +684,7 @@ export default function CustomerDetailPage() {
             </Link>
           </div>
           {expenseByCategory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={CHART_H.md}>
               <PieChart>
                 <Pie
                   data={expenseByCategory}
@@ -718,7 +719,7 @@ export default function CustomerDetailPage() {
             Income Breakdown
           </p>
           {incomeByCategory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={CHART_H.md}>
               <PieChart>
                 <Pie
                   data={incomeByCategory}
@@ -744,7 +745,7 @@ export default function CustomerDetailPage() {
             </ResponsiveContainer>
           ) : monthlyTrend.length > 1 ? (
             /* Fall back to monthly trend if income has no categories */
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={CHART_H.md}>
               <BarChart data={monthlyTrend} barGap={3} barCategoryGap="30%">
                 <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis

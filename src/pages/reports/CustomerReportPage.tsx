@@ -429,7 +429,7 @@ export default function CustomerReportPage() {
             Customer Reports
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-2xl font-bold tracking-tight">
+            <h1 className="text-display">
               {customer?.name ?? "Customer Report"}
             </h1>
             {customer && (
@@ -547,7 +547,7 @@ export default function CustomerReportPage() {
         <div className="rounded-xl border border-border bg-card p-5">
           <SectionLabel>Monthly Revenue vs Expenses</SectionLabel>
           {trendChartData.length === 0 ? (
-            <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
+            <div className="h-chart-md flex items-center justify-center text-sm text-muted-foreground">
               No monthly data for this period.
             </div>
           ) : (
@@ -557,7 +557,7 @@ export default function CustomerReportPage() {
                   Income:   { label: "Income",   color: "var(--chart-1)" },
                   Expenses: { label: "Expenses", color: "var(--chart-2)" },
                 }}
-                className="h-[220px] w-full"
+                className="h-chart-md w-full"
               >
                 <AreaChart data={trendChartData} margin={{ left: 0, right: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
@@ -598,7 +598,7 @@ export default function CustomerReportPage() {
         <div className="rounded-xl border border-border bg-card p-5">
           <SectionLabel>Expense Breakdown by Category</SectionLabel>
           {expenseByCategory.length === 0 ? (
-            <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
+            <div className="h-chart-md flex items-center justify-center text-sm text-muted-foreground">
               No expense data for this period.
             </div>
           ) : (
@@ -606,7 +606,7 @@ export default function CustomerReportPage() {
               config={Object.fromEntries(
                 expenseByCategory.map((c, i) => [c.category, { label: c.category, color: PIE_COLORS[i % PIE_COLORS.length] }])
               )}
-              className="mx-auto aspect-square h-[220px]"
+              className="mx-auto aspect-square h-chart-md"
             >
               <PieChart>
                 <ChartTooltip content={<ChartTooltipContent hideLabel className="w-44" nameKey="category" />} />

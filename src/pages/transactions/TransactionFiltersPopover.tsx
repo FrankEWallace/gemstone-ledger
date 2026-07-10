@@ -72,7 +72,7 @@ export default function TransactionFiltersPopover({
           <SlidersHorizontal className="h-3.5 w-3.5" />
           Filters
           {count > 0 && (
-            <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold h-4 min-w-4 px-1 leading-none">
+            <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold h-4 min-w-4 px-1 leading-none">
               {count}
             </span>
           )}

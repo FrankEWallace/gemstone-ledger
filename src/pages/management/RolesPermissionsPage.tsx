@@ -316,7 +316,7 @@ export default function RolesPermissionsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Roles & Permissions</h1>
+          <h1 className="text-display">Roles & Permissions</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage team members and their access across sites.
           </p>
