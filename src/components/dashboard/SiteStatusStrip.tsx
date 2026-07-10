@@ -43,25 +43,21 @@ export default function SiteStatusStrip({ siteId }: { siteId: string }) {
   ];
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="grid grid-cols-2 divide-x divide-border">
-        {cells.map((cell) => (
-          <Link
-            key={cell.label}
-            to={cell.href}
-            className="flex items-center gap-4 px-6 py-4 hover:bg-muted/30 transition-colors"
-          >
-            <cell.icon
-              className={`h-4 w-4 shrink-0 ${cell.alert ? "text-warning" : "text-muted-foreground"}`}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">{cell.label}</p>
-              <p className="text-sm font-semibold truncate mt-0.5">{cell.value}</p>
-            </div>
-            {cell.alert && <AlertTriangle className="h-4 w-4 text-warning shrink-0" />}
-          </Link>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm">
+      {cells.map((cell) => (
+        <Link
+          key={cell.label}
+          to={cell.href}
+          className="flex items-center gap-2 hover:text-foreground transition-colors"
+        >
+          <cell.icon
+            className={`h-4 w-4 shrink-0 ${cell.alert ? "text-warning" : "text-muted-foreground"}`}
+          />
+          <span className="text-muted-foreground">{cell.label}:</span>
+          <span className="font-medium truncate">{cell.value}</span>
+          {cell.alert && <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />}
+        </Link>
+      ))}
     </div>
   );
 }

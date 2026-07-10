@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { Link } from "react-router-dom";
-import { MapPin, Plus, Upload } from "lucide-react";
+import { MapPin, Plus, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
@@ -13,7 +13,6 @@ import BreakdownCard from "@/components/dashboard/BreakdownCard";
 import CustomerInsights from "@/components/dashboard/CustomerInsights";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import SiteStatusStrip from "@/components/dashboard/SiteStatusStrip";
-import CustomerSelect from "@/components/dashboard/CustomerSelect";
 import { type DashboardPeriod, PERIOD_DAYS } from "@/components/dashboard/useBreakdownCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -128,6 +127,14 @@ export default function Dashboard() {
   const curr = useMemo(() => sumKpis(filteredTxs), [filteredTxs]);
   const prev = useMemo(() => sumKpis(prevTxs), [prevTxs]);
 
+  const selectedCustomerName = useMemo(
+    () =>
+      customers.find((c) => c.id === selectedCustomerId)?.name ??
+      customerSummaries.find((s) => s.customerId === selectedCustomerId)?.customerName ??
+      null,
+    [customers, customerSummaries, selectedCustomerId]
+  );
+
   const trendPct = (cur: number, pre: number) =>
     pre > 0 ? Math.round(((cur - pre) / pre) * 1000) / 10 : null;
 
@@ -177,22 +184,32 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="text-display">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {today.toLocaleDateString("en-US", {
               weekday: "long", day: "numeric", month: "long", year: "numeric",
             })}
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <PeriodPills value={period} onChange={setPeriod} />
-          <CustomerSelect
-            customers={customers.map((c) => ({ id: c.id, name: c.name }))}
-            value={selectedCustomerId}
-            onChange={setSelectedCustomerId}
-          />
-        </div>
+        <PeriodPills value={period} onChange={setPeriod} />
       </div>
+
+      {/* Site status — slim line under header */}
+      <SiteStatusStrip siteId={activeSiteId} />
+
+      {/* Active customer filter chip */}
+      {selectedCustomerId && (
+        <div className="flex items-center gap-2 flex-wrap text-sm">
+          <span className="text-muted-foreground">Filtered by</span>
+          <button
+            onClick={() => setSelectedCustomerId(null)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium hover:bg-primary/15 transition-colors"
+          >
+            {selectedCustomerName ?? "customer"}
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* No-data prompt */}
       {txs.length === 0 && !txsLoading && (
@@ -274,9 +291,6 @@ export default function Dashboard() {
 
       {/* Recent Transactions */}
       <RecentTransactions txs={filteredTxs} isLoading={txsLoading} />
-
-      {/* Site Status */}
-      <SiteStatusStrip siteId={activeSiteId} />
     </div>
   );
 }

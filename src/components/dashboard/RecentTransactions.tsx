@@ -14,7 +14,7 @@ export default function RecentTransactions({
   txs: Transaction[];
   isLoading: boolean;
 }) {
-  const recent = txs.slice(0, 6);
+  const recent = txs.slice(0, 5);
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
