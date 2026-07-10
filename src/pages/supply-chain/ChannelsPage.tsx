@@ -218,7 +218,7 @@ export default function ChannelsPage() {
     <div className="p-4 lg:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Channels</h1>
+          <h1 className="text-display">Channels</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Distribution channels used in purchase orders.</p>
         </div>
         <Button size="sm" onClick={() => { setEditing(null); setModalOpen(true); }}>

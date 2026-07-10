@@ -209,7 +209,7 @@ export default function AuditLogPage() {
     <div className="p-4 lg:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Audit Log</h1>
+          <h1 className="text-display">Audit Log</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {logs.length} event{logs.length !== 1 ? "s" : ""}
           </p>

@@ -8,7 +8,7 @@ import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
 import { getCustomers } from "@/services/customers.service";
 import { getCustomerSummaries } from "@/services/reports.service";
-import KpiCard from "@/components/dashboard/KpiCard";
+import StatCard from "@/components/shared/StatCard";
 import BreakdownCard from "@/components/dashboard/BreakdownCard";
 import CustomerInsights from "@/components/dashboard/CustomerInsights";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
@@ -224,27 +224,27 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard
+        <StatCard
           label="Revenue"
           rawValue={curr.revenue}
           trendPct={revTrend}
           vsLabel="vs prev period"
           href="/transactions"
         />
-        <KpiCard
+        <StatCard
           label="Expenses"
           rawValue={curr.expenses}
           trendPct={expTrend}
           vsLabel="vs prev period"
           href="/transactions"
         />
-        <KpiCard
+        <StatCard
           label="Net Profit"
           rawValue={Math.abs(curr.net)}
           trendPct={netTrend}
           vsLabel={curr.net >= 0 ? "positive cashflow" : "net loss"}
           href="/reports"
-          valueColor={curr.net >= 0 ? C.net : C.loss}
+          color={curr.net >= 0 ? C.net : C.loss}
           prominent
         />
       </div>

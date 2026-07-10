@@ -28,6 +28,7 @@ import ReportsSubNav from "@/components/reports/ReportsSubNav";
 import { supabase } from "@/lib/supabase";
 import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtTick, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
+import { CHART_H } from "@/lib/chartHeights";
 import { getInventoryItems, getInventoryConsumptionRates } from "@/services/inventory.service";
 import SharedStatCard from "@/components/shared/StatCard";
 import type { Tables } from "@/lib/supabaseTypes";
@@ -764,7 +765,7 @@ export default function InventoryReportPage() {
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight">Inventory Report</h1>
+            <h1 className="text-display">Inventory Report</h1>
             <p className="text-sm text-muted-foreground">Stock levels, consumption, low stock alerts and write-offs</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -971,7 +972,7 @@ export default function InventoryReportPage() {
             ) : consumptionOverTime.length === 0 ? (
               <EmptyState />
             ) : (
-              <ResponsiveContainer width="100%" height={230}>
+              <ResponsiveContainer width="100%" height={CHART_H.md}>
                 <AreaChart data={consumptionOverTime} margin={{ left: 0, right: 8, top: 4, bottom: 4 }}>
                   <defs>
                     <linearGradient id="consumptionGrad" x1="0" y1="0" x2="0" y2="1">

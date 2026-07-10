@@ -798,7 +798,7 @@ export default function OrdersPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold">Order Management</h1>
+        <h1 className="text-display">Order Management</h1>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
           New Purchase Order

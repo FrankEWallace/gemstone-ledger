@@ -552,7 +552,7 @@ export default function SystemSettingsPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-8 max-w-2xl">
-      <h1 className="font-display text-2xl font-bold">System Settings</h1>
+      <h1 className="text-display">System Settings</h1>
 
       {/* Appearance */}
       <div>

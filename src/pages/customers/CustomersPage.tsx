@@ -567,7 +567,7 @@ export default function CustomersPage() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Customers</h1>
+          <h1 className="text-display">Customers</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Financial metrics reflect {format(startOfMonth(today), "MMMM yyyy")}
           </p>

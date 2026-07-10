@@ -424,7 +424,7 @@ export default function SafetyPage() {
     <div className="p-4 lg:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold">Safety Incidents</h1>
+        <h1 className="text-display">Safety Incidents</h1>
         <Button size="sm" onClick={() => setModalOpen(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
           Log Incident

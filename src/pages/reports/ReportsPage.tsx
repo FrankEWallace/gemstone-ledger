@@ -94,7 +94,7 @@ export default function ReportsPage() {
 
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight">Reports & Analytics</h1>
+        <h1 className="text-display">Reports & Analytics</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Select a period then open a report</p>
       </div>
 

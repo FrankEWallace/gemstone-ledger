@@ -649,7 +649,7 @@ export default function EquipmentPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Equipment</h1>
+          <h1 className="text-display">Equipment</h1>
           {maintenanceDue > 0 && (
             <p className="text-sm text-destructive mt-0.5 flex items-center gap-1">
               <AlertTriangle className="h-3.5 w-3.5" />

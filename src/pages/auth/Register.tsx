@@ -183,7 +183,7 @@ export default function Register() {
               className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300"
             >
               <div>
-                <h2 className="font-display text-2xl font-bold">Create your account</h2>
+                <h2 className="text-display">Create your account</h2>
                 <p className="text-sm text-muted-foreground mt-1">Step 1 of 2 — your personal details</p>
               </div>
 
@@ -270,7 +270,7 @@ export default function Register() {
                   <ChevronLeft className="h-4 w-4" />
                   Back
                 </button>
-                <h2 className="font-display text-2xl font-bold">Set up your workspace</h2>
+                <h2 className="text-display">Set up your workspace</h2>
                 <p className="text-sm text-muted-foreground mt-1">Step 2 of 2 — your organization</p>
               </div>
 

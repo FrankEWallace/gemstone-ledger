@@ -16,6 +16,7 @@ import {
   getReportSummary, getMonthlyTrend, getExpensesByCategory,
 } from "@/services/reports.service";
 import { fmtCurrency, fmtCompact, fmtTick, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
+import { CHART_H } from "@/lib/chartHeights";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -257,7 +258,7 @@ export default function OverviewReportPage() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Financial Overview</h1>
+        <h1 className="text-display">Financial Overview</h1>
         <button
           onClick={handleExportPDF}
           disabled={isExporting || !summary}
@@ -333,7 +334,7 @@ export default function OverviewReportPage() {
           </div>
         ) : (
           <>
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={CHART_H.md}>
               <ComposedChart data={trendChartData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id="overviewIncomeGrad" x1="0" y1="0" x2="0" y2="1">

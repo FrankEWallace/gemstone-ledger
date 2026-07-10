@@ -354,7 +354,7 @@ export default function ExpenseCategoriesPage() {
     <div className="p-4 lg:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Categories</h1>
+          <h1 className="text-display">Categories</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage expense and income categories for reporting and transaction breakdowns.
           </p>

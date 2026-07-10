@@ -42,7 +42,7 @@ export default function ForgotPassword() {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
         <CheckCircle2 className="h-12 w-12 text-success" />
-        <h1 className="font-display text-2xl font-bold">Check your email</h1>
+        <h1 className="text-display">Check your email</h1>
         <p className="text-sm text-muted-foreground">
           We sent a password reset link to your email address.
         </p>
@@ -59,7 +59,7 @@ export default function ForgotPassword() {
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <BrandMark className="h-6 w-6" />
         </div>
-        <h1 className="font-display text-2xl font-bold">Reset password</h1>
+        <h1 className="text-display">Reset password</h1>
         <p className="text-sm text-muted-foreground">
           Enter your email and we'll send you a reset link
         </p>

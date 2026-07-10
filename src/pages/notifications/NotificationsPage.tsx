@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import EmptyState from "@/components/shared/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { useSystemAlerts, type SystemAlert, type SystemAlertCategory } from "@/hooks/useSystemAlerts";
@@ -202,7 +203,7 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Notifications</h1>
+          <h1 className="text-display">Notifications</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {totalCount > 0
               ? `${totalCount} system alert${totalCount !== 1 ? "s" : ""}${criticalCount > 0 ? ` · ${criticalCount} critical` : ""}`
@@ -281,11 +282,11 @@ export default function NotificationsPage() {
               ))}
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
-              <Bell className="h-8 w-8 mb-2 opacity-25" />
-              <p className="text-sm font-medium">No notifications yet</p>
-              <p className="text-xs mt-1">Push notifications from system triggers will appear here.</p>
-            </div>
+            <EmptyState
+              icon={Bell}
+              title="No notifications yet"
+              description="Push notifications from system triggers will appear here."
+            />
           ) : (
             notifications.map((notif, i) => (
               <NotifRow

@@ -59,7 +59,7 @@ export default function Login() {
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <BrandMark className="h-6 w-6" />
         </div>
-        <h1 className="font-display text-2xl font-bold">Sign in</h1>
+        <h1 className="text-display">Sign in</h1>
         <p className="text-sm text-muted-foreground">Welcome back to FW Mining OS</p>
       </div>
 
