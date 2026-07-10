@@ -20,6 +20,7 @@ import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtCompact, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import SharedStatusBadge from "@/components/shared/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -79,15 +80,12 @@ const C = {
 
 function TypeBadge({ type }: { type: Customer["type"] }) {
   return type === "external"
-    ? <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">External</Badge>
+    ? <Badge variant="outline" className="text-info border-info/20 text-xs">External</Badge>
     : <Badge variant="outline" className="text-muted-foreground text-xs">Internal</Badge>;
 }
 
 function StatusBadge({ status }: { status: Customer["status"] }) {
-  if (status === "prospect")  return <Badge variant="outline" className="text-violet-600 border-violet-200 text-xs">Prospect</Badge>;
-  if (status === "active")    return <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">Active</Badge>;
-  if (status === "completed") return <Badge variant="outline" className="text-blue-500 border-blue-100 text-xs">Completed</Badge>;
-  return <Badge variant="outline" className="text-muted-foreground text-xs">Inactive</Badge>;
+  return <SharedStatusBadge status={status} className="text-xs" />;
 }
 
 // ─── Rent Charge Modal ────────────────────────────────────────────────────────
@@ -693,9 +691,9 @@ export default function CustomersPage() {
                   const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
 
                   const avatarCls: Record<string, string> = {
-                    active:    "bg-blue-100 text-blue-700",
-                    prospect:  "bg-violet-100 text-violet-700",
-                    completed: "bg-blue-100 text-blue-700",
+                    active:    "bg-success/10 text-success",
+                    prospect:  "bg-info/10 text-info",
+                    completed: "bg-info/10 text-info",
                     inactive:  "bg-muted text-muted-foreground",
                   };
 
@@ -806,7 +804,7 @@ export default function CustomersPage() {
                           {hasDailyRate && (
                             <Button
                               variant="ghost" size="icon"
-                              className="h-7 w-7 text-blue-600 hover:text-blue-700"
+                              className="h-7 w-7 text-info hover:text-info"
                               title="Charge daily rent"
                               onClick={() => setRentTarget(c)}
                             >

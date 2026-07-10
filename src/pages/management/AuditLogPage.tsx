@@ -93,9 +93,9 @@ function DiffRow({ log }: { log: AuditLog }) {
           {changed.map((k) => (
             <div key={k}>
               <span className="text-muted-foreground">{k}: </span>
-              <span className="line-through text-red-500">{JSON.stringify(log.old_data![k])}</span>
+              <span className="line-through text-destructive">{JSON.stringify(log.old_data![k])}</span>
               <span className="text-muted-foreground"> → </span>
-              <span className="text-emerald-600">{JSON.stringify(log.new_data![k])}</span>
+              <span className="text-success">{JSON.stringify(log.new_data![k])}</span>
             </div>
           ))}
         </div>
@@ -107,15 +107,15 @@ function DiffRow({ log }: { log: AuditLog }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const ACTION_ICON: Record<string, React.ReactNode> = {
-  create: <Plus className="h-3.5 w-3.5 text-emerald-500" />,
-  update: <Pencil className="h-3.5 w-3.5 text-blue-500" />,
-  delete: <Trash2 className="h-3.5 w-3.5 text-red-500" />,
+  create: <Plus className="h-3.5 w-3.5 text-success" />,
+  update: <Pencil className="h-3.5 w-3.5 text-info" />,
+  delete: <Trash2 className="h-3.5 w-3.5 text-destructive" />,
 };
 
 const ACTION_COLOR: Record<string, string> = {
-  create: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  update: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  delete: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  create: "bg-success/10 text-success",
+  update: "bg-info/10 text-info",
+  delete: "bg-destructive/10 text-destructive",
 };
 
 export default function AuditLogPage() {

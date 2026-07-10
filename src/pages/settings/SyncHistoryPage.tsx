@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 import { usePendingCount, useSyncLog, drainQueue } from "@/lib/offline/syncEngine";
 import { offlineDB } from "@/lib/offline/db";
@@ -29,15 +30,15 @@ function entityLabel(entity: string) {
 }
 
 function StatusIcon({ status }: { status: SyncLogEntry["status"] }) {
-  if (status === "success")  return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-  if (status === "failed")   return <XCircle className="h-4 w-4 text-red-500" />;
-  return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+  if (status === "success")  return <CheckCircle2 className="h-4 w-4 text-success" />;
+  if (status === "failed")   return <XCircle className="h-4 w-4 text-destructive" />;
+  return <AlertTriangle className="h-4 w-4 text-warning" />;
 }
 
 function statusBadge(status: SyncLogEntry["status"]) {
-  if (status === "success")  return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Synced</Badge>;
-  if (status === "failed")   return <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Failed</Badge>;
-  return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Conflict</Badge>;
+  if (status === "success")  return <StatusBadge status="success" label="Synced" />;
+  if (status === "failed")   return <StatusBadge status="failed" label="Failed" />;
+  return <StatusBadge status="conflict" label="Conflict" />;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -116,25 +117,25 @@ export default function SyncHistoryPage() {
           icon={isOffline ? <WifiOff className="h-4 w-4" /> : <Database className="h-4 w-4" />}
           label="Status"
           value={isOffline ? "Offline" : "Online"}
-          color={isOffline ? "text-amber-600" : "text-green-600"}
+          color={isOffline ? "text-warning" : "text-success"}
         />
         <StatCard
           icon={<Clock className="h-4 w-4" />}
           label="Pending"
           value={String(pending)}
-          color={pending > 0 ? "text-amber-600" : "text-muted-foreground"}
+          color={pending > 0 ? "text-warning" : "text-muted-foreground"}
         />
         <StatCard
           icon={<CheckCircle2 className="h-4 w-4" />}
           label="Synced"
           value={String(successCount)}
-          color="text-green-600"
+          color="text-success"
         />
         <StatCard
           icon={<XCircle className="h-4 w-4" />}
           label="Failed"
           value={String(failedCount + conflictCount)}
-          color={failedCount + conflictCount > 0 ? "text-red-600" : "text-muted-foreground"}
+          color={failedCount + conflictCount > 0 ? "text-destructive" : "text-muted-foreground"}
         />
       </div>
 
@@ -176,7 +177,7 @@ export default function SyncHistoryPage() {
         <>
           <Separator />
           <div>
-            <h2 className="text-sm font-semibold mb-3 text-red-600 uppercase tracking-wide">
+            <h2 className="text-sm font-semibold mb-3 text-destructive uppercase tracking-wide">
               Failed permanently ({deadItems.length})
             </h2>
             <p className="text-xs text-muted-foreground mb-3">
@@ -188,9 +189,9 @@ export default function SyncHistoryPage() {
               {deadItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 rounded-lg border border-red-200 dark:border-red-900/40 bg-card px-4 py-3"
+                  className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-card px-4 py-3"
                 >
-                  <XCircle className="h-4 w-4 text-red-500 shrink-0" />
+                  <XCircle className="h-4 w-4 text-destructive shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{entityLabel(item.entity)}</span>
@@ -246,16 +247,16 @@ export default function SyncHistoryPage() {
                     </Badge>
                     {statusBadge(entry.status)}
                     {entry.conflictResolution && (
-                      <Badge variant="outline" className="text-xs text-amber-600">
+                      <Badge variant="outline" className="text-xs text-warning">
                         server wins
                       </Badge>
                     )}
                   </div>
                   {entry.error && (
-                    <p className="text-xs text-red-500 mt-0.5 truncate">{entry.error}</p>
+                    <p className="text-xs text-destructive mt-0.5 truncate">{entry.error}</p>
                   )}
                   {entry.status === "conflict" && !entry.error && (
-                    <p className="text-xs text-amber-600 mt-0.5">
+                    <p className="text-xs text-warning mt-0.5">
                       Server record was modified — local change discarded to preserve data integrity.
                     </p>
                   )}

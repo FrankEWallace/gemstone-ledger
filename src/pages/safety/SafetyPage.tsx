@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -61,17 +62,10 @@ import {
 const SEVERITIES: IncidentSeverity[] = ["low", "medium", "high", "critical"];
 const TYPES: IncidentType[] = ["near-miss", "injury", "equipment", "environmental", "other"];
 
-const SEVERITY_STYLES: Record<IncidentSeverity, string> = {
-  low:      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  medium:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  high:     "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-};
-
 const STATUS_CONFIG: Record<ResolutionStatus, { label: string; className: string }> = {
-  open:         { label: "Open",         className: "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400" },
-  under_review: { label: "Under Review", className: "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400" },
-  resolved:     { label: "Resolved",     className: "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400" },
+  open:         { label: "Open",         className: "bg-destructive/10 text-destructive border-destructive/20" },
+  under_review: { label: "Under Review", className: "bg-warning/10 text-warning border-warning/20" },
+  resolved:     { label: "Resolved",     className: "bg-success/10 text-success border-success/20" },
 };
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -355,15 +349,13 @@ export default function SafetyPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-medium">{row.title}</p>
             {/* Severity shown inline on mobile only */}
-            <span className={`sm:hidden inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${SEVERITY_STYLES[row.severity as IncidentSeverity]}`}>
-              {String(row.severity)}
-            </span>
+            <StatusBadge status={String(row.severity)} className="sm:hidden" />
           </div>
           {row.description && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{row.description}</p>
           )}
           {(row as any).resolution_notes && (
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 line-clamp-1 italic">
+            <p className="text-xs text-info mt-0.5 line-clamp-1 italic">
               Note: {(row as any).resolution_notes}
             </p>
           )}
@@ -375,11 +367,7 @@ export default function SafetyPage() {
       header: "Severity",
       className: "hidden sm:table-cell",
       sortable: true,
-      render: (val) => (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${SEVERITY_STYLES[val as IncidentSeverity]}`}>
-          {String(val)}
-        </span>
-      ),
+      render: (val) => <StatusBadge status={String(val)} />,
     },
     {
       key: "type",
@@ -446,9 +434,9 @@ export default function SafetyPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Open",         value: openCount,      icon: <AlertTriangle className="h-4 w-4 text-orange-500" />, color: openCount > 0 ? "text-orange-600" : "" },
-          { label: "Under Review", value: reviewCount,    icon: <ShieldAlert className="h-4 w-4 text-blue-500" />,    color: reviewCount > 0 ? "text-blue-600" : "" },
-          { label: "Critical",     value: criticalOpen,   icon: <ShieldAlert className="h-4 w-4 text-red-500" />,     color: criticalOpen > 0 ? "text-red-600" : "" },
+          { label: "Open",         value: openCount,      icon: <AlertTriangle className="h-4 w-4 text-destructive" />, color: openCount > 0 ? "text-destructive" : "" },
+          { label: "Under Review", value: reviewCount,    icon: <ShieldAlert className="h-4 w-4 text-warning" />,      color: reviewCount > 0 ? "text-warning" : "" },
+          { label: "Critical",     value: criticalOpen,   icon: <ShieldAlert className="h-4 w-4 text-destructive" />,  color: criticalOpen > 0 ? "text-destructive" : "" },
           { label: "This Month",   value: thisMonthCount, icon: <Info className="h-4 w-4 text-muted-foreground" />,   color: "" },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1.5">

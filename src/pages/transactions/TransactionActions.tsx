@@ -159,7 +159,7 @@ export function RecordPaymentModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-emerald-600 dark:text-emerald-400">
+          <DialogTitle className="text-success">
             Record Payment
           </DialogTitle>
         </DialogHeader>
@@ -352,7 +352,7 @@ export function RecordPaymentModal({
 
             {/* Total preview */}
             {total > 0 && (
-              <p className="text-sm text-right text-emerald-600 font-medium tabular-nums">
+              <p className="text-sm text-right text-success font-medium tabular-nums">
                 Total: {fmtCurrency(total)}
               </p>
             )}
@@ -364,7 +364,7 @@ export function RecordPaymentModal({
               <Button
                 type="submit"
                 disabled={isPending}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-success hover:bg-success/90 text-success-foreground"
               >
                 {isPending ? "Saving…" : "Record Payment"}
               </Button>
@@ -459,7 +459,7 @@ export function RecordExpenseModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-red-600 dark:text-red-400">Record Expense</DialogTitle>
+          <DialogTitle className="text-destructive">Record Expense</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -624,7 +624,7 @@ export function RecordExpenseModal({
 
             {/* Total preview */}
             {total > 0 && (
-              <p className="text-sm text-right text-red-600 font-medium tabular-nums">
+              <p className="text-sm text-right text-destructive font-medium tabular-nums">
                 Total: {fmtCurrency(total)}
               </p>
             )}
@@ -636,7 +636,7 @@ export function RecordExpenseModal({
               <Button
                 type="submit"
                 disabled={isPending}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >
                 {isPending ? "Saving…" : "Record Expense"}
               </Button>
@@ -735,7 +735,7 @@ export function UseInventoryModal({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+          <DialogTitle className="flex items-center gap-2 text-info">
             <Package className="h-4 w-4" />
             Use Inventory
           </DialogTitle>
@@ -797,7 +797,7 @@ export function UseInventoryModal({
                   <p className="text-xs text-muted-foreground">After use</p>
                   <p
                     className={`font-medium ${
-                      stockAfter !== null && stockAfter < 0 ? "text-red-600" : ""
+                      stockAfter !== null && stockAfter < 0 ? "text-destructive" : ""
                     }`}
                   >
                     {stockAfter !== null
@@ -902,7 +902,7 @@ export function UseInventoryModal({
 
             {/* Total cost preview */}
             {totalCost > 0 && (
-              <p className="text-sm text-right text-red-600 font-medium tabular-nums">
+              <p className="text-sm text-right text-destructive font-medium tabular-nums">
                 Expense created: {fmtCurrency(totalCost)}
               </p>
             )}
@@ -919,7 +919,7 @@ export function UseInventoryModal({
               <Button
                 type="submit"
                 disabled={isPending || !watchedItemId}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-info hover:bg-info/90 text-info-foreground"
               >
                 {isPending ? "Recording…" : "Use Inventory"}
               </Button>

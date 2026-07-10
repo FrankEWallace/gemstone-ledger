@@ -27,9 +27,9 @@ import { useSystemAlerts } from "@/hooks/useSystemAlerts";
 // ─── Type icon + colour ───────────────────────────────────────────────────────
 
 const TYPE_META: Record<NotificationType, { icon: React.ElementType; color: string }> = {
-  alert: { icon: AlertCircle, color: "text-red-500" },
-  warning: { icon: AlertTriangle, color: "text-yellow-500" },
-  info: { icon: Info, color: "text-blue-500" },
+  alert: { icon: AlertCircle, color: "text-destructive" },
+  warning: { icon: AlertTriangle, color: "text-warning" },
+  info: { icon: Info, color: "text-info" },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -95,12 +95,12 @@ export default function NotificationBell() {
               {hasNew && (
                 <span className={cn(
                   "absolute top-1 right-1 h-4 w-4 rounded-full animate-ping opacity-60",
-                  criticalCount > 0 ? "bg-red-500" : "bg-destructive"
+                  "bg-destructive"
                 )} />
               )}
               <span className={cn(
-                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-white",
-                criticalCount > 0 ? "bg-red-500" : "bg-destructive"
+                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-destructive-foreground",
+                "bg-destructive"
               )}>
                 {totalBadge > 9 ? "9+" : totalBadge}
               </span>
@@ -132,8 +132,8 @@ export default function NotificationBell() {
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 text-xs border-b border-border transition-colors hover:bg-muted/50",
               criticalCount > 0
-                ? "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-                : "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300"
+                ? "bg-destructive/10 text-destructive"
+                : "bg-warning/10 text-warning"
             )}
           >
             {criticalCount > 0

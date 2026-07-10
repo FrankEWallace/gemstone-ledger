@@ -48,8 +48,8 @@ function KpiProgressRow({ label, actual, target, format: fmt, dir = "higher" }: 
     status = ratio <= 1 ? "ok" : ratio <= 1.1 ? "warn" : "bad";
   }
 
-  const barColor = status === "ok" ? "bg-emerald-500" : status === "warn" ? "bg-yellow-500" : "bg-destructive";
-  const textColor = status === "ok" ? "text-emerald-600" : status === "warn" ? "text-yellow-600" : "text-destructive";
+  const barColor = status === "ok" ? "bg-success" : status === "warn" ? "bg-warning" : "bg-destructive";
+  const textColor = status === "ok" ? "text-success" : status === "warn" ? "text-warning" : "text-destructive";
 
   return (
     <div className="space-y-1.5">

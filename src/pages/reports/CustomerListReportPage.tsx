@@ -140,7 +140,7 @@ export default function CustomerListReportPage() {
                     <p className="font-semibold truncate">{cs.customerName}</p>
                     <Badge
                       variant="outline"
-                      className={cs.customerType === "external" ? "text-blue-600 border-blue-200 mt-1" : "text-muted-foreground mt-1"}
+                      className={cs.customerType === "external" ? "text-info border-info/20 mt-1" : "text-muted-foreground mt-1"}
                     >
                       {cs.customerType}
                     </Badge>

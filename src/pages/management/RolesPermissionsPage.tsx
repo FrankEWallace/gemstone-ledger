@@ -55,9 +55,9 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  admin: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  site_manager: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  worker: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  admin: "bg-chart-3/10 text-chart-3",
+  site_manager: "bg-chart-4/10 text-chart-4",
+  worker: "bg-chart-1/10 text-chart-1",
   viewer: "bg-muted text-muted-foreground",
 };
 

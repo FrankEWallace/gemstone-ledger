@@ -17,6 +17,7 @@ import {
 
 import { useSite } from "@/hooks/useSite";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -95,21 +96,12 @@ type ShiftFormValues = z.infer<typeof shiftSchema>;
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function statusBadge(status: WorkerStatus) {
-  const map: Record<WorkerStatus, string> = {
-    active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    on_leave: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    terminated: "bg-muted text-muted-foreground",
-  };
   const labels: Record<WorkerStatus, string> = {
     active: "Active",
     on_leave: "On Leave",
     terminated: "Terminated",
   };
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${map[status]}`}>
-      {labels[status]}
-    </span>
-  );
+  return <StatusBadge status={status} label={labels[status]} />;
 }
 
 // ─── Worker Modal ─────────────────────────────────────────────────────────────

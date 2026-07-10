@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 /**
  * Single filled triangle icon used for all up/down trend indicators.
  * Direction is expressed via rotation only — same shape, same component.
- * Size and color are controlled via className (e.g. "h-2.5 w-2.5 text-emerald-500").
+ * Size and color are controlled via className (e.g. "h-2.5 w-2.5 text-success").
  */
 export function TrendArrow({
   direction,

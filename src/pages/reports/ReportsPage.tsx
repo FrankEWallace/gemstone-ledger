@@ -198,7 +198,7 @@ export default function ReportsPage() {
             description="Stock levels, consumption rates, low-stock alerts and write-offs."
             badge={
               lowStockCount > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 text-xs font-semibold">
+                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20 px-2 py-0.5 text-xs font-semibold">
                   <AlertTriangle className="h-3 w-3" />
                   {lowStockCount} low
                 </span>

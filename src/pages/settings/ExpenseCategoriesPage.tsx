@@ -147,7 +147,7 @@ function CategoryModal({ open, onClose, orgId, editing, defaultType }: CategoryM
                           field.value === t
                             ? t === "expense"
                               ? "border-destructive bg-destructive/10 text-destructive"
-                              : "border-green-600 bg-green-600/10 text-green-700 dark:text-green-400"
+                              : "border-success bg-success/10 text-success"
                             : "border-border text-muted-foreground hover:bg-muted",
                         ].join(" ")}
                       >
@@ -307,7 +307,7 @@ export default function ExpenseCategoriesPage() {
             variant="outline"
             className={
               t === "income"
-                ? "border-green-600 text-green-700 dark:text-green-400"
+                ? "border-success text-success"
                 : "border-destructive text-destructive"
             }
           >

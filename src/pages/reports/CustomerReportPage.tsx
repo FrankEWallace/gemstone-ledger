@@ -34,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { fmtCurrency, fmtTick, fmtCompact } from "@/lib/formatCurrency";
 import StatCard from "@/components/shared/StatCard";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { getCustomers } from "@/services/customers.service";
 import { getCustomerDetail } from "@/services/reports.service";
 import { getTransactions } from "@/services/transactions.service";
@@ -435,21 +436,11 @@ export default function CustomerReportPage() {
               <>
                 <Badge
                   variant="outline"
-                  className={customer.type === "external" ? "text-blue-600 border-blue-200" : "text-muted-foreground"}
+                  className={customer.type === "external" ? "text-info border-info/20" : "text-muted-foreground"}
                 >
                   {customer.type}
                 </Badge>
-                <Badge
-                  variant="outline"
-                  className={
-                    customer.status === "active"    ? "text-emerald-600 border-emerald-200" :
-                    customer.status === "prospect"  ? "text-violet-600 border-violet-200"   :
-                    customer.status === "completed" ? "text-blue-500 border-blue-100"       :
-                    "text-muted-foreground"
-                  }
-                >
-                  {customer.status}
-                </Badge>
+                <StatusBadge status={customer.status} className="capitalize" />
               </>
             )}
           </div>
@@ -751,17 +742,10 @@ export default function CustomerReportPage() {
                     </td>
                     <td className="px-3 py-3 text-center capitalize text-muted-foreground">{t.type}</td>
                     <td className="px-3 py-3 text-center hidden md:table-cell">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-                        t.status === "success"   ? "bg-emerald-100 text-emerald-700"  :
-                        t.status === "pending"   ? "bg-yellow-100 text-yellow-700"    :
-                        t.status === "refunded"  ? "bg-blue-100 text-blue-700"        :
-                        "bg-muted text-muted-foreground"
-                      }`}>
-                        {t.status}
-                      </span>
+                      <StatusBadge status={String(t.status)} className="capitalize" />
                     </td>
                     <td className="px-5 py-3 text-center tabular-nums font-semibold">
-                      <span className={isIncome ? "text-emerald-600" : "text-red-500"}>
+                      <span className={isIncome ? "text-success" : "text-destructive"}>
                         {fmt(total)}
                       </span>
                     </td>

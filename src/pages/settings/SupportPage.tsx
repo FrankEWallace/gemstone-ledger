@@ -90,8 +90,8 @@ export default function SupportPage() {
   if (submitted) {
     return (
       <div className="p-4 lg:p-6 max-w-lg">
-        <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-8 text-center space-y-4">
-          <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto" />
+        <div className="rounded-lg border border-success/20 bg-success/10 p-8 text-center space-y-4">
+          <CheckCircle className="h-12 w-12 text-success mx-auto" />
           <div>
             <h2 className="text-lg font-semibold">Message Received</h2>
             <p className="text-sm text-muted-foreground mt-1">

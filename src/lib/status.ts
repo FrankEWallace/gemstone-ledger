@@ -27,6 +27,14 @@ const STATUS_VARIANTS: Record<string, StatusVariant> = {
   scheduled: "info",
   ended: "neutral",
 
+  // customers / payments
+  prospect: "info",
+  refunded: "neutral",
+
+  // team / workers
+  on_leave: "warning",
+  terminated: "neutral",
+
   // supply-chain orders
   sent: "info",
   confirmed: "warning",

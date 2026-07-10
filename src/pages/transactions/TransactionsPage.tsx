@@ -46,6 +46,7 @@ import {
 import { getCustomers } from "@/services/customers.service";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
 import StatCard from "@/components/shared/StatCard";
+import StatusBadge from "@/components/shared/StatusBadge";
 import {
   RecordPaymentModal,
   RecordExpenseModal,
@@ -74,17 +75,7 @@ function typeIcon(type: TransactionType) {
 }
 
 function statusBadge(status: TransactionStatus) {
-  const map: Record<TransactionStatus, string> = {
-    success:   "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    pending:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    refunded:  "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
-    cancelled: "bg-muted text-muted-foreground",
-  };
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${map[status]}`}>
-      {status}
-    </span>
-  );
+  return <StatusBadge status={status} className="capitalize" />;
 }
 
 function exportCSV(txs: Transaction[], customerMap: Map<string, string>) {
