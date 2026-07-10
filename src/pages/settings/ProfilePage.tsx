@@ -912,7 +912,7 @@ export default function ProfilePage() {
 
       <SitesRolesCard sites={sites} />
 
-      <DangerZoneCard userId={userId} />
+      {demo && <DangerZoneCard userId={userId} />}
     </div>
   );
 }
