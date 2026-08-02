@@ -4,9 +4,11 @@ import SwiftUI
 /// Selecting a site sets `activeSiteId`, which flips RootView to the main app.
 struct SitePickerView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         NavigationStack {
+            GeometryReader { geo in
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 14) {
@@ -17,7 +19,7 @@ struct SitePickerView: View {
                                 .font(.geist(14)).foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.top, 40)
+                    .padding(.top, hSize == .regular ? 0 : 40)
 
                     if appState.sites.isEmpty {
                         ContentUnavailableView {
@@ -39,6 +41,7 @@ struct SitePickerView: View {
                 .padding(24)
                 .frame(maxWidth: 480)
                 .frame(maxWidth: .infinity)
+                .frame(minHeight: geo.size.height, alignment: hSize == .regular ? .center : .top)
             }
             .background(BrandBackground())
             .toolbar {
@@ -46,6 +49,7 @@ struct SitePickerView: View {
                     Button("Sign out") { Task { await appState.signOut() } }
                         .font(.geist(15)).foregroundStyle(Brand.teal)
                 }
+            }
             }
         }
     }

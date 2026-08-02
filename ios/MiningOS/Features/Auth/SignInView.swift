@@ -3,6 +3,7 @@ import SwiftUI
 /// Branded sign-in: the gem lockup over a titled email/password form.
 struct SignInView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.horizontalSizeClass) private var hSize
 
     @State private var email = ""
     @State private var password = ""
@@ -13,10 +14,11 @@ struct SignInView: View {
     private var canSubmit: Bool { !email.isEmpty && !password.isEmpty && !busy }
 
     var body: some View {
+        GeometryReader { geo in
         ScrollView {
             VStack(spacing: 28) {
                 BrandLockup()
-                    .padding(.top, 48)
+                    .padding(.top, hSize == .regular ? 0 : 48)
 
                 VStack(spacing: 16) {
                     BrandField(label: "Email", icon: "envelope") {
@@ -72,8 +74,10 @@ struct SignInView: View {
             .padding(24)
             .frame(maxWidth: 440)
             .frame(maxWidth: .infinity)
+            .frame(minHeight: geo.size.height, alignment: hSize == .regular ? .center : .top)
         }
         .background(BrandBackground())
+        }
     }
 
     private func signIn() {

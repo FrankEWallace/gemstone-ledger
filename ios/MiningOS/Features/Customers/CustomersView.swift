@@ -1,65 +1,118 @@
 import SwiftUI
 
-/// Customers tab: a customer directory with per-customer money totals, the ability
-/// to add a customer, and a read-only report (P&L + contract projection) per row.
+/// Customers tab. Compact (iPhone): a directory that pushes to a per-customer
+/// report. Regular (iPad): a list-detail split — pick a customer on the left,
+/// read their report on the right (the layout finance apps use on iPad).
 struct CustomersView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.horizontalSizeClass) private var hSize
     @StateObject private var model = CustomersModel()
     @State private var showAdd = false
+    @State private var selectedId: String?
 
     var body: some View {
+        Group {
+            if hSize == .regular { padBody } else { phoneBody }
+        }
+        .task { await reload() }
+        .sheet(isPresented: $showAdd) {
+            AddCustomerSheet { created in
+                model.insertOptimistic(created)
+                selectedId = created.id
+                Task { await reload() }
+            }
+        }
+    }
+
+    // MARK: - iPhone: list that pushes to the report
+
+    private var phoneBody: some View {
         NavigationStack {
             Group {
                 if model.loading && model.customers.isEmpty {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if model.customers.isEmpty {
-                    ContentUnavailableView {
-                        Label("No customers", systemImage: "person.2")
-                    } description: {
-                        Text("Add your first customer to start tracking their income and contract.")
-                    } actions: {
-                        Button("Add customer") { showAdd = true }.buttonStyle(.borderedProminent).tint(Brand.teal)
-                    }
+                    emptyState
                 } else {
-                    list
+                    List {
+                        Section {
+                            ForEach(model.customers) { c in
+                                NavigationLink {
+                                    CustomerReportView(customer: c, txns: model.txns(for: c.id))
+                                } label: {
+                                    CustomerRow(customer: c, income: model.income(for: c.id))
+                                }
+                            }
+                        } header: {
+                            Text("^[\(model.customers.count) customer](inflect: true)")
+                        }
+                    }
                 }
             }
             .navigationTitle("Customers")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { showAdd = true } label: { Image(systemName: "plus") }
-                }
-            }
-            .task { await reload() }
+            .toolbar { addButton }
             .refreshable { await reload() }
-            .sheet(isPresented: $showAdd) {
-                AddCustomerSheet { created in
-                    model.insertOptimistic(created)
-                    Task { await reload() }
-                }
-            }
         }
     }
 
-    private var list: some View {
-        List {
-            Section {
-                ForEach(model.customers) { c in
-                    NavigationLink {
-                        CustomerReportView(customer: c, txns: model.txns(for: c.id))
-                    } label: {
-                        CustomerRow(customer: c, income: model.income(for: c.id))
+    // MARK: - iPad: list-detail split
+
+    private var padBody: some View {
+        NavigationStack {
+            HStack(spacing: 0) {
+                Group {
+                    if model.customers.isEmpty {
+                        emptyState
+                    } else {
+                        List(selection: $selectedId) {
+                            ForEach(model.customers) { c in
+                                CustomerRow(customer: c, income: model.income(for: c.id)).tag(c.id)
+                            }
+                        }
                     }
                 }
-            } header: {
-                Text("^[\(model.customers.count) customer](inflect: true)")
+                .frame(width: 340)
+                .refreshable { await reload() }
+
+                Divider()
+
+                detailPane
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .navigationTitle("Customers")
+            .toolbar { addButton }
+        }
+    }
+
+    @ViewBuilder private var detailPane: some View {
+        if let id = selectedId, let c = model.customers.first(where: { $0.id == id }) {
+            CustomerReportView(customer: c, txns: model.txns(for: c.id))
+        } else {
+            ContentUnavailableView("Select a customer", systemImage: "person.text.rectangle",
+                                   description: Text("Pick someone on the left to see their report."))
+        }
+    }
+
+    private var emptyState: some View {
+        ContentUnavailableView {
+            Label("No customers", systemImage: "person.2")
+        } description: {
+            Text("Add your first customer to start tracking their income and contract.")
+        } actions: {
+            Button("Add customer") { showAdd = true }.buttonStyle(.borderedProminent).tint(Brand.teal)
+        }
+    }
+
+    private var addButton: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Button { showAdd = true } label: { Image(systemName: "plus") }
         }
     }
 
     private func reload() async {
         guard let siteId = appState.activeSiteId else { return }
         await model.load(siteId: siteId)
+        if selectedId == nil { selectedId = model.customers.first?.id }   // iPad: fill the detail pane
     }
 }
 
