@@ -1,0 +1,57 @@
+name: MiningOS
+options:
+  bundleIdPrefix: com.fwallace.miningos
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_LANGUAGE: en
+
+targets:
+  MiningOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - MiningOS
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fwallace.miningos
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"      # 1 = iPhone, 2 = iPad
+        SUPPORTS_MACCATALYST: NO
+    info:
+      path: MiningOS/Info.plist
+      properties:
+        CFBundleDisplayName: Mining OS
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIAppFonts:
+          - Geist-Regular.otf
+          - Geist-Medium.otf
+          - Geist-SemiBold.otf
+        # Injected from Config/Secrets.xcconfig at build time
+        SUPABASE_URL: $(SUPABASE_URL)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+    dependencies:
+      - package: Supabase
+        product: Supabase
