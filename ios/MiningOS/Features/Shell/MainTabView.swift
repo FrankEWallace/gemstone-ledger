@@ -61,7 +61,9 @@ struct MainTabView: View {
         } detail: {
             destination
         }
-        .navigationSplitViewStyle(.balanced)
+        // Keep the detail at full width; in portrait the sidebar overlays instead of
+        // stealing space (which would crush the Customers list-detail into 3 columns).
+        .navigationSplitViewStyle(.prominentDetail)
     }
 
     /// List single-selection wants an optional binding; keep `tab` non-optional.
