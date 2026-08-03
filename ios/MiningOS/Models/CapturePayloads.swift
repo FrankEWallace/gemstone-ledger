@@ -28,8 +28,18 @@ struct TransactionPayload: Encodable {
     var customer_id: String?      // FK -> customers.id
     var phase_id: String?         // FK -> production_phases.id
     var reference_no: String?
-    var inventory_item_id: String?  // FK -> inventory_items.id (set for item usage)
-    var source: String?             // "inventory" marks an item-usage expense (web convention)
+    var inventory_item_id: String?    // FK -> inventory_items.id (set for item usage)
+    var source: String?               // "inventory" marks an item-usage expense (web convention)
+    var expense_category_id: String?  // FK -> expense_categories.id (income or expense kind)
+}
+
+/// New structured category. `type` is "income" or "expense" (DB check constraint).
+/// Org-scoped; client `id` for offline-safe optimistic select, mirroring customers/phases.
+struct ExpenseCategoryCreatePayload: Encodable {
+    var id: String
+    var org_id: String
+    var name: String
+    var type: String
 }
 
 /// Partial update to an inventory item's price. `id` targets the row; the outbox
