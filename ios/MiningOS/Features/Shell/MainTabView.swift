@@ -11,18 +11,18 @@ struct MainTabView: View {
     @State private var showEntry = false
 
     enum Tab: String, CaseIterable, Identifiable {
-        case ledger, calendar, customers, more
+        case ledger, prices, customers, more
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .ledger: "Ledger"; case .calendar: "Calendar"
+            case .ledger: "Ledger"; case .prices: "Prices"
             case .customers: "Customers"; case .more: "More"
             }
         }
         var icon: String {
             switch self {
             case .ledger: "list.bullet.rectangle.portrait"
-            case .calendar: "calendar"
+            case .prices: "tag"
             case .customers: "person.2"
             case .more: "ellipsis"
             }
@@ -41,7 +41,7 @@ struct MainTabView: View {
     @ViewBuilder private var destination: some View {
         switch tab {
         case .ledger:    LedgerView()
-        case .calendar:  CalendarView()
+        case .prices:    CatalogView()
         case .customers: CustomersView()
         case .more:      MoreView()
         }
@@ -93,7 +93,7 @@ struct MainTabView: View {
     private var tabBar: some View {
         HStack(alignment: .center, spacing: 0) {
             tabButton(.ledger)
-            tabButton(.calendar)
+            tabButton(.prices)
             plusButton
             tabButton(.customers)
             tabButton(.more)

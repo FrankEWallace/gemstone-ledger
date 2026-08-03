@@ -28,6 +28,32 @@ struct TransactionPayload: Encodable {
     var customer_id: String?      // FK -> customers.id
     var phase_id: String?         // FK -> production_phases.id
     var reference_no: String?
+    var inventory_item_id: String?    // FK -> inventory_items.id (set for item usage)
+    var source: String?               // "inventory" marks an item-usage expense (web convention)
+    var expense_category_id: String?  // FK -> expense_categories.id (income or expense kind)
+}
+
+/// New structured category. `type` is "income" or "expense" (DB check constraint).
+/// Org-scoped; client `id` for offline-safe optimistic select, mirroring customers/phases.
+struct ExpenseCategoryCreatePayload: Encodable {
+    var id: String
+    var org_id: String
+    var name: String
+    var type: String
+}
+
+/// Partial update to an inventory item's price. `id` targets the row; the outbox
+/// UPDATE path filters by it. Mirrors the web `updateInventoryItem({ unit_cost })`.
+struct InventoryPriceUpdate: Encodable {
+    var id: String
+    var unit_cost: Double
+}
+
+/// Partial update to on-hand stock. Absolute new quantity (read-modify-write, same
+/// as the web app's `consumeInventoryItem` — a stale read can clobber a concurrent edit).
+struct InventoryStockUpdate: Encodable {
+    var id: String
+    var quantity: Double
 }
 
 /// New customer. `id` is generated client-side (UUID) so the just-created row can
@@ -58,6 +84,7 @@ struct PhaseCreatePayload: Encodable {
 }
 
 struct InventoryItemPayload: Encodable {
+    var id: String? = nil      // optional client UUID for offline-safe optimistic insert
     var site_id: String
     var name: String
     var quantity: Double

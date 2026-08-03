@@ -16,7 +16,8 @@ struct EntryPadView: View {
     @State private var amountExpr = ""           // last calculator expression
     @State private var date = Date()
 
-    @State private var category: String?
+    @State private var category: String?       // display name (also written as denormalized text)
+    @State private var categoryId: String?     // FK -> expense_categories.id
     @State private var customerId: String?
     @State private var customerName: String?
     @State private var phaseId: String?
@@ -28,6 +29,7 @@ struct EntryPadView: View {
     @State private var showCategory = false
     @State private var showCustomer = false
     @State private var showPhase = false
+    @State private var showItem = false
 
     private let types = ["income", "expense", "inventory"]
 
@@ -36,7 +38,13 @@ struct EntryPadView: View {
     @State private var unit = ""
     @State private var unitCost = 0.0
     @State private var calcTarget: CalcTarget = .amount
-    private enum CalcTarget { case amount, quantity, unitCost }
+    private enum CalcTarget { case amount, quantity, unitCost, unitPrice }
+
+    // Expense item-usage: when set, this expense consumes a catalog item.
+    // Mirrors the web app's consumeInventoryItem (deduct stock + source:"inventory").
+    @State private var usedItem: InventoryItemLite?
+    // A typed one-off expense name (not in the catalog) — plain expense, no stock change.
+    @State private var customLabel: String?
 
     private var total: Double { unitPrice * quantity }
     private var isInventory: Bool { type == "inventory" }
@@ -67,7 +75,7 @@ struct EntryPadView: View {
         }
         .task {
             guard let siteId = appState.activeSiteId else { return }
-            await model.load(siteId: siteId)
+            await model.load(siteId: siteId, orgId: appState.activeOrgId)
             if phaseId == nil, let open = model.phases.first(where: { $0.isOpen }) ?? model.phases.first {
                 phaseId = open.id; phaseName = open.name
             }
@@ -75,18 +83,21 @@ struct EntryPadView: View {
         .sheet(isPresented: $showCalc) {
             CalculatorSheet(accent: accent, initial: calcTarget == .amount ? amountExpr : "") { r, expr in
                 switch calcTarget {
-                case .amount:   applyAmount(r, expr)
-                case .quantity: quantity = r
-                case .unitCost: unitCost = r
+                case .amount:    applyAmount(r, expr)
+                case .quantity:  quantity = r
+                case .unitCost:  unitCost = r
+                case .unitPrice: unitPrice = r
                 }
             }
             .presentationDetents([.height(440)])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showCategory) {
-            CategoryPickerSheet(categories: model.categories, selected: category) { category = $0 }
-                .presentationDetents([.height(420)])
-                .presentationDragIndicator(.visible)
+            CategoryPickerSheet(categories: model.categories(for: type), selectedId: categoryId, onCreate: createCategory) { pick in
+                categoryId = pick?.id; category = pick?.name
+            }
+            .presentationDetents([.height(460)])
+            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showCustomer) {
             CustomerPickerSheet(customers: model.customers, selectedId: customerId, onCreate: createCustomer) {
@@ -98,6 +109,17 @@ struct EntryPadView: View {
         .sheet(isPresented: $showPhase) {
             PhasePickerSheet(phases: model.phases, selectedId: phaseId, onCreate: createPhase) {
                 phaseId = $0?.id; phaseName = $0?.name
+            }
+            .presentationDetents([.height(460)])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showItem) {
+            ItemPickerSheet(items: model.items, selectedId: usedItem?.id, onOneOff: { name in
+                let n = name.trimmingCharacters(in: .whitespaces)
+                usedItem = nil
+                customLabel = n.isEmpty ? nil : n
+            }) { pick in
+                selectItem(pick)
             }
             .presentationDetents([.height(460)])
             .presentationDragIndicator(.visible)
@@ -114,6 +136,8 @@ struct EntryPadView: View {
                     if (type == "inventory") != (t == "inventory") {
                         unitPrice = 0; quantity = 1; unitCost = 0; amountExpr = ""
                     }
+                    if t != "expense" { usedItem = nil; customLabel = nil }   // item/one-off are expense-only
+                    if t != type { category = nil; categoryId = nil }  // category lists differ by type
                     type = t
                 } label: {
                     Text(t.capitalized)
@@ -144,16 +168,38 @@ struct EntryPadView: View {
             }
             Divider().padding(.leading, 96)
 
-            amountRow("Amount", value: total, expr: quantity != 1) { calcTarget = .amount; showCalc = true }
-            if quantity != 1 {
+            if type == "expense" {
+                tapRow("Item", usedItem?.name ?? customLabel ?? "None") { showItem = true }
+                Divider().padding(.leading, 96)
+            }
+
+            if let item = usedItem {
+                // Quantity-based: price pre-filled from the catalog, user enters how much
+                // was used, amount is computed. Both are snapshotted onto the transaction.
+                amountRow("Unit price", value: unitPrice, expr: false) { calcTarget = .unitPrice; showCalc = true }
+                Divider().padding(.leading, 96)
+                amountRow("Quantity", value: quantity, expr: false) { calcTarget = .quantity; showCalc = true }
                 HStack {
                     Spacer()
-                    Text("\(Money.grouped(unitPrice)) × \(Money.grouped(quantity))")
+                    Text("per \(item.unitLabel) · \(Money.grouped(item.quantity)) on hand")
                         .font(.geist(12)).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal).padding(.bottom, 6)
+                Divider().padding(.leading, 96)
+                computedAmountRow
+                Divider().padding(.leading, 96)
+            } else {
+                amountRow("Amount", value: total, expr: quantity != 1) { calcTarget = .amount; showCalc = true }
+                if quantity != 1 {
+                    HStack {
+                        Spacer()
+                        Text("\(Money.grouped(unitPrice)) × \(Money.grouped(quantity))")
+                            .font(.geist(12)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal).padding(.bottom, 6)
+                }
+                Divider().padding(.leading, 96)
             }
-            Divider().padding(.leading, 96)
 
             tapRow("Category", category ?? "None") { showCategory = true }
             Divider().padding(.leading, 96)
@@ -219,6 +265,18 @@ struct EntryPadView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// Read-only total for item usage (unit price × quantity), styled like the amount row.
+    private var computedAmountRow: some View {
+        HStack {
+            label("Amount")
+            Spacer()
+            Text(total > 0 ? Money.grouped(total) : "0")
+                .font(.geist(21, .semibold)).monospacedDigit()
+                .foregroundStyle(total > 0 ? accent : Color(.tertiaryLabel))
+        }
+        .padding(.horizontal).frame(maxWidth: .infinity, minHeight: 44)
     }
 
     private func label(_ s: String) -> some View {
@@ -289,19 +347,75 @@ struct EntryPadView: View {
             return
         }
         guard total > 0 else { return }
+        let trimmedNote = note.trimmingCharacters(in: .whitespaces)
+        // A one-off item name is the expense's headline; the note is optional extra detail.
+        let label = (customLabel ?? "").trimmingCharacters(in: .whitespaces)
+        var description: String?
+        if !label.isEmpty {
+            description = trimmedNote.isEmpty ? label : "\(label) — \(trimmedNote)"
+        } else {
+            description = trimmedNote.isEmpty ? nil : trimmedNote
+        }
+        var inventoryItemId: String? = nil
+        var source: String? = nil
+
+        // Item usage: mirror the web app's consumeInventoryItem so entries land in the
+        // same reports and stock stays in sync — deduct on-hand, tag source:"inventory",
+        // and use the "<name> usage — <qty> <unit>" description the web reports parse.
+        if type == "expense", let item = usedItem {
+            inventoryItemId = item.id
+            source = "inventory"
+            let unitLabel = (item.unit?.isEmpty == false) ? item.unit! : "units"
+            let qtyStr = quantity == quantity.rounded() ? String(Int(quantity)) : String(quantity)
+            let base = "\(item.name) usage — \(qtyStr) \(unitLabel)"
+            description = trimmedNote.isEmpty ? base : "\(base) (\(trimmedNote))"
+            outbox.enqueue(entity: "inventory_items", operation: .update,
+                           payload: InventoryStockUpdate(id: item.id, quantity: item.quantity - quantity),
+                           siteId: siteId)
+        }
+
         let payload = TransactionPayload(
             site_id: siteId, type: type, status: status,
             quantity: quantity, unit_price: unitPrice,
             transaction_date: DateFmt.day(date),
-            description: note.trimmingCharacters(in: .whitespaces).isEmpty ? nil : note,
+            description: description,
             category: category,
             currency: "TZS",
             customer_id: customerId,
             phase_id: phaseId,
-            reference_no: reference.trimmingCharacters(in: .whitespaces).isEmpty ? nil : reference
+            reference_no: reference.trimmingCharacters(in: .whitespaces).isEmpty ? nil : reference,
+            inventory_item_id: inventoryItemId,
+            source: source,
+            expense_category_id: categoryId
         )
         outbox.enqueue(entity: "transactions", operation: .create, payload: payload, siteId: siteId)
         dismiss()
+    }
+
+    /// Pick (or clear) a catalog item for this expense. Selecting pre-fills the unit
+    /// price from the catalog (editable) and defaults quantity to 1; category defaults
+    /// to the item's category if none is set yet.
+    private func selectItem(_ item: InventoryItemLite?) {
+        usedItem = item
+        customLabel = nil          // picking from the catalog (or None) clears any one-off
+        guard let item else { return }
+        unitPrice = item.unitCost ?? unitPrice
+        if quantity <= 0 { quantity = 1 }
+        if category == nil, let c = item.category, !c.isEmpty { category = c }
+    }
+
+    /// Create a structured category of the current kind (income/expense) and select it.
+    /// Offline-safe: a client UUID lets us use the row immediately while the outbox syncs.
+    private func createCategory(_ raw: String) -> CategoryLite? {
+        let n = raw.trimmingCharacters(in: .whitespaces)
+        guard !n.isEmpty, let orgId = appState.activeOrgId else { return nil }
+        let kind = type == "income" ? "income" : "expense"
+        let id = UUID().uuidString.lowercased()
+        let payload = ExpenseCategoryCreatePayload(id: id, org_id: orgId, name: n, type: kind)
+        outbox.enqueue(entity: "expense_categories", operation: .create, payload: payload, siteId: appState.activeSiteId ?? "")
+        let lite = CategoryLite(id: id, name: n)
+        model.addCategory(lite, kind: kind)
+        return lite
     }
 
     // MARK: - Inline creation (from the pickers)
@@ -448,12 +562,33 @@ struct CalculatorSheet: View {
 final class EntryPadModel: ObservableObject {
     @Published var customers: [CustomerLite] = []
     @Published var phases: [PhaseLite] = []
-    @Published var categories: [String] = []
+    @Published var expenseCats: [CategoryLite] = []
+    @Published var incomeCats: [CategoryLite] = []
+    @Published var items: [InventoryItemLite] = []
 
-    func load(siteId: String) async {
-        customers  = (try? await Lookups.customers(siteId: siteId)) ?? []
-        phases     = (try? await Lookups.phases(siteId: siteId)) ?? []
-        categories = (try? await Lookups.categories(siteId: siteId)) ?? []
+    func load(siteId: String, orgId: String?) async {
+        customers = (try? await Lookups.customers(siteId: siteId)) ?? []
+        phases    = (try? await Lookups.phases(siteId: siteId)) ?? []
+        items     = (try? await Lookups.inventoryItems(siteId: siteId)) ?? []
+        if let orgId {
+            expenseCats = (try? await Lookups.categories(orgId: orgId, type: "expense")) ?? []
+            incomeCats  = (try? await Lookups.categories(orgId: orgId, type: "income")) ?? []
+        }
+    }
+
+    /// Categories for the current transaction kind.
+    func categories(for type: String) -> [CategoryLite] {
+        type == "income" ? incomeCats : expenseCats
+    }
+
+    func addCategory(_ c: CategoryLite, kind: String) {
+        if kind == "income" {
+            incomeCats.append(c)
+            incomeCats.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        } else {
+            expenseCats.append(c)
+            expenseCats.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
     }
 }
 
@@ -496,28 +631,31 @@ private struct PickChip: View {
 }
 
 private struct CategoryPickerSheet: View {
-    let categories: [String]
-    let selected: String?
-    let onPick: (String?) -> Void
+    let categories: [CategoryLite]
+    let selectedId: String?
+    let onCreate: (String) -> CategoryLite?
+    let onPick: (CategoryLite?) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var custom = ""
+
+    private var canAdd: Bool { !custom.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         VStack(spacing: 0) {
             SheetHead(title: "Category") { dismiss() }
             HStack {
                 TextField("New category", text: $custom).textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.words)
                 Button("Add") {
-                    let v = custom.trimmingCharacters(in: .whitespaces); guard !v.isEmpty else { return }
-                    onPick(v); dismiss()
-                }.disabled(custom.trimmingCharacters(in: .whitespaces).isEmpty)
+                    if let c = onCreate(custom) { onPick(c); dismiss() }
+                }.disabled(!canAdd)
             }
             .padding(.horizontal).padding(.bottom, 10)
             ScrollView {
                 LazyVGrid(columns: pickCols, spacing: 10) {
-                    PickChip(text: "None", selected: selected == nil) { onPick(nil); dismiss() }
-                    ForEach(categories, id: \.self) { c in
-                        PickChip(text: c, selected: c == selected) { onPick(c); dismiss() }
+                    PickChip(text: "None", selected: selectedId == nil) { onPick(nil); dismiss() }
+                    ForEach(categories) { c in
+                        PickChip(text: c.name, selected: c.id == selectedId) { onPick(c); dismiss() }
                     }
                 }
                 .padding(.horizontal).padding(.bottom, 20)
@@ -557,6 +695,75 @@ private struct CustomerPickerSheet: View {
                 .padding(.horizontal).padding(.bottom, 20)
             }
         }
+    }
+}
+
+private struct ItemPickerSheet: View {
+    let items: [InventoryItemLite]
+    let selectedId: String?
+    let onOneOff: (String) -> Void
+    let onPick: (InventoryItemLite?) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var oneOff = ""
+
+    private var canAdd: Bool { !oneOff.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            SheetHead(title: "Item") { dismiss() }
+            // Type a one-off expense that isn't in the catalog (plain expense, no stock).
+            HStack {
+                TextField("One-off expense (not in catalog)", text: $oneOff).textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.sentences)
+                Button("Add") { onOneOff(oneOff); dismiss() }.disabled(!canAdd)
+            }
+            .padding(.horizontal).padding(.bottom, 10)
+
+            if items.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "tag").font(.title2).foregroundStyle(.tertiary)
+                    Text("No priced items yet").font(.geist(15, .medium))
+                    Text("Add items with prices in the Prices tab to auto-calculate expenses, or type a one-off above.")
+                        .font(.geist(13)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 32).padding(.top, 12)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: pickCols, spacing: 10) {
+                        PickChip(text: "None", selected: selectedId == nil) { onPick(nil); dismiss() }
+                        ForEach(items) { item in
+                            ItemChip(item: item, selected: item.id == selectedId) { onPick(item); dismiss() }
+                        }
+                    }
+                    .padding(.horizontal).padding(.bottom, 20)
+                }
+            }
+        }
+    }
+}
+
+private struct ItemChip: View {
+    let item: InventoryItemLite
+    let selected: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name).font(.geist(14)).lineLimit(1)
+                        .foregroundStyle(selected ? Brand.teal : .primary)
+                    Text("\(item.priceText)/\(item.unitLabel)").font(.geist(11))
+                        .foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                if selected { Image(systemName: "checkmark").font(.caption2).foregroundStyle(Brand.teal) }
+            }
+            .padding(.horizontal, 12).frame(height: 52)
+            .background(RoundedRectangle(cornerRadius: 10)
+                .fill(selected ? Brand.tealTint : Color(.secondarySystemBackground)))
+        }
+        .buttonStyle(.plain)
     }
 }
 
