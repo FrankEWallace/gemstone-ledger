@@ -37,7 +37,6 @@ struct LedgerBreakdownView: View {
                     Text("Total \(kind.isIncome ? "income" : "expense")").font(.geist(12)).foregroundStyle(.secondary)
                     Text(Money.grouped(total)).font(.geist(30, .semibold)).monospacedDigit()
                         .foregroundStyle(kind.tint).minimumScaleFactor(0.6).lineLimit(1)
-                    Text("paid · site-wide").font(.geist(11)).foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 8)
                 .listRowSeparator(.hidden)
