@@ -157,9 +157,6 @@ function ItemSheet({ item, onClose, onSaved }: { item: InventoryItem | null; onC
             onChange={(e) => setPrice(e.target.value)}
             className="text-right text-lg font-semibold"
           />
-          <p className="text-[11px] text-muted-foreground">
-            Updates the current price only. Expenses already recorded keep the price they were saved at.
-          </p>
         </div>
 
         <div className="mt-1 space-y-1.5 border-t pt-3">
@@ -177,9 +174,6 @@ function ItemSheet({ item, onClose, onSaved }: { item: InventoryItem | null; onC
               Add
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            Increases quantity on hand. The cost is recorded when the stock is used, not when it's received.
-          </p>
         </div>
 
         <DialogFooter>

@@ -78,7 +78,7 @@ export default function CaptureLedger() {
       <div className="grid grid-cols-3 divide-x rounded-2xl bg-card shadow-sm p-3 text-center">
         <Stat to="/capture/breakdown/income" label="Income" value={fmtCompact(income)} className="text-success" />
         <Stat to="/capture/breakdown/expense" label="Expense" value={fmtCompact(expense)} className="text-destructive" />
-        <Stat label="Net" value={fmtCompact(net)} className={net < 0 ? "text-destructive" : "text-success"} />
+        <Stat label="Net" value={fmtCompact(Math.abs(net))} className={net < 0 ? "text-destructive" : "text-success"} />
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
@@ -107,7 +107,7 @@ export default function CaptureLedger() {
               <div className="mb-1 flex items-center justify-between gap-3 px-1">
                 <span className="truncate text-xs font-medium text-muted-foreground">{g.name}</span>
                 <span className={cn("shrink-0 text-xs font-medium tabular-nums", g.total < 0 ? "text-destructive" : "text-success")}>
-                  {g.total < 0 ? "−" : ""}{fmtCurrency(g.total)}
+                  {fmtCurrency(Math.abs(g.total))}
                 </span>
               </div>
               <div className="overflow-hidden rounded-2xl bg-card shadow-sm">

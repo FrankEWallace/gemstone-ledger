@@ -88,7 +88,7 @@ export default function CaptureCustomerReport() {
       <div className="mb-5 text-center">
         <div className="text-sm text-muted-foreground">Net position</div>
         <div className={cn("text-5xl font-semibold tracking-tight tabular-nums", stats.net < 0 ? "text-destructive" : "text-success")}>
-          {stats.net < 0 ? "−" : ""}{grp(stats.net)}
+          {grp(stats.net)}
         </div>
         <div className="text-xs text-muted-foreground">TZS</div>
         <div className="mt-1 text-sm text-muted-foreground">
