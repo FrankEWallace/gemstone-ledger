@@ -75,9 +75,9 @@ export default function CaptureLedger() {
       <h1 className="mb-3 text-2xl font-bold">Ledger</h1>
 
       <div className="grid grid-cols-3 divide-x rounded-2xl bg-card shadow-sm p-3 text-center">
-        <Stat label="Income" value={fmtCompact(income)} className="text-emerald-600" />
-        <Stat label="Expense" value={fmtCompact(expense)} className="text-red-600" />
-        <Stat label="Net" value={fmtCompact(net)} className={net < 0 ? "text-red-600" : "text-emerald-600"} />
+        <Stat label="Income" value={fmtCompact(income)} className="text-success" />
+        <Stat label="Expense" value={fmtCompact(expense)} className="text-destructive" />
+        <Stat label="Net" value={fmtCompact(net)} className={net < 0 ? "text-destructive" : "text-success"} />
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
@@ -105,7 +105,7 @@ export default function CaptureLedger() {
             <section key={g.name}>
               <div className="mb-1 flex items-center justify-between gap-3 px-1">
                 <span className="truncate text-xs font-medium text-muted-foreground">{g.name}</span>
-                <span className={cn("shrink-0 text-xs font-semibold tabular-nums", g.total < 0 ? "text-red-600" : "text-emerald-600")}>
+                <span className={cn("shrink-0 text-xs font-semibold tabular-nums", g.total < 0 ? "text-destructive" : "text-success")}>
                   {g.total < 0 ? "−" : ""}{fmtCurrency(g.total)}
                 </span>
               </div>
@@ -118,7 +118,7 @@ export default function CaptureLedger() {
                         {t.transaction_date}{t.status !== "success" ? " · pending" : ""}
                       </div>
                     </div>
-                    <div className={cn("shrink-0 text-sm font-semibold tabular-nums", t.type === "income" ? "text-emerald-600" : "text-red-600")}>
+                    <div className={cn("shrink-0 text-sm font-semibold tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
                       {t.type === "income" ? "" : "−"}{fmtCurrency(amountOf(t))}
                     </div>
                   </div>

@@ -81,7 +81,7 @@ export default function CaptureCustomerReport() {
       {/* Net position hero — plain, centered, no card */}
       <div className="mb-5 text-center">
         <div className="text-sm text-muted-foreground">Net position</div>
-        <div className={cn("text-5xl font-semibold tracking-tight tabular-nums", stats.net < 0 ? "text-red-600" : "text-emerald-600")}>
+        <div className={cn("text-5xl font-semibold tracking-tight tabular-nums", stats.net < 0 ? "text-destructive" : "text-success")}>
           {stats.net < 0 ? "−" : ""}{grp(stats.net)}
         </div>
         <div className="text-xs text-muted-foreground">TZS</div>
@@ -93,9 +93,9 @@ export default function CaptureCustomerReport() {
 
       {/* Income / Expense / Pending */}
       <div className="grid grid-cols-3 gap-3">
-        <MiniStat label="Income" value={grp(stats.income)} className="text-emerald-600" />
-        <MiniStat label="Expense" value={grp(stats.expense)} className="text-red-600" />
-        <MiniStat label="Pending" value={grp(stats.pending)} className="text-amber-600" />
+        <MiniStat label="Income" value={grp(stats.income)} className="text-success" />
+        <MiniStat label="Expense" value={grp(stats.expense)} className="text-destructive" />
+        <MiniStat label="Pending" value={grp(stats.pending)} className="text-warning" />
       </div>
 
       {contract && (
@@ -130,7 +130,7 @@ export default function CaptureCustomerReport() {
                   {t.transaction_date}{t.status !== "success" ? " · pending" : ""}
                 </div>
               </div>
-              <div className={cn("shrink-0 text-sm font-semibold tabular-nums", t.type === "income" ? "text-emerald-600" : "text-red-600")}>
+              <div className={cn("shrink-0 text-sm font-semibold tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
                 {t.type === "income" ? "+" : "−"}{grp(amountOf(t))}
               </div>
             </div>

@@ -184,7 +184,7 @@ export default function EntryPad({
   }
 
   const accent =
-    kind === "income" ? "text-emerald-600" : kind === "inventory" ? "text-blue-600" : "text-red-600";
+    kind === "income" ? "text-success" : kind === "inventory" ? "text-info" : "text-destructive";
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -240,7 +240,7 @@ export default function EntryPad({
                     onClick={() => setStatus((s) => (s === "success" ? "pending" : "success"))}
                     className={cn(
                       "h-10 w-full rounded-md border text-sm font-medium",
-                      status === "success" ? "text-primary" : "text-amber-600",
+                      status === "success" ? "text-primary" : "text-warning",
                     )}
                   >
                     {status === "success" ? "Paid" : "Pending"}
