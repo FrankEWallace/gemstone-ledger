@@ -176,8 +176,6 @@ private struct EditPriceSheet: View {
                     }
                 } header: {
                     Text(item.name)
-                } footer: {
-                    Text("Updates the current price only. Expenses already recorded keep the price they were saved at.")
                 }
             }
             .navigationTitle("Update price")

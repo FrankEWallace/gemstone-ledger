@@ -90,7 +90,7 @@ struct LedgerView: View {
     private func metric(_ label: String, _ value: Double, _ tint: Color) -> some View {
         VStack(spacing: 4) {
             Text(label).font(.geist(12)).foregroundStyle(.secondary)
-            Text(Money.grouped(value)).font(.geist(17, .semibold)).monospacedDigit()
+            Text(Money.grouped(abs(value))).font(.geist(17, .semibold)).monospacedDigit()
                 .foregroundStyle(tint).minimumScaleFactor(0.6).lineLimit(1)
         }
         .frame(maxWidth: .infinity)
@@ -117,7 +117,7 @@ private struct GroupHeader: View {
         HStack {
             Text(title).font(.geist(13, .medium)).foregroundStyle(.primary)
             Spacer()
-            Text((net >= 0 ? "+" : "") + Money.grouped(net))
+            Text(Money.grouped(abs(net)))
                 .font(.geist(13, .medium)).monospacedDigit()
                 .foregroundStyle(net >= 0 ? Brand.teal : Brand.expenseRed)
         }

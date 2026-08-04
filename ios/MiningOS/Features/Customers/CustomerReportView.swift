@@ -27,7 +27,7 @@ struct CustomerReportView: View {
     private var header: some View {
         VStack(spacing: 6) {
             Text("Net position").font(.geist(12)).foregroundStyle(.secondary)
-            Text(Money.grouped(stats.net)).font(.geist(34, .semibold)).monospacedDigit()
+            Text(Money.grouped(abs(stats.net))).font(.geist(34, .semibold)).monospacedDigit()
                 .foregroundStyle(stats.net >= 0 ? Brand.teal : Brand.expenseRed)
             Text("TZS").font(.geist(11)).foregroundStyle(.secondary)
             HStack(spacing: 8) {
