@@ -62,9 +62,6 @@ struct CatalogView: View {
                     Button { editing = item } label: { row(item) }
                         .buttonStyle(.plain)
                 }
-            } footer: {
-                Text("Tap an item to update today's price. Prices apply to new entries only — past records keep the price they were saved at.")
-                    .font(.geist(12))
             }
         }
         .listStyle(.insetGrouped)
