@@ -44,6 +44,8 @@ const CaptureLedger     = lazy(() => import("@/pages/capture/CaptureLedger"));
 const CapturePrices     = lazy(() => import("@/pages/capture/CapturePrices"));
 const CaptureCustomers  = lazy(() => import("@/pages/capture/CaptureCustomers"));
 const CaptureCustomerReport = lazy(() => import("@/pages/capture/CaptureCustomerReport"));
+const CaptureMore       = lazy(() => import("@/pages/capture/CaptureMore"));
+const CaptureBreakdown  = lazy(() => import("@/pages/capture/CaptureBreakdown"));
 const CustomersPage                  = lazy(() => import("@/pages/customers/CustomersPage"));
 const CustomerDetailPage             = lazy(() => import("@/pages/customers/CustomerDetailPage"));
 const CustomerExpenseBreakdownPage   = lazy(() => import("@/pages/customers/CustomerExpenseBreakdownPage"));
@@ -100,6 +102,8 @@ export default function Router() {
           <Route path="prices"        element={<BoundedRoute element={<CapturePrices />} />} />
           <Route path="customers"     element={<BoundedRoute element={<CaptureCustomers />} />} />
           <Route path="customers/:id" element={<BoundedRoute element={<CaptureCustomerReport />} />} />
+          <Route path="more"          element={<BoundedRoute element={<CaptureMore />} />} />
+          <Route path="breakdown/:type" element={<BoundedRoute element={<CaptureBreakdown />} />} />
         </Route>
 
         <Route element={<AppLayout />}>

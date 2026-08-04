@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtCurrency } from "@/lib/formatCurrency";
 import { useAuth } from "@/hooks/useAuth";
@@ -57,6 +58,9 @@ export default function EntryPad({
 
   // income / expense
   const [itemId, setItemId] = useState<string>(NONE);
+  // Free-typed item name for an expense that isn't in the catalog (one-off, plain
+  // expense, no stock change) — mirrors the iOS item picker's "one-off" field.
+  const [itemText, setItemText] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -106,6 +110,7 @@ export default function EntryPad({
   useEffect(() => {
     if (!open) return;
     setItemId(NONE);
+    setItemText("");
     setQuantity("1");
     setAmount("");
     setDescription("");
@@ -156,6 +161,8 @@ export default function EntryPad({
           transactionDate: date,
         });
       } else {
+        // One-off: for an expense the typed item name is the label; income keeps its own description.
+        const oneOffDesc = (kind === "income" ? description : itemText).trim();
         await createTransaction(
           activeSiteId,
           {
@@ -163,7 +170,7 @@ export default function EntryPad({
             status,
             quantity: 1,
             unit_price: computedAmount,
-            description: description.trim() || undefined,
+            description: oneOffDesc || undefined,
             expense_category_id: categoryId === NONE ? null : categoryId,
             customer_id: customerId === NONE ? null : customerId,
             phase_id: phaseId === NONE ? null : phaseId,
@@ -249,18 +256,15 @@ export default function EntryPad({
               </div>
 
               {kind === "expense" && (
-                <Field label="Item (from catalog)">
-                  <Select value={itemId} onValueChange={setItemId}>
-                    <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>None (one-off)</SelectItem>
-                      {items.map((i) => (
-                        <SelectItem key={i.id} value={i.id}>
-                          {i.name} — {fmtCurrency(Number(i.unit_cost ?? 0))}/{i.unit || "unit"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <Field label="Item">
+                  <ExpenseItemField
+                    items={items}
+                    selected={selectedItem}
+                    text={itemText}
+                    onText={setItemText}
+                    onPick={(id) => { setItemId(id); setItemText(""); }}
+                    onClear={() => setItemId(NONE)}
+                  />
                 </Field>
               )}
 
@@ -280,9 +284,11 @@ export default function EntryPad({
                   <Field label="Amount">
                     <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className={cn("text-right font-semibold", accent)} />
                   </Field>
-                  <Field label="Description">
-                    <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={kind === "income" ? "e.g. Gold sale" : "e.g. Generator repair"} />
-                  </Field>
+                  {kind === "income" && (
+                    <Field label="Description">
+                      <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Gold sale" />
+                    </Field>
+                  )}
                 </>
               )}
 
@@ -347,6 +353,73 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1.5">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
+    </div>
+  );
+}
+
+/** Typeable item picker for expenses. Type a one-off name (plain expense, no stock
+ *  change) or tap a catalog match to auto-price it — mirrors the iOS ItemPickerSheet. */
+function ExpenseItemField({
+  items,
+  selected,
+  text,
+  onText,
+  onPick,
+  onClear,
+}: {
+  items: InventoryItem[];
+  selected?: InventoryItem;
+  text: string;
+  onText: (v: string) => void;
+  onPick: (id: string) => void;
+  onClear: () => void;
+}) {
+  if (selected) {
+    return (
+      <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{selected.name}</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {fmtCurrency(Number(selected.unit_cost ?? 0))}/{selected.unit || "unit"} · from catalog
+          </div>
+        </div>
+        <button type="button" onClick={onClear} className="shrink-0 rounded-full p-1 text-muted-foreground" aria-label="Clear item">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  const q = text.trim().toLowerCase();
+  const matches = (q ? items.filter((i) => i.name.toLowerCase().includes(q)) : items).slice(0, 6);
+
+  return (
+    <div className="space-y-1.5">
+      <Input
+        value={text}
+        onChange={(e) => onText(e.target.value)}
+        placeholder="Type an item, or pick from catalog"
+      />
+      {matches.length > 0 && (
+        <div className="overflow-hidden rounded-md border">
+          {matches.map((i, idx) => (
+            <button
+              key={i.id}
+              type="button"
+              onClick={() => onPick(i.id)}
+              className={cn("flex w-full items-center justify-between px-3 py-2 text-left", idx > 0 && "border-t")}
+            >
+              <span className="truncate text-sm">{i.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {fmtCurrency(Number(i.unit_cost ?? 0))}/{i.unit || "unit"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {q.length > 0 && matches.length === 0 && (
+        <p className="text-[11px] text-muted-foreground">Not in catalog — saved as a one-off expense.</p>
+      )}
     </div>
   );
 }

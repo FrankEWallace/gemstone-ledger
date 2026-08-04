@@ -9,6 +9,7 @@ import { getTransactions } from "@/services/transactions.service";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { CustomerAvatar } from "./CustomerAvatar";
 import type { Transaction } from "@/lib/supabaseTypes";
 
 const amountOf = (t: Transaction) => Number(t.quantity ?? 0) * Number(t.unit_price ?? 0);
@@ -78,6 +79,11 @@ export default function CaptureCustomerReport() {
         <h1 className="truncate px-11 text-base font-semibold">{customer?.name ?? "Customer"}</h1>
       </div>
 
+      {/* Avatar — same initials mark the app draws */}
+      <div className="mb-4 flex justify-center">
+        <CustomerAvatar name={customer?.name ?? "?"} className="h-16 w-16 text-xl" />
+      </div>
+
       {/* Net position hero — plain, centered, no card */}
       <div className="mb-5 text-center">
         <div className="text-sm text-muted-foreground">Net position</div>
@@ -105,7 +111,7 @@ export default function CaptureCustomerReport() {
             <span className="text-sm text-muted-foreground">{grp(contract.rate)} / day</span>
           </div>
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-lg font-semibold tabular-nums">{grp(contract.value)}</span>
+            <span className="text-lg font-medium tabular-nums">{grp(contract.value)}</span>
             {contract.daysRemaining != null && (
               <span className="text-xs text-muted-foreground">{contract.daysRemaining} days left</span>
             )}
@@ -130,7 +136,7 @@ export default function CaptureCustomerReport() {
                   {t.transaction_date}{t.status !== "success" ? " · pending" : ""}
                 </div>
               </div>
-              <div className={cn("shrink-0 text-sm font-semibold tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
+              <div className={cn("shrink-0 text-sm font-medium tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
                 {t.type === "income" ? "+" : "−"}{grp(amountOf(t))}
               </div>
             </div>

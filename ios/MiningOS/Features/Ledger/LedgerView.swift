@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// The tappable summary metrics that drill into a breakdown. (Net is a plain figure.)
+private enum LedgerMetric: Hashable { case income, expense }
+
 /// Home tab. Money-Manager "Trans." screen: a compact Income / Expense / Net header
 /// (success-only) over a transaction list grouped by the chosen segment
 /// (Phase · Customer · Category), defaulting to Phase.
@@ -7,9 +10,10 @@ struct LedgerView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var model = LedgerModel()
     @State private var segment: LedgerSegment = .phase
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if model.loading && model.txns.isEmpty {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -18,6 +22,12 @@ struct LedgerView: View {
                 }
             }
             .navigationTitle("Ledger")
+            .navigationDestination(for: LedgerMetric.self) { metric in
+                switch metric {
+                case .income:  LedgerBreakdownView(kind: .income, txns: model.txns)
+                case .expense: LedgerBreakdownView(kind: .expense, txns: model.txns)
+                }
+            }
             .task { await reload() }
             .refreshable { await reload() }
         }
@@ -60,9 +70,15 @@ struct LedgerView: View {
 
     private var summaryHeader: some View {
         HStack(spacing: 0) {
-            metric("Income", model.totalIncome, Brand.teal)
+            Button { path.append(LedgerMetric.income) } label: {
+                metric("Income", model.totalIncome, Brand.teal)
+            }
+            .buttonStyle(.plain)
             divider
-            metric("Expense", model.totalExpense, Brand.expenseRed)
+            Button { path.append(LedgerMetric.expense) } label: {
+                metric("Expense", model.totalExpense, Brand.expenseRed)
+            }
+            .buttonStyle(.plain)
             divider
             metric("Net", model.totalNet, model.totalNet >= 0 ? Brand.teal : Brand.expenseRed)
         }
@@ -79,6 +95,7 @@ struct LedgerView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 4)
+        .contentShape(Rectangle())
     }
 
     private var divider: some View {
