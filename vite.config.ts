@@ -34,7 +34,9 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         orientation: "portrait-primary",
         scope: "/",
-        start_url: "/",
+        // The installed app opens straight into the simplified mobile capture.
+        // The full dashboard stays reachable in-app via the "Full app" link.
+        start_url: "/capture",
         icons: [
           { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
           { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
@@ -42,9 +44,9 @@ export default defineConfig(({ mode }) => ({
         ],
         categories: ["business", "productivity"],
         shortcuts: [
-          { name: "Dashboard",  short_name: "Home",      url: "/",            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }] },
-          { name: "Inventory",  short_name: "Inventory", url: "/inventory",   icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }] },
-          { name: "Safety",     short_name: "Safety",    url: "/safety",      icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }] },
+          { name: "New entry", short_name: "New entry", url: "/capture?new=1",    icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }] },
+          { name: "Prices",    short_name: "Prices",    url: "/capture/prices",   icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }] },
+          { name: "Full app",  short_name: "Full app",  url: "/",                 icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }] },
         ],
       },
       injectManifest: {

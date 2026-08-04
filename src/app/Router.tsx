@@ -39,6 +39,11 @@ const AuditLogPage        = lazy(() => import("@/pages/management/AuditLogPage")
 const TargetsAlertsPage   = lazy(() => import("@/pages/settings/TargetsAlertsPage"));
 const HelpSupportPage     = lazy(() => import("@/pages/settings/HelpSupportPage"));
 const SyncHistoryPage     = lazy(() => import("@/pages/settings/SyncHistoryPage"));
+const CaptureLayout     = lazy(() => import("@/pages/capture/CaptureLayout"));
+const CaptureLedger     = lazy(() => import("@/pages/capture/CaptureLedger"));
+const CapturePrices     = lazy(() => import("@/pages/capture/CapturePrices"));
+const CaptureCustomers  = lazy(() => import("@/pages/capture/CaptureCustomers"));
+const CaptureCustomerReport = lazy(() => import("@/pages/capture/CaptureCustomerReport"));
 const CustomersPage                  = lazy(() => import("@/pages/customers/CustomersPage"));
 const CustomerDetailPage             = lazy(() => import("@/pages/customers/CustomerDetailPage"));
 const CustomerExpenseBreakdownPage   = lazy(() => import("@/pages/customers/CustomerExpenseBreakdownPage"));
@@ -88,6 +93,15 @@ export default function Router() {
 
       {/* Protected app routes */}
       <Route element={<ProtectedRoute />}>
+
+        {/* Simplified mobile capture — its own shell, no AppLayout chrome */}
+        <Route path="/capture" element={<BoundedRoute element={<CaptureLayout />} />}>
+          <Route index                element={<BoundedRoute element={<CaptureLedger />} />} />
+          <Route path="prices"        element={<BoundedRoute element={<CapturePrices />} />} />
+          <Route path="customers"     element={<BoundedRoute element={<CaptureCustomers />} />} />
+          <Route path="customers/:id" element={<BoundedRoute element={<CaptureCustomerReport />} />} />
+        </Route>
+
         <Route element={<AppLayout />}>
 
           {/* Dashboard */}

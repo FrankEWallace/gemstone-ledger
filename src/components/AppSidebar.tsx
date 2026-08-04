@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Shield,
   Settings,
+  Smartphone,
   X,
   Pickaxe,
   Wrench,
@@ -297,6 +298,7 @@ export default function AppSidebar({
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              <NavItemRow item={{ label: "Simple capture", icon: Smartphone, to: "/capture" }} />
               <NavItemRow item={{ label: "Settings", icon: Settings, to: "/settings" }} />
             </SidebarMenu>
           </SidebarGroupContent>
