@@ -36,9 +36,8 @@ export default function CaptureLayout() {
           className="flex items-center justify-between border-b px-4 pb-3"
           style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
         >
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-sm font-semibold">Capture</span>
-            {activeSite && <span className="truncate text-xs text-muted-foreground">· {activeSite.name}</span>}
+          <div className="flex min-w-0 items-baseline gap-1.5">
+            <span className="truncate text-sm font-semibold">{activeSite?.name ?? "Mining OS"}</span>
           </div>
           <Link to="/" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-3.5 w-3.5" /> Full app

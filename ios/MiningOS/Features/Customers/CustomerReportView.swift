@@ -114,7 +114,7 @@ struct CustomerReportView: View {
                 Text(t.transaction_date ?? "").font(.geist(11)).foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            Text((t.isExpense ? "-" : "+") + Money.grouped(t.amount))
+            Text(Money.grouped(t.amount))
                 .font(.geist(14, .medium)).monospacedDigit()
                 .foregroundStyle(t.isExpense ? Brand.expenseRed : Brand.teal)
         }

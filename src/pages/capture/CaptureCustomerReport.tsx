@@ -137,7 +137,7 @@ export default function CaptureCustomerReport() {
                 </div>
               </div>
               <div className={cn("shrink-0 text-sm font-medium tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
-                {t.type === "income" ? "+" : "−"}{grp(amountOf(t))}
+                {grp(amountOf(t))}
               </div>
             </div>
           ))

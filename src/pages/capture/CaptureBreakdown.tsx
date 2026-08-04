@@ -117,7 +117,7 @@ export default function CaptureBreakdown() {
       <div className="mb-4 text-center">
         <div className="text-sm text-muted-foreground">Total {isIncome ? "income" : "expense"}</div>
         <div className={cn("text-4xl font-semibold tracking-tight tabular-nums", accent)}>{fmtCurrency(total)}</div>
-        <div className="text-xs text-muted-foreground">paid · {filtered ? "filtered" : "site-wide"}</div>
+        {filtered && <div className="text-xs text-muted-foreground">Filtered</div>}
       </div>
 
       {/* Soft filters */}
@@ -192,7 +192,7 @@ export default function CaptureBreakdown() {
                   </div>
                 </div>
                 <div className={cn("shrink-0 text-sm font-medium tabular-nums", accent)}>
-                  {isIncome ? "" : "−"}{fmtCurrency(amountOf(t))}
+                  {fmtCurrency(amountOf(t))}
                 </div>
               </div>
             ))}

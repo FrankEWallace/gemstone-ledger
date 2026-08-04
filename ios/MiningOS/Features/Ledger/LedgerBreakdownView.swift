@@ -76,7 +76,7 @@ struct LedgerBreakdownView: View {
                                     .font(.geist(11)).foregroundStyle(.secondary).lineLimit(1)
                             }
                             Spacer(minLength: 8)
-                            Text((kind.isIncome ? "" : "-") + Money.grouped(t.amount))
+                            Text(Money.grouped(t.amount))
                                 .font(.geist(15, .medium)).monospacedDigit().foregroundStyle(kind.tint)
                         }
                         .padding(.vertical, 2)

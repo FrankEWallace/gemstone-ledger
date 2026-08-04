@@ -142,7 +142,7 @@ private struct LedgerRow: View {
                 }
             }
             Spacer(minLength: 8)
-            Text((tx.isIncome ? "+" : "-") + Money.grouped(tx.amount))
+            Text(Money.grouped(tx.amount))
                 .font(.geist(15, .medium)).monospacedDigit()
                 .foregroundStyle(tx.isIncome ? Brand.teal : Brand.expenseRed)
         }
