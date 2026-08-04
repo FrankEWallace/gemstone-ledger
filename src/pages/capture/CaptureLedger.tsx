@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
@@ -75,8 +76,8 @@ export default function CaptureLedger() {
       <h1 className="mb-3 text-2xl font-bold">Ledger</h1>
 
       <div className="grid grid-cols-3 divide-x rounded-2xl bg-card shadow-sm p-3 text-center">
-        <Stat label="Income" value={fmtCompact(income)} className="text-success" />
-        <Stat label="Expense" value={fmtCompact(expense)} className="text-destructive" />
+        <Stat to="/capture/breakdown/income" label="Income" value={fmtCompact(income)} className="text-success" />
+        <Stat to="/capture/breakdown/expense" label="Expense" value={fmtCompact(expense)} className="text-destructive" />
         <Stat label="Net" value={fmtCompact(net)} className={net < 0 ? "text-destructive" : "text-success"} />
       </div>
 
@@ -105,7 +106,7 @@ export default function CaptureLedger() {
             <section key={g.name}>
               <div className="mb-1 flex items-center justify-between gap-3 px-1">
                 <span className="truncate text-xs font-medium text-muted-foreground">{g.name}</span>
-                <span className={cn("shrink-0 text-xs font-semibold tabular-nums", g.total < 0 ? "text-destructive" : "text-success")}>
+                <span className={cn("shrink-0 text-xs font-medium tabular-nums", g.total < 0 ? "text-destructive" : "text-success")}>
                   {g.total < 0 ? "−" : ""}{fmtCurrency(g.total)}
                 </span>
               </div>
@@ -118,7 +119,7 @@ export default function CaptureLedger() {
                         {t.transaction_date}{t.status !== "success" ? " · pending" : ""}
                       </div>
                     </div>
-                    <div className={cn("shrink-0 text-sm font-semibold tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
+                    <div className={cn("shrink-0 text-sm font-medium tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
                       {t.type === "income" ? "" : "−"}{fmtCurrency(amountOf(t))}
                     </div>
                   </div>
@@ -132,11 +133,16 @@ export default function CaptureLedger() {
   );
 }
 
-function Stat({ label, value, className }: { label: string; value: string; className?: string }) {
-  return (
-    <div className="px-1">
+function Stat({ to, label, value, className }: { to?: string; label: string; value: string; className?: string }) {
+  const inner = (
+    <>
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className={cn("mt-0.5 text-sm font-semibold tabular-nums", className)}>{value}</div>
-    </div>
+      <div className={cn("mt-0.5 text-sm font-medium tabular-nums", className)}>{value}</div>
+    </>
+  );
+  return to ? (
+    <Link to={to} className="px-1 transition-transform active:scale-95">{inner}</Link>
+  ) : (
+    <div className="px-1">{inner}</div>
   );
 }

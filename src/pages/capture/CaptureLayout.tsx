@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, Link, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ScrollText, Tags, Users, Plus, ArrowLeft } from "lucide-react";
+import { LayoutList, Tag, Users, Plus, ArrowLeft, Ellipsis } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSite } from "@/hooks/useSite";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import EntryPad from "./EntryPad";
 
 const TABS = [
-  { to: "/capture", label: "Ledger", icon: ScrollText, end: true },
-  { to: "/capture/prices", label: "Prices", icon: Tags, end: false },
+  { to: "/capture", label: "Ledger", icon: LayoutList, end: true },
+  { to: "/capture/prices", label: "Prices", icon: Tag, end: false },
   { to: "/capture/customers", label: "Customers", icon: Users, end: false },
+  { to: "/capture/more", label: "More", icon: Ellipsis, end: false },
 ];
 
 export default function CaptureLayout() {
@@ -64,7 +65,7 @@ export default function CaptureLayout() {
               </button>
             </div>
             <Tab {...TABS[2]} />
-            <div className="w-16 shrink-0" aria-hidden />
+            <Tab {...TABS[3]} />
           </div>
         </nav>
       </div>
@@ -78,7 +79,7 @@ export default function CaptureLayout() {
   );
 }
 
-function Tab({ to, label, icon: Icon, end }: { to: string; label: string; icon: typeof ScrollText; end: boolean }) {
+function Tab({ to, label, icon: Icon, end }: { to: string; label: string; icon: typeof LayoutList; end: boolean }) {
   return (
     <NavLink
       to={to}
