@@ -9,7 +9,6 @@ import { getTransactions } from "@/services/transactions.service";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { CustomerAvatar } from "./CustomerAvatar";
 import type { Transaction } from "@/lib/supabaseTypes";
 
 const amountOf = (t: Transaction) => Number(t.quantity ?? 0) * Number(t.unit_price ?? 0);
@@ -79,19 +78,14 @@ export default function CaptureCustomerReport() {
         <h1 className="truncate px-11 text-base font-semibold">{customer?.name ?? "Customer"}</h1>
       </div>
 
-      {/* Avatar — same initials mark the app draws */}
-      <div className="mb-4 flex justify-center">
-        <CustomerAvatar name={customer?.name ?? "?"} className="h-16 w-16 text-xl" />
-      </div>
-
-      {/* Net position hero — plain, centered, no card */}
-      <div className="mb-5 text-center">
+      {/* Net position hero — plain, centered, no card (matches the native app) */}
+      <div className="mb-8 mt-6 text-center">
         <div className="text-sm text-muted-foreground">Net position</div>
-        <div className={cn("text-5xl font-semibold tracking-tight tabular-nums", stats.net < 0 ? "text-destructive" : "text-success")}>
+        <div className={cn("mt-1 text-4xl font-semibold tracking-tight tabular-nums", stats.net < 0 ? "text-destructive" : "text-success")}>
           {grp(stats.net)}
         </div>
-        <div className="text-xs text-muted-foreground">TZS</div>
-        <div className="mt-1 text-sm text-muted-foreground">
+        <div className="mt-0.5 text-xs text-muted-foreground">TZS</div>
+        <div className="mt-2 text-sm text-muted-foreground">
           {customer?.type && <span className="capitalize">{customer.type}</span>}
           {customer?.contact_phone ? ` · ${customer.contact_phone}` : ""}
         </div>
@@ -105,7 +99,7 @@ export default function CaptureCustomerReport() {
       </div>
 
       {contract && (
-        <div className="mt-3 rounded-2xl bg-card p-4 shadow-sm">
+        <div className="mt-4 rounded-2xl bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Contract</span>
             <span className="text-sm text-muted-foreground">{grp(contract.rate)} / day</span>
@@ -121,7 +115,7 @@ export default function CaptureCustomerReport() {
       )}
 
       {/* Recent — header inside the card */}
-      <div className="mt-3 rounded-2xl bg-card p-4 shadow-sm">
+      <div className="mt-4 rounded-2xl bg-card p-4 shadow-sm">
         <div className="mb-1 text-base font-semibold">Recent</div>
         {isLoading ? (
           <div className="space-y-2 pt-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
@@ -149,9 +143,9 @@ export default function CaptureCustomerReport() {
 
 function MiniStat({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div className="rounded-2xl bg-card p-3 shadow-sm">
+    <div className="rounded-2xl bg-card px-3 py-4 shadow-sm">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={cn("mt-1 text-lg font-medium tabular-nums", className)}>{value}</div>
+      <div className={cn("mt-1.5 text-lg font-medium tabular-nums", className)}>{value}</div>
     </div>
   );
 }
