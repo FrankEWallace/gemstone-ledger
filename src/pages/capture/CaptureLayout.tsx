@@ -30,8 +30,8 @@ export default function CaptureLayout() {
   }, [params, setParams]);
 
   return (
-    <div className="min-h-[100dvh] bg-background">
-      <div className="relative flex min-h-[100dvh] w-full flex-col bg-background">
+    <div className="min-h-[100dvh] bg-muted dark:bg-background">
+      <div className="relative flex min-h-[100dvh] w-full flex-col bg-muted dark:bg-background">
         <header
           className="flex items-center justify-between border-b px-4 pb-3"
           style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
@@ -46,11 +46,11 @@ export default function CaptureLayout() {
 
         <OfflineBanner />
 
-        <main className="flex-1 overflow-y-auto bg-muted/30" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}>
+        <main className="flex-1 overflow-y-auto bg-muted dark:bg-background" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}>
           <Outlet />
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-10 border-t bg-background/95 backdrop-blur">
+        <nav className="fixed inset-x-0 bottom-0 z-10 border-t bg-muted/95 backdrop-blur dark:bg-background/95">
           <div className="flex items-stretch" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
             <Tab {...TABS[0]} />
             <Tab {...TABS[1]} />
@@ -58,7 +58,7 @@ export default function CaptureLayout() {
               <button
                 aria-label="New entry"
                 onClick={() => setEntryOpen(true)}
-                className="absolute -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background transition-transform active:scale-95"
+                className="absolute -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-muted transition-transform active:scale-95 dark:ring-background"
               >
                 <Plus className="h-6 w-6" />
               </button>

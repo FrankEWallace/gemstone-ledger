@@ -92,7 +92,7 @@ export default function CaptureCustomerReport() {
       </div>
 
       {/* Income / Expense / Pending */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2.5">
         <MiniStat label="Income" value={grp(stats.income)} className="text-success" />
         <MiniStat label="Expense" value={grp(stats.expense)} className="text-destructive" />
         <MiniStat label="Pending" value={grp(stats.pending)} className="text-warning" />
@@ -143,7 +143,7 @@ export default function CaptureCustomerReport() {
 
 function MiniStat({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div className="rounded-2xl bg-card px-3 py-4 shadow-sm">
+    <div className="rounded-xl bg-card p-3 shadow-sm">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className={cn("mt-1.5 text-lg font-medium tabular-nums", className)}>{value}</div>
     </div>
