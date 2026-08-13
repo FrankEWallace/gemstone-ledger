@@ -6,6 +6,10 @@ import { cn } from "@/lib/utils";
 import { useSite } from "@/hooks/useSite";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import EntryPad from "./EntryPad";
+import type { Transaction } from "@/lib/supabaseTypes";
+
+/** Shared via <Outlet context> so capture tabs can open the pad to add or edit. */
+export type CaptureContext = { openEntry: (tx?: Transaction) => void };
 
 const TABS = [
   { to: "/capture", label: "Ledger", icon: LayoutList, end: true },
@@ -16,9 +20,15 @@ const TABS = [
 
 export default function CaptureLayout() {
   const [entryOpen, setEntryOpen] = useState(false);
+  const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
   const { activeSite } = useSite();
+
+  const openEntry = (tx?: Transaction) => {
+    setEditTx(tx ?? null);
+    setEntryOpen(true);
+  };
 
   // Home-screen shortcut "New entry" deep-links to /capture?new=1 — open the pad.
   useEffect(() => {
@@ -47,7 +57,7 @@ export default function CaptureLayout() {
         <OfflineBanner />
 
         <main className="flex-1 overflow-y-auto bg-muted dark:bg-background" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}>
-          <Outlet />
+          <Outlet context={{ openEntry } satisfies CaptureContext} />
         </main>
 
         <nav className="fixed inset-x-0 bottom-0 z-10 border-t bg-muted/95 backdrop-blur dark:bg-background/95">
@@ -57,7 +67,7 @@ export default function CaptureLayout() {
             <div className="relative flex w-16 shrink-0 justify-center">
               <button
                 aria-label="New entry"
-                onClick={() => setEntryOpen(true)}
+                onClick={() => openEntry()}
                 className="absolute -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-muted transition-transform active:scale-95 dark:ring-background"
               >
                 <Plus className="h-6 w-6" />
@@ -71,7 +81,11 @@ export default function CaptureLayout() {
 
       <EntryPad
         open={entryOpen}
-        onOpenChange={setEntryOpen}
+        editTx={editTx}
+        onOpenChange={(v) => {
+          setEntryOpen(v);
+          if (!v) setEditTx(null);
+        }}
         onSaved={() => qc.invalidateQueries({ queryKey: ["capture"] })}
       />
     </div>

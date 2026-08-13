@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { ChevronLeft } from "lucide-react";
@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import type { Transaction } from "@/lib/supabaseTypes";
+import type { CaptureContext } from "./CaptureLayout";
+import CaptureTxRow from "./CaptureTxRow";
 
 const amountOf = (t: Transaction) => Number(t.quantity ?? 0) * Number(t.unit_price ?? 0);
 const grp = (n: number) => Math.round(Math.abs(n)).toLocaleString("en-US");
@@ -17,6 +19,7 @@ const grp = (n: number) => Math.round(Math.abs(n)).toLocaleString("en-US");
 export default function CaptureCustomerReport() {
   const { id = "" } = useParams();
   const { activeSiteId } = useSite();
+  const { openEntry } = useOutletContext<CaptureContext>();
 
   const { data: customers = [] } = useQuery({
     queryKey: ["capture", "customers-page", activeSiteId],
@@ -123,17 +126,14 @@ export default function CaptureCustomerReport() {
           <p className="py-8 text-center text-sm text-muted-foreground">No transactions yet.</p>
         ) : (
           recent.map((t, i) => (
-            <div key={t.id} className={cn("flex items-center justify-between gap-3 py-2.5", i > 0 && "border-t")}>
-              <div className="min-w-0">
-                <div className="truncate text-sm">{t.description || t.category || (t.type === "income" ? "Income" : "Expense")}</div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {t.transaction_date}{t.status !== "success" ? " · pending" : ""}
-                </div>
-              </div>
-              <div className={cn("shrink-0 text-sm font-medium tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
-                {grp(amountOf(t))}
-              </div>
-            </div>
+            <CaptureTxRow
+              key={t.id}
+              t={t}
+              first={i === 0}
+              onEdit={openEntry}
+              formatAmount={grp}
+              className="px-0"
+            />
           ))
         )}
       </div>

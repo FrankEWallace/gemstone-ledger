@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSite } from "@/hooks/useSite";
 import { getTransactions } from "@/services/transactions.service";
@@ -9,6 +9,8 @@ import { fmtCompact, fmtCurrency } from "@/lib/formatCurrency";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Transaction } from "@/lib/supabaseTypes";
+import type { CaptureContext } from "./CaptureLayout";
+import CaptureTxRow from "./CaptureTxRow";
 
 type Segment = "phase" | "customer" | "category";
 const SEGMENTS: Segment[] = ["phase", "customer", "category"];
@@ -17,6 +19,7 @@ const amountOf = (t: Transaction) => Number(t.quantity ?? 0) * Number(t.unit_pri
 
 export default function CaptureLedger() {
   const { activeSiteId } = useSite();
+  const { openEntry } = useOutletContext<CaptureContext>();
   const [segment, setSegment] = useState<Segment>("phase");
 
   const { data: txns = [], isLoading } = useQuery({
@@ -112,17 +115,13 @@ export default function CaptureLedger() {
               </div>
               <div className="overflow-hidden rounded-2xl bg-card shadow-sm">
                 {g.rows.map((t, i) => (
-                  <div key={t.id} className={cn("flex items-center justify-between gap-3 px-3 py-2.5", i > 0 && "border-t")}>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm">{t.description || t.category || (t.type === "income" ? "Income" : "Expense")}</div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {t.transaction_date}{t.status !== "success" ? " · pending" : ""}
-                      </div>
-                    </div>
-                    <div className={cn("shrink-0 text-sm font-medium tabular-nums", t.type === "income" ? "text-success" : "text-destructive")}>
-                      {fmtCurrency(amountOf(t))}
-                    </div>
-                  </div>
+                  <CaptureTxRow
+                    key={t.id}
+                    t={t}
+                    first={i === 0}
+                    onEdit={openEntry}
+                    formatAmount={fmtCurrency}
+                  />
                 ))}
               </div>
             </section>
