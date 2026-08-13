@@ -64,4 +64,33 @@ enum Money {
         default:               return String(format: "%.0f", v)
         }
     }
+
+    /// Groups the integer part of a raw text-field string with commas while the
+    /// user types (6000 → "6,000"), preserving a decimal they're mid-entering.
+    /// Non-numeric characters are dropped; only the first dot is kept.
+    static func groupInput(_ raw: String) -> String {
+        let cleaned = raw.filter { $0.isNumber || $0 == "." }
+        guard !cleaned.isEmpty else { return "" }
+        let parts = cleaned.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
+        let intDigits = String(parts.first ?? "")
+        let groupedInt = intDigits.isEmpty
+            ? ""
+            : (fmt.string(from: NSNumber(value: Int(intDigits) ?? 0)) ?? intDigits)
+        if cleaned.contains(".") {
+            let dec = parts.count > 1 ? String(parts[1]) : ""
+            return groupedInt + "." + dec
+        }
+        return groupedInt
+    }
+}
+
+extension Binding where Value == String {
+    /// Wraps a raw numeric-string binding so the field *displays* grouped digits
+    /// while *storing* the comma-free value (kept parseable by `optionalDouble`).
+    func moneyGrouped() -> Binding<String> {
+        Binding<String>(
+            get: { Money.groupInput(wrappedValue) },
+            set: { wrappedValue = $0.filter { $0.isNumber || $0 == "." } }
+        )
+    }
 }

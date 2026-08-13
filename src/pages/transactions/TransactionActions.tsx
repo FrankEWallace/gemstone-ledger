@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Button } from "@/components/ui/button";
 import { fmtCurrency } from "@/lib/formatCurrency";
 
@@ -276,7 +277,14 @@ export function RecordPaymentModal({
                   <FormItem>
                     <FormLabel>Unit Price *</FormLabel>
                     <FormControl>
-                      <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
+                      <MoneyInput
+                        placeholder="0"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -588,7 +596,14 @@ export function RecordExpenseModal({
                   <FormItem>
                     <FormLabel>Unit Cost *</FormLabel>
                     <FormControl>
-                      <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
+                      <MoneyInput
+                        placeholder="0"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

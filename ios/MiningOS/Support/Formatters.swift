@@ -19,7 +19,8 @@ enum DateFmt {
 extension String {
     /// Parses a decimal text field, treating empty/invalid as nil.
     var optionalDouble: Double? {
-        let trimmed = trimmingCharacters(in: .whitespaces)
+        // Tolerate grouping separators from money fields (e.g. "6,000").
+        let trimmed = trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "")
         return trimmed.isEmpty ? nil : Double(trimmed)
     }
 }
