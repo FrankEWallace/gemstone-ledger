@@ -22,7 +22,7 @@ import {
   ChevronRight,
   Package,
 } from "lucide-react";
-import { TrendArrow } from "@/components/shared/TrendArrow";
+import StatCard from "@/components/shared/StatCard";
 import {
   PieChart,
   Pie,
@@ -98,23 +98,6 @@ function typeIcon(type: TransactionType) {
   if (type === "income")  return <ArrowUpCircle className="h-3.5 w-3.5" style={{ color: C.income }} />;
   if (type === "expense") return <ArrowDownCircle className="h-3.5 w-3.5" style={{ color: C.expense }} />;
   return <RefreshCw className="h-3.5 w-3.5" style={{ color: C.net }} />;
-}
-
-// ─── Spark bars ───────────────────────────────────────────────────────────────
-
-function SparkBars({ values, color }: { values: number[]; color?: string }) {
-  const max = Math.max(...values, 1);
-  return (
-    <div className="flex items-end gap-0.5 h-7 opacity-60 shrink-0">
-      {values.map((v, i) => (
-        <div
-          key={i}
-          className="w-1 rounded-sm"
-          style={{ height: `${Math.max(12, (v / max) * 100)}%`, backgroundColor: color ?? "var(--foreground)" }}
-        />
-      ))}
-    </div>
-  );
 }
 
 // ─── Tooltips ─────────────────────────────────────────────────────────────────
@@ -431,8 +414,6 @@ export default function CustomerDetailPage() {
     [transactions],
   );
 
-  const revenuePerDay = daysWorked > 0 ? (summary?.totalIncome ?? 0) / daysWorked : 0;
-
   // Income breakdown by category (computed client-side)
   const incomeByCategory = useMemo(() => {
     const map: Record<string, number> = {};
@@ -524,59 +505,6 @@ export default function CustomerDetailPage() {
       },
     },
   ];
-
-  // ── KPI data ────────────────────────────────────────────────────────────────
-
-  const incomeSpark  = monthlyTrend.map((t) => t.income);
-  const expenseSpark = monthlyTrend.map((t) => t.expenses);
-  const netSpark     = monthlyTrend.map((t) => Math.max(0, t.income - t.expenses));
-
-  const kpis = summary
-    ? [
-        {
-          label: "Total Income",
-          value: fmt(summary.totalIncome),
-          sub: `${summary.transactionCount} transactions`,
-          color: C.income,
-          spark: incomeSpark,
-          sparkColor: C.income,
-        },
-        {
-          label: "Total Expenses",
-          value: fmt(summary.totalExpenses),
-          sub: expenseByCategory.length > 0 ? `${expenseByCategory[0].category} is largest` : "No expenses",
-          color: C.expense,
-          spark: expenseSpark,
-          sparkColor: C.expense,
-        },
-        {
-          label: "Net Profit",
-          value: fmt(summary.netProfit),
-          sub: summary.totalIncome > 0
-            ? `${Math.round((summary.netProfit / summary.totalIncome) * 100)}% margin`
-            : "",
-          color: summary.netProfit >= 0 ? C.income : C.expense,
-          spark: netSpark,
-          sparkColor: C.net,
-        },
-        {
-          label: "Revenue / Day",
-          value: daysWorked > 0 ? fmt(revenuePerDay) : "—",
-          sub: daysWorked > 0 ? "avg per working day" : "no income days yet",
-          color: undefined as string | undefined,
-          spark: null,
-          sparkColor: undefined as string | undefined,
-        },
-        {
-          label: "Days Worked",
-          value: daysWorked > 0 ? String(daysWorked) : "—",
-          sub: daysWorked > 0 ? "days with income" : "no income recorded",
-          color: undefined as string | undefined,
-          spark: null,
-          sparkColor: undefined as string | undefined,
-        },
-      ]
-    : [];
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -728,30 +656,34 @@ export default function CustomerDetailPage() {
 
       {/* ── KPI strip ── */}
       {loadingSummary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-28 animate-pulse bg-muted rounded-xl" />)}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 animate-pulse bg-muted rounded-xl" />)}
         </div>
-      ) : kpis.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {kpis.map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2.5 overflow-hidden relative">
-              {s.color && <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-xl" style={{ backgroundColor: s.color }} />}
-              <div className="flex items-center justify-between gap-2 pt-0.5">
-                <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground leading-tight">
-                  {s.label}
-                </p>
-                {s.spark && s.spark.some((v) => v > 0)
-                  ? <SparkBars values={s.spark} color={s.sparkColor} />
-                  : null}
-              </div>
-              <p className="text-2xl font-bold tracking-tight leading-none font-display tabular-nums" style={s.color ? { color: s.color } : undefined}>
-                {s.value}
-              </p>
-              {s.sub && (
-                <p className="text-xs text-muted-foreground">{s.sub}</p>
-              )}
-            </div>
-          ))}
+      ) : summary ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard
+            label="Total Income"
+            value={fmt(summary.totalIncome)}
+            sub={`${summary.transactionCount} transactions`}
+            color={C.income}
+          />
+          <StatCard
+            label="Total Expenses"
+            value={fmt(summary.totalExpenses)}
+            sub={expenseByCategory.length > 0 ? `${expenseByCategory[0].category} is largest` : "No expenses"}
+            color={C.expense}
+          />
+          <StatCard
+            label="Net Profit"
+            value={fmt(summary.netProfit)}
+            sub={summary.totalIncome > 0 ? `${Math.round((summary.netProfit / summary.totalIncome) * 100)}% margin` : undefined}
+            color={summary.netProfit >= 0 ? C.income : C.expense}
+          />
+          <StatCard
+            label="Days Worked"
+            value={daysWorked > 0 ? String(daysWorked) : "—"}
+            sub={daysWorked > 0 ? "days with income" : "no income recorded"}
+          />
         </div>
       ) : null}
 
