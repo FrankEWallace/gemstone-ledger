@@ -40,7 +40,7 @@ struct AddCustomerSheet: View {
                     HStack {
                         Text("Daily rate")
                         Spacer()
-                        TextField("0", text: $dailyRate)
+                        TextField("0", text: $dailyRate.moneyGrouped())
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing).monospacedDigit()
                         Text("TZS").foregroundStyle(.secondary)
                     }

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -229,7 +230,7 @@ export default function EntryPad({
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Price / unit">
-                  <Input type="number" inputMode="decimal" value={invCost} onChange={(e) => setInvCost(e.target.value)} placeholder="0" />
+                  <MoneyInput value={invCost} onValueChange={setInvCost} placeholder="0" />
                 </Field>
                 <Field label="Opening stock">
                   <Input type="number" inputMode="decimal" value={invQty} onChange={(e) => setInvQty(e.target.value)} placeholder="0" />
@@ -282,7 +283,7 @@ export default function EntryPad({
               ) : (
                 <>
                   <Field label="Amount">
-                    <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className={cn("text-right font-semibold", accent)} />
+                    <MoneyInput value={amount} onValueChange={setAmount} placeholder="0" className={cn("text-right font-semibold", accent)} />
                   </Field>
                   {kind === "income" && (
                     <Field label="Description">

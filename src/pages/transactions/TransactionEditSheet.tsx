@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -62,6 +63,8 @@ interface Props {
   onClose: () => void;
   customers: Customer[];
   categories: string[];
+  /** Called after a successful save — lets callers refresh their own derived queries. */
+  onSaved?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -72,6 +75,7 @@ export default function TransactionEditSheet({
   onClose,
   customers,
   categories,
+  onSaved,
 }: Props) {
   const { activeSiteId } = useSite();
   const queryClient = useQueryClient();
@@ -123,6 +127,7 @@ export default function TransactionEditSheet({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", activeSiteId] });
       toast.success("Transaction updated.");
+      onSaved?.();
       onClose();
     },
   });
@@ -342,7 +347,14 @@ export default function TransactionEditSheet({
                   <FormItem>
                     <FormLabel>Unit Price</FormLabel>
                     <FormControl>
-                      <Input type="number" min="0" step="0.01" {...field} className="text-sm" />
+                      <MoneyInput
+                        className="text-sm"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

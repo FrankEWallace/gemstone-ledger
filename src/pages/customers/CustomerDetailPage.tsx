@@ -44,6 +44,7 @@ import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtTick } from "@/lib/formatCurrency";
 import { CHART_H } from "@/lib/chartHeights";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import SharedStatusBadge from "@/components/shared/StatusBadge";
@@ -62,14 +63,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import * as SelectPrimitive from "@radix-ui/react-select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 
-import type { Transaction, TransactionType } from "@/lib/supabaseTypes";
+import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
 import { getCustomers } from "@/services/customers.service";
 import { getCustomerDetail } from "@/services/reports.service";
-import { getTransactions, createTransaction, type TransactionPayload } from "@/services/transactions.service";
+import { getTransactions, getTransactionCategories, createTransaction, updateTransactionStatus, type TransactionPayload } from "@/services/transactions.service";
 import { getCustomerMonthlyTrend } from "@/services/contract.service";
 import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
+import TransactionEditSheet from "@/pages/transactions/TransactionEditSheet";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -229,14 +232,11 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: Qu
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Amount ($) *</Label>
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="0.00"
+              <Label className="text-xs">Amount *</Label>
+              <MoneyInput
+                placeholder="0"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onValueChange={setAmount}
                 className="h-9 text-sm"
               />
             </div>
@@ -300,17 +300,80 @@ function ChartEmpty({ message }: { message: string }) {
   );
 }
 
+// ─── Inline status editor ─────────────────────────────────────────────────────
+// Mirrors the Transactions page: click the status badge to flip
+// pending → success/refunded straight from the row, no edit sheet needed.
+
+const TX_STATUSES: TransactionStatus[] = ["success", "pending", "refunded", "cancelled"];
+
+function StatusSelect({ tx, onChanged }: { tx: Transaction; onChanged?: () => void }) {
+  const queryClient = useQueryClient();
+  const { activeSiteId } = useSite();
+
+  const { mutate } = useMutation({
+    mutationFn: (status: TransactionStatus) =>
+      isDemoMode() ? Promise.resolve() : updateTransactionStatus(tx.id, status),
+    onMutate: async (newStatus: TransactionStatus) => {
+      await queryClient.cancelQueries({ queryKey: ["transactions", activeSiteId] });
+      const keys = queryClient.getQueryCache().findAll({ queryKey: ["transactions", activeSiteId] });
+      const snapshots = keys.map((q) => ({ key: q.queryKey, data: q.state.data }));
+      keys.forEach((q) => {
+        queryClient.setQueryData<Transaction[]>(q.queryKey, (old) =>
+          old?.map((t) => (t.id === tx.id ? { ...t, status: newStatus } : t)) ?? []
+        );
+      });
+      return { snapshots };
+    },
+    onError: (err: Error, _s, context) => {
+      context?.snapshots.forEach(({ key, data }) => queryClient.setQueryData(key, data));
+      toast.error(err.message);
+    },
+    onSuccess: () => {
+      if (!isDemoMode()) {
+        queryClient.invalidateQueries({ queryKey: ["transactions", activeSiteId] });
+        onChanged?.();
+      }
+      toast.success("Status updated.");
+    },
+  });
+
+  return (
+    <Select value={tx.status} onValueChange={(v) => mutate(v as TransactionStatus)}>
+      {/* Bare trigger: reads like a plain badge (no chevron/border), still opens inline */}
+      <SelectPrimitive.Trigger
+        aria-label="Change status"
+        className="inline-flex items-center rounded-md p-0.5 -m-0.5 outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring [&>svg]:hidden"
+      >
+        <SelectValue>
+          <SharedStatusBadge status={tx.status} className="capitalize" />
+        </SelectValue>
+      </SelectPrimitive.Trigger>
+      <SelectContent>
+        {TX_STATUSES.map((s) => (
+          <SelectItem key={s} value={s}>
+            <SharedStatusBadge status={s} className="capitalize" />
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { activeSiteId } = useSite();
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
+  const queryClient = useQueryClient();
+
+  const canEdit = activeRole === "admin";
 
   const [dateFrom, setDateFrom] = useState(DEFAULT_FROM);
   const [dateTo,   setDateTo]   = useState(DEFAULT_TO);
   const [addTxType, setAddTxType] = useState<"income" | "expense" | null>(null);
   const [useInventoryOpen, setUseInventoryOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Transaction | null>(null);
 
   const opts = { enabled: !!activeSiteId && !!id };
 
@@ -338,6 +401,12 @@ export default function CustomerDetailPage() {
     queryKey: ["customer-trend", activeSiteId, id, dateFrom, dateTo],
     queryFn: () => getCustomerMonthlyTrend(activeSiteId!, id!, dateFrom, dateTo),
     ...opts,
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["tx-categories", activeSiteId],
+    queryFn: () => getTransactionCategories(activeSiteId!),
+    enabled: canEdit && !!activeSiteId,
   });
 
   // ── Derived data ────────────────────────────────────────────────────────────
@@ -416,9 +485,21 @@ export default function CustomerDetailPage() {
     {
       key: "status",
       header: "Status",
-      render: (val) => {
-        return <SharedStatusBadge status={String(val)} className="capitalize" />;
-      },
+      render: (val, row) =>
+        canEdit ? (
+          <div onClick={(e) => e.stopPropagation()}>
+            <StatusSelect
+              tx={row as unknown as Transaction}
+              onChanged={() => {
+                queryClient.invalidateQueries({ queryKey: ["customer-detail", activeSiteId] });
+                queryClient.invalidateQueries({ queryKey: ["customer-trend", activeSiteId] });
+                queryClient.invalidateQueries({ queryKey: ["customerSummaries", activeSiteId] });
+              }}
+            />
+          </div>
+        ) : (
+          <SharedStatusBadge status={String(val)} className="capitalize" />
+        ),
     },
     {
       key: "unit_price",
@@ -774,6 +855,11 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* ── Transaction table ── */}
+      {canEdit && txRows.length > 0 && (
+        <p className="text-xs text-muted-foreground -mb-2">
+          Tap a row to edit, or tap its status to change it directly.
+        </p>
+      )}
       <DataTable
         data={txRows as unknown as Record<string, unknown>[]}
         columns={columns as DataTableColumn<Record<string, unknown>>[]}
@@ -784,6 +870,7 @@ export default function CustomerDetailPage() {
         pageSize={15}
         isLoading={loadingTx}
         emptyMessage="No transactions in this date range."
+        onRowClick={canEdit ? (row) => setEditTarget(row as unknown as Transaction) : undefined}
       />
 
       {/* ── Modals ── */}
@@ -805,6 +892,20 @@ export default function CustomerDetailPage() {
           userId={user?.id}
           customers={customers.map((c) => ({ id: c.id, name: c.name }))}
           defaultCustomerId={id}
+        />
+      )}
+      {canEdit && (
+        <TransactionEditSheet
+          transaction={editTarget}
+          open={!!editTarget}
+          onClose={() => setEditTarget(null)}
+          customers={customers}
+          categories={categories}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["customer-detail", activeSiteId] });
+            queryClient.invalidateQueries({ queryKey: ["customer-trend", activeSiteId] });
+            queryClient.invalidateQueries({ queryKey: ["customerSummaries", activeSiteId] });
+          }}
         />
       )}
     </div>

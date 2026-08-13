@@ -169,7 +169,7 @@ private struct EditPriceSheet: View {
                     HStack {
                         Text("Price per \(item.unitLabel)").font(.geist(15)).foregroundStyle(.secondary)
                         Spacer()
-                        TextField("0", text: $text)
+                        TextField("0", text: $text.moneyGrouped())
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .font(.geist(20, .semibold))
@@ -219,7 +219,7 @@ private struct AddItemSheet: View {
                     HStack {
                         Text("Price per unit").foregroundStyle(.secondary)
                         Spacer()
-                        TextField("0", text: $price).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                        TextField("0", text: $price.moneyGrouped()).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                     }
                 }
                 Section("Optional") {
