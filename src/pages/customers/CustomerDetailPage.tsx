@@ -310,9 +310,16 @@ function StatusSelect({ tx, onChanged }: { tx: Transaction; onChanged?: () => vo
   const queryClient = useQueryClient();
   const { activeSiteId } = useSite();
 
-  const { mutate } = useMutation({
-    mutationFn: (status: TransactionStatus) =>
-      isDemoMode() ? Promise.resolve() : updateTransactionStatus(tx.id, status),
+  const { mutate } = useMutation<
+    void,
+    Error,
+    TransactionStatus,
+    { snapshots: { key: readonly unknown[]; data: unknown }[] }
+  >({
+    mutationFn: async (status) => {
+      if (isDemoMode()) return;
+      await updateTransactionStatus(tx.id, status);
+    },
     onMutate: async (newStatus: TransactionStatus) => {
       await queryClient.cancelQueries({ queryKey: ["transactions", activeSiteId] });
       const keys = queryClient.getQueryCache().findAll({ queryKey: ["transactions", activeSiteId] });
