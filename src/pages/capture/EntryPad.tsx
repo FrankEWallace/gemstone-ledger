@@ -29,11 +29,11 @@ import {
   createInventoryItem,
   consumeInventoryItem,
 } from "@/services/inventory.service";
-import { createTransaction } from "@/services/transactions.service";
+import { createTransaction, updateTransaction } from "@/services/transactions.service";
 import { getExpenseCategories } from "@/services/expense-categories.service";
 import { getProductionPhases } from "@/services/production-phases.service";
 import { getCustomers } from "@/services/customers.service";
-import type { InventoryItem } from "@/lib/supabaseTypes";
+import type { InventoryItem, Transaction } from "@/lib/supabaseTypes";
 
 type Kind = "income" | "expense" | "inventory";
 const NONE = "__none__";
@@ -44,13 +44,17 @@ export default function EntryPad({
   open,
   onOpenChange,
   onSaved,
+  editTx,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSaved: () => void;
+  /** When set, the pad opens pre-filled to edit this transaction instead of adding a new one. */
+  editTx?: Transaction | null;
 }) {
   const { user, orgId } = useAuth();
   const { activeSiteId } = useSite();
+  const isEdit = !!editTx;
 
   const [kind, setKind] = useState<Kind>("expense");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -108,8 +112,9 @@ export default function EntryPad({
   );
 
   // Reset per-open and when the kind changes so stale picks don't leak across types.
+  // Skipped while editing — the prefill effect owns the field values there.
   useEffect(() => {
-    if (!open) return;
+    if (!open || isEdit) return;
     setItemId(NONE);
     setItemText("");
     setQuantity("1");
@@ -119,14 +124,31 @@ export default function EntryPad({
     setCustomerId(NONE);
     setPhaseId(NONE);
     setStatus("success");
-  }, [open, kind]);
+  }, [open, kind, isEdit]);
 
-  // Default to the newest open phase.
+  // Pre-fill from the transaction being edited.
   useEffect(() => {
-    if (!open || phaseId !== NONE || phases.length === 0) return;
+    if (!open || !editTx) return;
+    setKind(editTx.type === "income" ? "income" : "expense");
+    setDate(editTx.transaction_date ?? new Date().toISOString().slice(0, 10));
+    setStatus(editTx.status === "success" ? "success" : "pending");
+    setItemId(NONE);
+    setItemText("");
+    setQuantity("1");
+    const total = Number(editTx.quantity ?? 1) * Number(editTx.unit_price ?? 0);
+    setAmount(total ? String(total) : "");
+    setDescription(editTx.description ?? "");
+    setCategoryId(editTx.expense_category_id ?? NONE);
+    setCustomerId(editTx.customer_id ?? NONE);
+    setPhaseId(editTx.phase_id ?? NONE);
+  }, [open, editTx]);
+
+  // Default to the newest open phase (adding only — never override an edited entry's phase).
+  useEffect(() => {
+    if (!open || isEdit || phaseId !== NONE || phases.length === 0) return;
     const openPhase = phases.find((p) => (p.status ?? "open") === "open") ?? phases[0];
     if (openPhase) setPhaseId(openPhase.id);
-  }, [open, phases, phaseId]);
+  }, [open, phases, phaseId, isEdit]);
 
   const qtyNum = Number(quantity) || 0;
   const computedAmount = selectedItem
@@ -144,6 +166,24 @@ export default function EntryPad({
     if (!activeSiteId || !canSave) return;
     setSaving(true);
     try {
+      if (editTx) {
+        // Edit mode — update the existing transaction's fields in place.
+        await updateTransaction(editTx.id, {
+          type: kind === "income" ? "income" : "expense",
+          status,
+          quantity: 1,
+          unit_price: computedAmount,
+          description: description.trim() || undefined,
+          expense_category_id: categoryId === NONE ? null : categoryId,
+          customer_id: customerId === NONE ? null : customerId,
+          phase_id: phaseId === NONE ? null : phaseId,
+          transaction_date: date,
+        });
+        toast.success("Entry updated");
+        onSaved();
+        onOpenChange(false);
+        return;
+      }
       if (kind === "inventory") {
         await createInventoryItem(activeSiteId, {
           name: invName.trim(),
@@ -198,13 +238,15 @@ export default function EntryPad({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-w-md">
         <DrawerHeader className="pb-2">
-          <DrawerTitle>New entry</DrawerTitle>
+          <DrawerTitle>{isEdit ? "Edit entry" : "New entry"}</DrawerTitle>
         </DrawerHeader>
 
         <div className="max-h-[70dvh] space-y-4 overflow-y-auto px-4">
-          {/* Kind segmented */}
-          <div className="grid grid-cols-3 gap-2">
-            {(["income", "expense", "inventory"] as Kind[]).map((k) => (
+          {/* Kind segmented — inventory (add stock) isn't editable, so hide it in edit mode */}
+          <div className={cn("grid gap-2", isEdit ? "grid-cols-2" : "grid-cols-3")}>
+            {(["income", "expense", "inventory"] as Kind[])
+              .filter((k) => !isEdit || k !== "inventory")
+              .map((k) => (
               <button
                 key={k}
                 onClick={() => setKind(k)}
@@ -256,7 +298,7 @@ export default function EntryPad({
                 </Field>
               </div>
 
-              {kind === "expense" && (
+              {!isEdit && kind === "expense" && (
                 <Field label="Item">
                   <ExpenseItemField
                     items={items}
@@ -285,7 +327,7 @@ export default function EntryPad({
                   <Field label="Amount">
                     <MoneyInput value={amount} onValueChange={setAmount} placeholder="0" className={cn("text-right font-semibold", accent)} />
                   </Field>
-                  {kind === "income" && (
+                  {(isEdit || kind === "income") && (
                     <Field label="Description">
                       <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Gold sale" />
                     </Field>
@@ -341,7 +383,7 @@ export default function EntryPad({
 
         <DrawerFooter>
           <Button onClick={save} disabled={!canSave || saving}>
-            {saving ? "Saving…" : "Save"}
+            {saving ? "Saving…" : isEdit ? "Save changes" : "Save"}
           </Button>
         </DrawerFooter>
       </DrawerContent>
