@@ -25,18 +25,51 @@ export default function App() {
     return cleanup;
   }, []);
 
-  // After a deployment the Service Worker activates the new version and fires
-  // controllerchange. Reloading here ensures users always run the latest bundle
-  // rather than old JS against a potentially-updated backend or API contract.
+  // Keep every client on the freshly-deployed bundle.
+  //
+  // The SW (sw.ts) calls skipWaiting()+clients.claim(), so a new version takes
+  // control as soon as it installs and fires `controllerchange` — we reload
+  // there to swap the running JS. But the browser only *checks* for a new SW on
+  // a hard navigation or roughly every 24 h. This is an SPA whose installed PWA
+  // opens to /capture and then moves via client-side routing, so it can stay
+  // open for hours and never trigger that check — leaving users on stale code.
+  // So we poll registration.update() proactively (on tab focus and a timer),
+  // which is a cheap conditional GET that kicks off the install→reload flow.
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+
+    let refreshing = false;
     const handleControllerChange = () => {
+      if (refreshing) return; // guard against a double reload
+      refreshing = true;
       console.info("[App] New SW version active — reloading for fresh bundle");
       window.location.reload();
     };
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+
+    let registration: ServiceWorkerRegistration | undefined;
+    const checkForUpdate = () => {
+      registration?.update().catch(() => {
+        /* offline or transient — the next check will retry */
+      });
+    };
+
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      registration = reg;
+      checkForUpdate(); // check once on load
+    });
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") checkForUpdate();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    // Safety net for a tab left focused for a long stretch.
+    const interval = window.setInterval(checkForUpdate, 15 * 60 * 1000);
+
     return () => {
       navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.clearInterval(interval);
     };
   }, []);
 
