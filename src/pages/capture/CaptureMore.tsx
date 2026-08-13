@@ -50,6 +50,9 @@ export default function CaptureMore() {
       <p className="mt-3 px-1 text-center text-xs text-muted-foreground">
         {userProfile?.full_name || user?.email}
       </p>
+      <p className="mt-1 px-1 text-center text-[11px] text-muted-foreground/70">
+        Build {__BUILD_ID__}
+      </p>
     </div>
   );
 }
