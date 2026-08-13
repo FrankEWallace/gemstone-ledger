@@ -7,6 +7,14 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Build stamp — surfaced on the capture "More" page so support can tell which
+  // deploy a client is actually running (see the service-worker caching history).
+  // Also guarantees each production build differs, so the SW update check fires.
+  define: {
+    __BUILD_ID__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC",
+    ),
+  },
   server: {
     host: "::",
     port: 8080,
