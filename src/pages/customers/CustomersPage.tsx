@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import SharedStatusBadge from "@/components/shared/StatusBadge";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -450,7 +451,14 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
                       <FormItem className="col-span-2">
                         <FormLabel>Daily Rate ($)</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
+                          <MoneyInput
+                            placeholder="0"
+                            name={field.name}
+                            ref={field.ref}
+                            onBlur={field.onBlur}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

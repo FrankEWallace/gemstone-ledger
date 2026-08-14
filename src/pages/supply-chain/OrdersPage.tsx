@@ -61,6 +61,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 
@@ -407,7 +408,14 @@ function CreateOrderModal({
                           <FormItem>
                             {index === 0 && <FormLabel className="text-xs text-muted-foreground">Unit Price</FormLabel>}
                             <FormControl>
-                              <Input type="number" min={0} step="0.01" className="h-9" {...f} />
+                              <MoneyInput
+                                className="h-9"
+                                name={f.name}
+                                ref={f.ref}
+                                onBlur={f.onBlur}
+                                value={f.value}
+                                onValueChange={f.onChange}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

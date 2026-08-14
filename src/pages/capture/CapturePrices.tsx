@@ -12,6 +12,7 @@ import { fmtCurrency } from "@/lib/formatCurrency";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
 import { ChevronRight, Plus } from "lucide-react";
 import {
@@ -150,11 +151,9 @@ function ItemSheet({ item, onClose, onSaved }: { item: InventoryItem | null; onC
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Price per {item?.unit || "unit"}</Label>
-          <Input
-            type="number"
-            inputMode="decimal"
+          <MoneyInput
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            onValueChange={setPrice}
             className="text-right text-lg font-semibold"
           />
         </div>
@@ -247,7 +246,7 @@ function AddItemDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenC
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Price / unit</Label>
-              <Input type="number" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" className="text-right" />
+              <MoneyInput value={price} onValueChange={setPrice} placeholder="0" className="text-right" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
