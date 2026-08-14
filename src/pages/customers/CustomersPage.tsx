@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { isDemoMode } from "@/lib/demo";
+import { invalidateCustomerCaches } from "@/lib/customerCache";
 import { fmtCurrency, fmtCompact, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -278,7 +279,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
         onClose();
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ["customers", siteId] });
+      invalidateCustomerCaches(queryClient);
       toast.success(editing ? "Customer updated." : "Customer added.");
       onClose();
     },
@@ -535,7 +536,7 @@ export default function CustomersPage() {
     },
     onSuccess: () => {
       if (!isDemoMode()) {
-        queryClient.invalidateQueries({ queryKey: ["customers", activeSiteId] });
+        invalidateCustomerCaches(queryClient);
       }
       toast.success("Customer deleted.");
       setDeleteTarget(null);

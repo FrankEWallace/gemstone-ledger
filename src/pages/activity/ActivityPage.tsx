@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { getCustomers, updateCustomer } from "@/services/customers.service";
+import { invalidateCustomerCaches } from "@/lib/customerCache";
 import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
 import { createTransaction } from "@/services/transactions.service";
 import { getExpenseCategories } from "@/services/expense-categories.service";
@@ -257,7 +258,7 @@ function CloseActivityModal({
       toast.error("Failed to close activity");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customers", activeSiteId] });
+      invalidateCustomerCaches(queryClient);
       queryClient.invalidateQueries({ queryKey: ["activity-summaries", activeSiteId] });
       toast.success(`${customer.name} activity closed`);
       onClose();
