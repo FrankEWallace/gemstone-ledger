@@ -32,7 +32,8 @@ import {
 import { createTransaction, updateTransaction } from "@/services/transactions.service";
 import { getExpenseCategories } from "@/services/expense-categories.service";
 import { getProductionPhases } from "@/services/production-phases.service";
-import { getCustomers } from "@/services/customers.service";
+import { getCustomers, updateCustomer } from "@/services/customers.service";
+import { differenceInCalendarDays, parseISO } from "date-fns";
 import type { InventoryItem, Transaction } from "@/lib/supabaseTypes";
 
 type Kind = "income" | "expense" | "inventory";
@@ -58,7 +59,7 @@ export default function EntryPad({
 
   const [kind, setKind] = useState<Kind>("expense");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [status, setStatus] = useState<"success" | "pending">("success");
+  const [status, setStatus] = useState<"success" | "pending">("pending");
   const [saving, setSaving] = useState(false);
 
   // income / expense
@@ -68,6 +69,9 @@ export default function EntryPad({
   const [itemText, setItemText] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [amount, setAmount] = useState("");
+  // Operating-cost mode (days × daily rate) — the category drives this.
+  const [days, setDays] = useState("");
+  const [ratePerDay, setRatePerDay] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>(NONE);
   const [customerId, setCustomerId] = useState<string>(NONE);
@@ -111,6 +115,15 @@ export default function EntryPad({
     [itemId, items],
   );
 
+  // The chosen expense category drives the input shape: an "operating" category
+  // switches the amount box to days × daily-rate (accrued cost), computed live.
+  const selectedCat = useMemo(
+    () => (categoryId === NONE ? undefined : cats.find((c) => c.id === categoryId)),
+    [categoryId, cats],
+  );
+  const isOperating =
+    kind === "expense" && !selectedItem && !!selectedCat && /operating/i.test(selectedCat.name);
+
   // Reset per-open and when the kind changes so stale picks don't leak across types.
   // Skipped while editing — the prefill effect owns the field values there.
   useEffect(() => {
@@ -119,11 +132,13 @@ export default function EntryPad({
     setItemText("");
     setQuantity("1");
     setAmount("");
+    setDays("");
+    setRatePerDay("");
     setDescription("");
     setCategoryId(NONE);
     setCustomerId(NONE);
     setPhaseId(NONE);
-    setStatus("success");
+    setStatus("pending");
   }, [open, kind, isEdit]);
 
   // Pre-fill from the transaction being edited.
@@ -137,6 +152,9 @@ export default function EntryPad({
     setQuantity("1");
     const total = Number(editTx.quantity ?? 1) * Number(editTx.unit_price ?? 0);
     setAmount(total ? String(total) : "");
+    // Operating-cost edits keep their days × rate breakdown (quantity = days).
+    setDays(editTx.quantity ? String(editTx.quantity) : "");
+    setRatePerDay(editTx.unit_price ? String(editTx.unit_price) : "");
     setDescription(editTx.description ?? "");
     setCategoryId(editTx.expense_category_id ?? NONE);
     setCustomerId(editTx.customer_id ?? NONE);
@@ -150,17 +168,51 @@ export default function EntryPad({
     if (openPhase) setPhaseId(openPhase.id);
   }, [open, phases, phaseId, isEdit]);
 
+  // Operating cost: seed the daily rate from the customer's stored rate, and default
+  // the day count from the production start date → today. Both stay editable — the day
+  // field IS the admin override. Only fills empty fields, so it never clobbers typing.
+  useEffect(() => {
+    if (!open || isEdit || !isOperating) return;
+    const cust = customerId === NONE ? undefined : customers.find((c) => c.id === customerId);
+    if (!cust) return;
+    if (ratePerDay === "" && cust.daily_rate != null) setRatePerDay(String(cust.daily_rate));
+    if (days === "" && cust.contract_start) {
+      const elapsed = differenceInCalendarDays(new Date(), parseISO(cust.contract_start)) + 1;
+      if (elapsed > 0) setDays(String(elapsed));
+    }
+  }, [open, isEdit, isOperating, customerId, customers, ratePerDay, days]);
+
   const qtyNum = Number(quantity) || 0;
+  const daysNum = Number(days) || 0;
+  const rateNum = Number(ratePerDay) || 0;
   const computedAmount = selectedItem
     ? qtyNum * Number(selectedItem.unit_cost ?? 0)
-    : Number(amount) || 0;
+    : isOperating
+      ? daysNum * rateNum
+      : Number(amount) || 0;
 
   const canSave = (() => {
     if (!activeSiteId) return false;
     if (kind === "inventory") return invName.trim().length > 0 && Number(invQty) > 0;
     if (selectedItem) return qtyNum > 0 && Number(selectedItem.unit_cost ?? 0) > 0;
+    if (isOperating) return daysNum > 0 && rateNum > 0;
     return computedAmount > 0;
   })();
+
+  const operatingLabel = (d: number) => `Operating cost — ${d} day${d === 1 ? "" : "s"}`;
+
+  // Persist the daily rate onto the customer so next time it prefills and they only
+  // confirm the days. Best-effort — a failure here shouldn't block the saved expense.
+  async function rememberDailyRate() {
+    if (customerId === NONE || rateNum <= 0) return;
+    const cust = customers.find((c) => c.id === customerId);
+    if (cust && Number(cust.daily_rate ?? 0) === rateNum) return;
+    try {
+      await updateCustomer(customerId, { daily_rate: rateNum });
+    } catch {
+      /* non-fatal: the expense is already saved */
+    }
+  }
 
   async function save() {
     if (!activeSiteId || !canSave) return;
@@ -168,17 +220,21 @@ export default function EntryPad({
     try {
       if (editTx) {
         // Edit mode — update the existing transaction's fields in place.
+        // Operating cost keeps its days × rate breakdown (quantity = days).
         await updateTransaction(editTx.id, {
           type: kind === "income" ? "income" : "expense",
           status,
-          quantity: 1,
-          unit_price: computedAmount,
-          description: description.trim() || undefined,
+          quantity: isOperating ? daysNum : 1,
+          unit_price: isOperating ? rateNum : computedAmount,
+          description: isOperating
+            ? description.trim() || operatingLabel(daysNum)
+            : description.trim() || undefined,
           expense_category_id: categoryId === NONE ? null : categoryId,
           customer_id: customerId === NONE ? null : customerId,
           phase_id: phaseId === NONE ? null : phaseId,
           transaction_date: date,
         });
+        if (isOperating) await rememberDailyRate();
         toast.success("Entry updated");
         onSaved();
         onOpenChange(false);
@@ -201,6 +257,26 @@ export default function EntryPad({
           userId: user?.id,
           transactionDate: date,
         });
+      } else if (isOperating) {
+        // Operating cost = days × daily rate, stored as quantity(days) × unit_price(rate)
+        // so the breakdown survives (no pre-multiplied lump).
+        await createTransaction(
+          activeSiteId,
+          {
+            type: "expense",
+            status,
+            quantity: daysNum,
+            unit_price: rateNum,
+            description: description.trim() || operatingLabel(daysNum),
+            expense_category_id: categoryId === NONE ? null : categoryId,
+            customer_id: customerId === NONE ? null : customerId,
+            phase_id: phaseId === NONE ? null : phaseId,
+            currency: "TZS",
+            transaction_date: date,
+          },
+          user?.id,
+        );
+        await rememberDailyRate();
       } else {
         // One-off: for an expense the typed item name is the label; income keeps its own description.
         const oneOffDesc = (kind === "income" ? description : itemText).trim();
@@ -298,7 +374,7 @@ export default function EntryPad({
                 </Field>
               </div>
 
-              {!isEdit && kind === "expense" && (
+              {!isEdit && kind === "expense" && !isOperating && (
                 <Field label="Item">
                   <ExpenseItemField
                     items={items}
@@ -322,6 +398,25 @@ export default function EntryPad({
                     </div>
                   </Field>
                 </div>
+              ) : isOperating ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Days worked">
+                      <Input type="number" inputMode="decimal" value={days} onChange={(e) => setDays(e.target.value)} placeholder="0" />
+                    </Field>
+                    <Field label="Rate / day">
+                      <MoneyInput value={ratePerDay} onValueChange={setRatePerDay} placeholder="0" className="text-right" />
+                    </Field>
+                  </div>
+                  <Field label="Amount">
+                    <div className={cn("flex h-10 items-center justify-end rounded-md border bg-muted/40 px-3 font-semibold", accent)}>
+                      {fmtCurrency(computedAmount)}
+                    </div>
+                  </Field>
+                  <p className="-mt-1 text-[11px] text-muted-foreground">
+                    Days default from the production start date — edit to override the days counted.
+                  </p>
+                </>
               ) : (
                 <>
                   <Field label="Amount">
