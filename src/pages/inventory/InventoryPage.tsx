@@ -43,6 +43,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 
 import { useAuth } from "@/hooks/useAuth";
 import type { InventoryItem } from "@/lib/supabaseTypes";
@@ -251,7 +252,14 @@ function ItemModal({ open, onClose, siteId, editing }: ItemModalProps) {
                   <FormItem>
                     <FormLabel>Unit Cost ($)</FormLabel>
                     <FormControl>
-                      <Input type="number" min={0} step="0.01" placeholder="0.00" {...field} />
+                      <MoneyInput
+                        placeholder="0"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

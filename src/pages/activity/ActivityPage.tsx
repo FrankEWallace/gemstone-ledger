@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import EmptyState from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -132,14 +133,11 @@ function QuickTxModal({
         <div className="space-y-3">
           <div>
             <Label htmlFor="qt-amount">Amount *</Label>
-            <Input
+            <MoneyInput
               id="qt-amount"
-              type="number"
-              min="0"
-              step="any"
               placeholder="0"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onValueChange={setAmount}
               autoFocus
             />
           </div>

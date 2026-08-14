@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -115,11 +116,9 @@ export default function AddCustomerDrawer({
 
           <div className="rounded-xl border p-3">
             <Field label="Daily rate (TZS)">
-              <Input
-                type="number"
-                inputMode="numeric"
+              <MoneyInput
                 value={dailyRate}
-                onChange={(e) => setDailyRate(e.target.value)}
+                onValueChange={setDailyRate}
                 placeholder="0"
                 className="text-right tabular-nums"
               />

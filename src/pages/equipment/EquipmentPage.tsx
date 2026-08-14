@@ -51,6 +51,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { fmtCurrency } from "@/lib/formatCurrency";
@@ -349,13 +350,10 @@ function MaintenanceLogSheet({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Cost (optional)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="0.00"
+                  <MoneyInput
+                    placeholder="0"
                     value={cost}
-                    onChange={(e) => setCost(e.target.value)}
+                    onValueChange={setCost}
                     className="h-8 text-xs"
                   />
                 </div>
