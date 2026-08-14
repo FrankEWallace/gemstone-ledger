@@ -115,6 +115,15 @@ export default function EntryPad({
     [itemId, items],
   );
 
+  // The chosen expense category drives the input shape: an "operating" category
+  // switches the amount box to days × daily-rate (accrued cost), computed live.
+  const selectedCat = useMemo(
+    () => (categoryId === NONE ? undefined : cats.find((c) => c.id === categoryId)),
+    [categoryId, cats],
+  );
+  const isOperating =
+    kind === "expense" && !selectedItem && !!selectedCat && /operating/i.test(selectedCat.name);
+
   // Reset per-open and when the kind changes so stale picks don't leak across types.
   // Skipped while editing — the prefill effect owns the field values there.
   useEffect(() => {
@@ -172,15 +181,6 @@ export default function EntryPad({
       if (elapsed > 0) setDays(String(elapsed));
     }
   }, [open, isEdit, isOperating, customerId, customers, ratePerDay, days]);
-
-  // The chosen expense category drives the input shape: an "operating" category
-  // switches the amount box to days × daily-rate (accrued cost), computed live.
-  const selectedCat = useMemo(
-    () => (categoryId === NONE ? undefined : cats.find((c) => c.id === categoryId)),
-    [categoryId, cats],
-  );
-  const isOperating =
-    kind === "expense" && !selectedItem && !!selectedCat && /operating/i.test(selectedCat.name);
 
   const qtyNum = Number(quantity) || 0;
   const daysNum = Number(days) || 0;
