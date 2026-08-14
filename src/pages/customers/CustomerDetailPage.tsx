@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,6 +7,7 @@ import {
   endOfMonth,
   subMonths,
   parseISO,
+  differenceInCalendarDays,
 } from "date-fns";
 import {
   ArrowLeft,
@@ -67,7 +68,7 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 
 import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
-import { getCustomers } from "@/services/customers.service";
+import { getCustomers, updateCustomer } from "@/services/customers.service";
 import { getCustomerDetail } from "@/services/reports.service";
 import { getTransactions, getTransactionCategories, createTransaction, updateTransactionStatus, type TransactionPayload } from "@/services/transactions.service";
 import { getCustomerMonthlyTrend } from "@/services/contract.service";
@@ -145,19 +146,44 @@ interface QuickAddTxModalProps {
   customerId: string;
   siteId: string;
   userId?: string;
+  /** Customer's stored daily rate + production start, used to auto-compute operating cost. */
+  dailyRate?: number | null;
+  contractStart?: string | null;
+  /** Existing category names, offered as a datalist so the user can choose not type. */
+  categories?: string[];
 }
 
-function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: QuickAddTxModalProps) {
+function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId, dailyRate, contractStart, categories = [] }: QuickAddTxModalProps) {
   const queryClient = useQueryClient();
   const today = format(new Date(), "yyyy-MM-dd");
   const [description, setDescription] = useState("");
   const [amount,      setAmount]      = useState("");
+  const [days,        setDays]        = useState("");
+  const [ratePerDay,  setRatePerDay]  = useState("");
   const [date,        setDate]        = useState(today);
   const [category,    setCategory]    = useState("");
   const [status,      setStatus]      = useState<"pending" | "success">("pending");
 
+  // An "operating" category turns the amount into days × daily-rate (accrued cost).
+  const isOperating = type === "expense" && /operating/i.test(category);
+  const daysNum = Number(days) || 0;
+  const rateNum = Number(ratePerDay) || 0;
+  const computedAmount = isOperating ? daysNum * rateNum : Number(amount) || 0;
+
+  // Seed the rate from the customer and default the days from the production start
+  // date → today. Both stay editable; the day field is the admin override.
+  useEffect(() => {
+    if (!open || !isOperating) return;
+    if (ratePerDay === "" && dailyRate != null) setRatePerDay(String(dailyRate));
+    if (days === "" && contractStart) {
+      const elapsed = differenceInCalendarDays(new Date(), parseISO(contractStart)) + 1;
+      if (elapsed > 0) setDays(String(elapsed));
+    }
+  }, [open, isOperating, dailyRate, contractStart, ratePerDay, days]);
+
   function reset() {
-    setDescription(""); setAmount(""); setDate(today); setCategory(""); setStatus("pending");
+    setDescription(""); setAmount(""); setDays(""); setRatePerDay("");
+    setDate(today); setCategory(""); setStatus("pending");
   }
 
   const { mutate, isPending } = useMutation({
@@ -167,16 +193,23 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: Qu
         return Promise.resolve({} as any);
       }
       const payload: TransactionPayload = {
-        description: description || undefined,
+        description: description || (isOperating ? `Operating cost — ${daysNum} day${daysNum === 1 ? "" : "s"}` : undefined),
         category:    category    || undefined,
         customer_id: customerId,
         type,
         status,
-        quantity:         1,
-        unit_price:       Number(amount),
+        // Operating cost keeps its days × rate breakdown (quantity = days).
+        quantity:         isOperating ? daysNum : 1,
+        unit_price:       isOperating ? rateNum : Number(amount),
         transaction_date: date,
       };
-      return createTransaction(siteId, payload, userId);
+      return createTransaction(siteId, payload, userId).then(async (tx) => {
+        // Remember the rate on the customer so it prefills next time (best-effort).
+        if (isOperating && rateNum > 0 && Number(dailyRate ?? 0) !== rateNum) {
+          try { await updateCustomer(customerId, { daily_rate: rateNum }); } catch { /* non-fatal */ }
+        }
+        return tx;
+      });
     },
     onSuccess: () => {
       if (!isDemoMode()) {
@@ -213,35 +246,86 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: Qu
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Amount *</Label>
-              <MoneyInput
-                placeholder="0"
-                value={amount}
-                onValueChange={setAmount}
-                className="h-9 text-sm"
-              />
+          {isOperating ? (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Days worked</Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={days}
+                    onChange={(e) => setDays(e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Rate / day</Label>
+                  <MoneyInput
+                    placeholder="0"
+                    value={ratePerDay}
+                    onValueChange={setRatePerDay}
+                    className="h-9 text-sm text-right"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Amount</Label>
+                  <div className="flex h-9 items-center justify-end rounded-md border bg-muted/40 px-3 text-sm font-semibold">
+                    {fmt(computedAmount)}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Date *</Label>
+                  <Input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="-mt-1 text-[11px] text-muted-foreground">
+                Days default from the production start date — edit to override the days counted.
+              </p>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Amount *</Label>
+                <MoneyInput
+                  placeholder="0"
+                  value={amount}
+                  onValueChange={setAmount}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Date *</Label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Date *</Label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-9 text-sm"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs">Category</Label>
             <Input
-              placeholder="e.g. Fuel, Labour, Rent…"
+              list="quickadd-tx-categories"
+              placeholder="Choose or type — e.g. Operating Costs, Fuel…"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="h-9 text-sm"
             />
+            <datalist id="quickadd-tx-categories">
+              {categories.map((c) => <option key={c} value={c} />)}
+            </datalist>
           </div>
 
           <div className="space-y-1.5">
@@ -262,7 +346,7 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId }: Qu
           </Button>
           <Button
             onClick={() => mutate()}
-            disabled={isPending || !amount || Number(amount) <= 0 || !date}
+            disabled={isPending || computedAmount <= 0 || !date}
             style={type === "income" ? { backgroundColor: C.income, color: "#fff" } : type === "expense" ? { backgroundColor: C.expense, color: "#fff" } : {}}
           >
             {isPending ? "Saving…" : `Add ${type === "income" ? "Income" : "Expense"}`}
@@ -821,6 +905,9 @@ export default function CustomerDetailPage() {
           customerId={id}
           siteId={activeSiteId!}
           userId={user?.id}
+          dailyRate={customer?.daily_rate}
+          contractStart={customer?.contract_start}
+          categories={categories}
         />
       )}
       {useInventoryOpen && (
