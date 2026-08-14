@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSite } from "@/hooks/useSite";
 import { getCustomers } from "@/services/customers.service";
+import { invalidateCustomerCaches } from "@/lib/customerCache";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight, Plus, Users } from "lucide-react";
 import { CustomerAvatar, TypeBadge } from "./CustomerAvatar";
@@ -69,7 +70,7 @@ export default function CaptureCustomers() {
       <AddCustomerDrawer
         open={adding}
         onOpenChange={setAdding}
-        onCreated={() => qc.invalidateQueries({ queryKey: ["capture"] })}
+        onCreated={() => invalidateCustomerCaches(qc)}
       />
     </div>
   );
