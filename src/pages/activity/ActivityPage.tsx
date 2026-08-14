@@ -7,13 +7,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { getCustomers, updateCustomer } from "@/services/customers.service";
 import { invalidateCustomerCaches } from "@/lib/customerCache";
+import { useOperatingCost, operatingLabel, isOperatingCategory } from "@/lib/operatingCost";
+import { OperatingCostFields } from "@/components/shared/OperatingCostFields";
 import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
 import { createTransaction } from "@/services/transactions.service";
 import { getExpenseCategories } from "@/services/expense-categories.service";
 import { getCustomerSummaries } from "@/services/reports.service";
 import type { CustomerSummary } from "@/services/reports.service";
 import type { Customer } from "@/lib/supabaseTypes";
-import { fmtCompact } from "@/lib/formatCurrency";
+import { fmtCompact, fmtCurrency } from "@/lib/formatCurrency";
 import { cn } from "@/lib/utils";
 import EmptyState from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -59,7 +61,7 @@ function QuickTxModal({
   const [categoryId, setCategoryId] = useState<string>("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(TODAY);
-  const [status, setStatus] = useState<"success" | "pending">("success");
+  const [status, setStatus] = useState<"success" | "pending">("pending");
 
   const { data: allCategories = [] } = useQuery({
     queryKey: ["expense-categories", orgId],
@@ -68,6 +70,17 @@ function QuickTxModal({
   });
 
   const categories = allCategories.filter((c) => c.type === txType);
+
+  // An "operating" category turns the amount into days × daily-rate (shared engine).
+  const selectedCat = allCategories.find((c) => c.id === categoryId);
+  const isOperating = txType === "expense" && isOperatingCategory(selectedCat?.name);
+  const op = useOperatingCost({
+    active: isOperating,
+    open: true,
+    dailyRate: customer.daily_rate,
+    contractStart: customer.contract_start,
+  });
+  const computedAmount = isOperating ? op.amount : parseFloat(amount) || 0;
 
   function handleTypeChange(type: "income" | "expense") {
     setTxType(type);
@@ -80,9 +93,10 @@ function QuickTxModal({
         activeSiteId!,
         {
           type: txType,
-          quantity: 1,
-          unit_price: parseFloat(amount),
-          description: description || undefined,
+          // Operating cost keeps its days × rate breakdown (quantity = days).
+          quantity: isOperating ? op.daysNum : 1,
+          unit_price: isOperating ? op.rateNum : parseFloat(amount),
+          description: description || (isOperating ? operatingLabel(op.daysNum) : undefined),
           transaction_date: date,
           status,
           customer_id: customer.id,
@@ -90,7 +104,10 @@ function QuickTxModal({
           expense_category_id: categoryId || null,
         },
         userProfile?.id
-      ),
+      ).then(async (tx) => {
+        if (isOperating) await op.rememberRate(customer.id);
+        return tx;
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions", activeSiteId] });
       queryClient.invalidateQueries({ queryKey: ["activity-summaries", activeSiteId] });
@@ -100,7 +117,7 @@ function QuickTxModal({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const valid = !!amount && parseFloat(amount) > 0;
+  const valid = computedAmount > 0;
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -131,16 +148,28 @@ function QuickTxModal({
         </div>
 
         <div className="space-y-3">
-          <div>
-            <Label htmlFor="qt-amount">Amount *</Label>
-            <MoneyInput
-              id="qt-amount"
-              placeholder="0"
-              value={amount}
-              onValueChange={setAmount}
-              autoFocus
+          {isOperating ? (
+            <OperatingCostFields
+              dense
+              days={op.days}
+              setDays={op.setDays}
+              ratePerDay={op.ratePerDay}
+              setRatePerDay={op.setRatePerDay}
+              amount={computedAmount}
+              fmt={fmtCurrency}
             />
-          </div>
+          ) : (
+            <div>
+              <Label htmlFor="qt-amount">Amount *</Label>
+              <MoneyInput
+                id="qt-amount"
+                placeholder="0"
+                value={amount}
+                onValueChange={setAmount}
+                autoFocus
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="qt-category">Category</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>

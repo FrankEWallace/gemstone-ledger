@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,7 +7,6 @@ import {
   endOfMonth,
   subMonths,
   parseISO,
-  differenceInCalendarDays,
 } from "date-fns";
 import {
   ArrowLeft,
@@ -68,7 +67,9 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 
 import type { Transaction, TransactionType, TransactionStatus } from "@/lib/supabaseTypes";
-import { getCustomers, updateCustomer } from "@/services/customers.service";
+import { getCustomers } from "@/services/customers.service";
+import { useOperatingCost, operatingLabel, isOperatingCategory } from "@/lib/operatingCost";
+import { OperatingCostFields } from "@/components/shared/OperatingCostFields";
 import { getCustomerDetail } from "@/services/reports.service";
 import { getTransactions, getTransactionCategories, createTransaction, updateTransactionStatus, type TransactionPayload } from "@/services/transactions.service";
 import { getCustomerMonthlyTrend } from "@/services/contract.service";
@@ -158,31 +159,18 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId, dail
   const today = format(new Date(), "yyyy-MM-dd");
   const [description, setDescription] = useState("");
   const [amount,      setAmount]      = useState("");
-  const [days,        setDays]        = useState("");
-  const [ratePerDay,  setRatePerDay]  = useState("");
   const [date,        setDate]        = useState(today);
   const [category,    setCategory]    = useState("");
   const [status,      setStatus]      = useState<"pending" | "success">("pending");
 
-  // An "operating" category turns the amount into days × daily-rate (accrued cost).
-  const isOperating = type === "expense" && /operating/i.test(category);
-  const daysNum = Number(days) || 0;
-  const rateNum = Number(ratePerDay) || 0;
-  const computedAmount = isOperating ? daysNum * rateNum : Number(amount) || 0;
-
-  // Seed the rate from the customer and default the days from the production start
-  // date → today. Both stay editable; the day field is the admin override.
-  useEffect(() => {
-    if (!open || !isOperating) return;
-    if (ratePerDay === "" && dailyRate != null) setRatePerDay(String(dailyRate));
-    if (days === "" && contractStart) {
-      const elapsed = differenceInCalendarDays(new Date(), parseISO(contractStart)) + 1;
-      if (elapsed > 0) setDays(String(elapsed));
-    }
-  }, [open, isOperating, dailyRate, contractStart, ratePerDay, days]);
+  // An "operating" category turns the amount into days × daily-rate (accrued cost),
+  // via the shared engine used by every add-transaction surface.
+  const isOperating = type === "expense" && isOperatingCategory(category);
+  const op = useOperatingCost({ active: isOperating, open, dailyRate, contractStart });
+  const computedAmount = isOperating ? op.amount : Number(amount) || 0;
 
   function reset() {
-    setDescription(""); setAmount(""); setDays(""); setRatePerDay("");
+    setDescription(""); setAmount(""); op.reset();
     setDate(today); setCategory(""); setStatus("pending");
   }
 
@@ -193,21 +181,18 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId, dail
         return Promise.resolve({} as any);
       }
       const payload: TransactionPayload = {
-        description: description || (isOperating ? `Operating cost — ${daysNum} day${daysNum === 1 ? "" : "s"}` : undefined),
+        description: description || (isOperating ? operatingLabel(op.daysNum) : undefined),
         category:    category    || undefined,
         customer_id: customerId,
         type,
         status,
         // Operating cost keeps its days × rate breakdown (quantity = days).
-        quantity:         isOperating ? daysNum : 1,
-        unit_price:       isOperating ? rateNum : Number(amount),
+        quantity:         isOperating ? op.daysNum : 1,
+        unit_price:       isOperating ? op.rateNum : Number(amount),
         transaction_date: date,
       };
       return createTransaction(siteId, payload, userId).then(async (tx) => {
-        // Remember the rate on the customer so it prefills next time (best-effort).
-        if (isOperating && rateNum > 0 && Number(dailyRate ?? 0) !== rateNum) {
-          try { await updateCustomer(customerId, { daily_rate: rateNum }); } catch { /* non-fatal */ }
-        }
+        if (isOperating) await op.rememberRate(customerId);
         return tx;
       });
     },
@@ -248,48 +233,24 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId, dail
 
           {isOperating ? (
             <>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Days worked</Label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={days}
-                    onChange={(e) => setDays(e.target.value)}
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Rate / day</Label>
-                  <MoneyInput
-                    placeholder="0"
-                    value={ratePerDay}
-                    onValueChange={setRatePerDay}
-                    className="h-9 text-sm text-right"
-                  />
-                </div>
+              <OperatingCostFields
+                dense
+                days={op.days}
+                setDays={op.setDays}
+                ratePerDay={op.ratePerDay}
+                setRatePerDay={op.setRatePerDay}
+                amount={computedAmount}
+                fmt={fmt}
+              />
+              <div className="space-y-1.5">
+                <Label className="text-xs">Date *</Label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="h-9 text-sm"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Amount</Label>
-                  <div className="flex h-9 items-center justify-end rounded-md border bg-muted/40 px-3 text-sm font-semibold">
-                    {fmt(computedAmount)}
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Date *</Label>
-                  <Input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="h-9 text-sm"
-                  />
-                </div>
-              </div>
-              <p className="-mt-1 text-[11px] text-muted-foreground">
-                Days default from the production start date — edit to override the days counted.
-              </p>
             </>
           ) : (
             <div className="grid grid-cols-2 gap-3">
