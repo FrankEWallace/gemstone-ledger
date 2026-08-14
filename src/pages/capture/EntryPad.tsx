@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -173,12 +173,17 @@ export default function EntryPad({
     setPhaseId(editTx.phase_id ?? NONE);
   }, [open, editTx, opSetDays, opSetRatePerDay]);
 
-  // Default to the newest open phase (adding only — never override an edited entry's phase).
+  // Default to the newest open phase, but only ONCE per open — otherwise the effect
+  // re-fires whenever phaseId returns to NONE and snaps the user's "None" pick back
+  // to a phase, making None impossible to select. Adding only; never touches edits.
+  const phaseDefaulted = useRef(false);
   useEffect(() => {
-    if (!open || isEdit || phaseId !== NONE || phases.length === 0) return;
+    if (!open) { phaseDefaulted.current = false; return; }
+    if (isEdit || phaseDefaulted.current || phases.length === 0) return;
+    phaseDefaulted.current = true;
     const openPhase = phases.find((p) => (p.status ?? "open") === "open") ?? phases[0];
     if (openPhase) setPhaseId(openPhase.id);
-  }, [open, phases, phaseId, isEdit]);
+  }, [open, phases, isEdit]);
 
   const qtyNum = Number(quantity) || 0;
   const computedAmount = selectedItem
