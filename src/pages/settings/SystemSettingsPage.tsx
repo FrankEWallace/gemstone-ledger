@@ -75,10 +75,12 @@ function WeeklyReportSection({
   orgId,
   org,
   queryClient,
+  canManage,
 }: {
   orgId: string | null;
   org: any;
   queryClient: ReturnType<typeof useQueryClient>;
+  canManage: boolean;
 }) {
   const [reportEmail, setReportEmail] = useState<string>("");
   const [sending, setSending] = useState(false);
@@ -154,8 +156,8 @@ function WeeklyReportSection({
           </div>
           <button
             onClick={() => toggleMutation.mutate(!org?.weekly_report_enabled)}
-            disabled={toggleMutation.isPending}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            disabled={toggleMutation.isPending || !canManage}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               org?.weekly_report_enabled ? "bg-primary" : "bg-muted"
             }`}
           >
@@ -175,11 +177,12 @@ function WeeklyReportSection({
             defaultValue={emailValue}
             onChange={(e) => setReportEmail(e.target.value)}
             className="flex-1"
+            disabled={!canManage}
           />
           <Button
             variant="outline"
             onClick={() => saveEmailMutation.mutate(reportEmail || emailValue)}
-            disabled={saveEmailMutation.isPending}
+            disabled={saveEmailMutation.isPending || !canManage}
           >
             {saveEmailMutation.isPending ? "Saving…" : "Save Email"}
           </Button>
@@ -190,7 +193,7 @@ function WeeklyReportSection({
           variant="outline"
           size="sm"
           onClick={sendNow}
-          disabled={sending || !org?.weekly_report_email}
+          disabled={sending || !org?.weekly_report_email || !canManage}
         >
           <Send className="h-3.5 w-3.5 mr-1.5" />
           {sending ? "Sending…" : "Send Report Now"}
@@ -486,7 +489,11 @@ function SiteManagementSection({ orgId }: { orgId: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SystemSettingsPage() {
-  const { orgId, activeRole } = useAuth();
+  const { orgId, orgRole } = useAuth();
+  // Organization-level settings write to `organizations` / `sites`, which RLS
+  // gates to org owners/admins. Mirror that in the UI so members see a
+  // read-only view instead of hitting RLS errors on save.
+  const canManageOrg = orgRole === "owner" || orgRole === "admin";
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -554,6 +561,16 @@ export default function SystemSettingsPage() {
     <div className="p-4 lg:p-6 space-y-8 max-w-2xl">
       <h1 className="text-display">System Settings</h1>
 
+      {!canManageOrg && (
+        <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3">
+          <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            Organization settings can only be changed by an organization owner or admin.
+            You can view them here, and your personal appearance preference below still applies.
+          </p>
+        </div>
+      )}
+
       {/* Appearance */}
       <div>
         <div className="flex items-center gap-2 mb-4">
@@ -587,7 +604,7 @@ export default function SystemSettingsPage() {
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingLogo}
+              disabled={isUploadingLogo || !canManageOrg}
             >
               <Upload className="h-3.5 w-3.5 mr-1.5" />
               {isUploadingLogo ? "Uploading…" : "Upload Logo"}
@@ -625,7 +642,7 @@ export default function SystemSettingsPage() {
                   <FormItem>
                     <FormLabel>Organization Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. FW Mining Corp" {...field} />
+                      <Input placeholder="e.g. FW Mining Corp" {...field} disabled={!canManageOrg} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -638,7 +655,7 @@ export default function SystemSettingsPage() {
                   <FormItem>
                     <FormLabel>URL Slug</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. fw-mining" {...field} />
+                      <Input placeholder="e.g. fw-mining" {...field} disabled={!canManageOrg} />
                     </FormControl>
                     <FormDescription>Used in URLs and API references. Lowercase letters, numbers, hyphens only.</FormDescription>
                     <FormMessage />
@@ -663,7 +680,7 @@ export default function SystemSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Timezone</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={!canManageOrg}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -685,7 +702,7 @@ export default function SystemSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={!canManageOrg}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -704,29 +721,31 @@ export default function SystemSettingsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving…" : "Save Settings"}
-            </Button>
-          </div>
+          {canManageOrg && (
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving…" : "Save Settings"}
+              </Button>
+            </div>
+          )}
         </form>
       </Form>
 
       <Separator />
 
       {/* Weekly email report */}
-      <WeeklyReportSection orgId={orgId} org={org} queryClient={queryClient} />
+      <WeeklyReportSection orgId={orgId} org={org} queryClient={queryClient} canManage={canManageOrg} />
 
-      {/* Module configuration — admin only */}
-      {activeRole === "admin" && (
+      {/* Module configuration — org owner/admin only */}
+      {canManageOrg && (
         <>
           <Separator />
           <ModuleConfigSection />
         </>
       )}
 
-      {/* Site management — admin only */}
-      {activeRole === "admin" && orgId && (
+      {/* Site management — org owner/admin only */}
+      {canManageOrg && orgId && (
         <>
           <Separator />
           <SiteManagementSection orgId={orgId} />
