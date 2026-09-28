@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, X, ChevronDown, Search, Plus } from "lucide-react";
+import { FlaskConical, X, Search } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import CommandPalette from "@/components/shared/CommandPalette";
 import OnboardingWizard from "@/components/shared/OnboardingWizard";
 import FirstSiteSetup from "@/components/shared/FirstSiteSetup";
-import CreateSiteDialog from "@/components/shared/CreateSiteDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useSite } from "@/hooks/useSite";
 import { isDemoMode, exitDemoMode } from "@/lib/demo";
@@ -17,15 +16,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import EntityAvatar from "@/components/shared/EntityAvatar";
+import SiteSwitcher from "@/components/shared/SiteSwitcher";
+import BottomNav from "@/components/layouts/BottomNav";
 
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
@@ -59,65 +51,6 @@ function getSidebarDefaultOpen(): boolean {
     .split(";")
     .find((c) => c.trim().startsWith("sidebar:state="));
   return !match || match.trim().split("=")[1]?.trim() !== "false";
-}
-
-// ─── Site Switcher ────────────────────────────────────────────────────────────
-
-function SiteSwitcher() {
-  const { activeSite, sites, setActiveSite } = useSite();
-  const { orgRole } = useAuth();
-  const [createOpen, setCreateOpen] = useState(false);
-  const canCreate = orgRole === "owner" || orgRole === "admin";
-
-  if (!activeSite) return null;
-
-  // Plain label only when there's nothing to switch to and nothing to add.
-  if (sites.length <= 1 && !canCreate) {
-    return (
-      <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground">
-        <EntityAvatar name={activeSite.name} seed={activeSite.id} shape="square" className="h-6 w-6 text-xs" />
-        <span className="truncate max-w-32">{activeSite.name}</span>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors">
-            <EntityAvatar name={activeSite.name} seed={activeSite.id} shape="square" className="h-6 w-6 text-xs" />
-            <span className="truncate max-w-32">{activeSite.name}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
-          {sites.map((s) => (
-            <DropdownMenuItem
-              key={s.id}
-              onClick={() => setActiveSite(s.id)}
-              className={cn("gap-2", s.id === activeSite.id && "font-medium text-primary")}
-            >
-              <EntityAvatar name={s.name} seed={s.id} shape="square" className="h-6 w-6 text-xs" />
-              <span className="truncate">{s.name}</span>
-            </DropdownMenuItem>
-          ))}
-          {canCreate && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setCreateOpen(true)} className="gap-2">
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
-                  <Plus className="h-3.5 w-3.5" />
-                </div>
-                <span>New site</span>
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {canCreate && <CreateSiteDialog open={createOpen} onOpenChange={setCreateOpen} />}
-    </>
-  );
 }
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
@@ -172,10 +105,11 @@ export default function AppLayout() {
       <SidebarInset className="h-svh overflow-y-auto">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-sm px-4 lg:px-6 py-2.5">
           <div className="flex items-center gap-2.5 min-w-0">
-            <SidebarTrigger className="text-muted-foreground hover:bg-accent hover:text-foreground -ml-1" />
-            <SiteSwitcher />
-            <span className="text-border select-none hidden sm:block">·</span>
-            <nav className="hidden sm:flex items-center gap-1.5 text-sm min-w-0">
+            <SidebarTrigger className="hidden lg:flex text-muted-foreground hover:bg-accent hover:text-foreground -ml-1" />
+            <div className="lg:hidden">
+              <SiteSwitcher variant="compact" />
+            </div>
+            <nav className="hidden lg:flex items-center gap-1.5 text-sm min-w-0">
               {pageInfo.breadcrumb && (
                 <>
                   <span className="text-muted-foreground/60 truncate">{pageInfo.breadcrumb}</span>
@@ -192,7 +126,7 @@ export default function AppLayout() {
             {/* Mobile search icon */}
             <button
               onClick={() => setCmdOpen(true)}
-              className="flex md:hidden rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="flex md:hidden rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               aria-label="Search"
             >
               <Search className="h-4 w-4" />
@@ -201,10 +135,11 @@ export default function AppLayout() {
             {/* Desktop search bar */}
             <button
               onClick={() => setCmdOpen(true)}
-              className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-border/80 hover:bg-accent/50 transition-colors"
+              className="hidden md:flex w-64 items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:border-input transition-colors"
             >
-              <span className="text-xs">Search…</span>
-              <kbd className="hidden lg:inline-flex h-4.5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground/70">
+              <Search className="h-4 w-4 shrink-0" />
+              <span className="flex-1 truncate text-left">Search</span>
+              <kbd className="hidden lg:inline-flex select-none items-center rounded-sm border border-border bg-muted px-1.5 font-mono text-xs text-muted-foreground">
                 ⌘K
               </kbd>
             </button>
@@ -241,7 +176,10 @@ export default function AppLayout() {
           />
         )}
 
-        <Outlet />
+        <div className="flex-1">
+          <Outlet />
+        </div>
+        <BottomNav />
       </SidebarInset>
 
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
