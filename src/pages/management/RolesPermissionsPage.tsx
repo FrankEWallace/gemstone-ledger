@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserPlus, Shield, X } from "lucide-react";
 import EntityAvatar from "@/components/shared/EntityAvatar";
+import { avatarSrc } from "@/lib/avatar";
 import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -237,7 +238,7 @@ function UserCard({ user, orgId, currentUserId }: UserCardProps) {
     <div className="rounded-lg border border-border p-4 space-y-3">
       {/* User header */}
       <div className="flex items-center gap-3">
-        <EntityAvatar name={user.full_name} seed={user.id} className="h-9 w-9 text-xs" />
+        <EntityAvatar name={user.full_name} seed={user.id} src={avatarSrc(user.avatar_url, user.id)} className="h-9 w-9 text-xs" />
         <div className="flex-1 min-w-0">
           <p className="font-medium truncate">
             {user.full_name ?? "Unnamed User"}
