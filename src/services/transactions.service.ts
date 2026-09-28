@@ -4,6 +4,7 @@ import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client
 import type { Transaction, TransactionType, TransactionStatus, TransactionSource, TablesInsert } from "@/lib/supabaseTypes";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_TRANSACTIONS } from "@/lib/demo/data";
+import { filterDemoTransactions } from "@/lib/demo/filterTransactions";
 import { enqueue } from "@/lib/offline/syncQueue";
 import { registerHandler } from "@/lib/offline/syncEngine";
 
@@ -47,7 +48,7 @@ export async function getTransactions(
   const limit = filters?.limit ?? DEFAULT_TRANSACTIONS_LIMIT;
   const offset = filters?.offset ?? 0;
 
-  if (isDemoMode()) return DEMO_TRANSACTIONS as any;
+  if (isDemoMode()) return filterDemoTransactions(DEMO_TRANSACTIONS as unknown as Transaction[], filters);
   if (isRestActive()) {
     const params = new URLSearchParams({ site_id: siteId });
     if (filters?.type && filters.type !== "all") params.set("type", filters.type);
