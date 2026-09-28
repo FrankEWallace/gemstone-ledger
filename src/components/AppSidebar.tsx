@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BrandMark from "@/components/shared/BrandMark";
-import SitePicker from "@/components/shared/SitePicker";
+import UserMenuButton from "@/components/shared/UserMenuButton";
 import SiteSwitcher from "@/components/shared/SiteSwitcher";
 import { useSite } from "@/hooks/useSite";
 import { getChannelMessageCounts } from "@/services/messages.service";
@@ -305,12 +305,12 @@ export default function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer: SitePicker + customizer (hidden when icon-only) */}
+      {/* Footer: UserMenuButton + customizer (hidden when icon-only) */}
       <SidebarFooter className="border-t border-sidebar-border relative">
         {!isCollapsed && (
           <>
             <div className="px-1">
-              <SitePicker />
+              <UserMenuButton />
             </div>
             <button
               onClick={() => setCustomizerOpen((o) => !o)}

@@ -454,7 +454,7 @@ export default function ProductionLogPage() {
                     <td className="px-4 py-3 text-right tabular-nums">
                       {log.water_m3 != null ? log.water_m3.toLocaleString() : "—"}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell max-w-[180px] truncate">
+                    <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell max-w-45 truncate">
                       {log.notes ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-right">

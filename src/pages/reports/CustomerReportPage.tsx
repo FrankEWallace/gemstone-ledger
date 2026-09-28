@@ -731,10 +731,10 @@ export default function CustomerReportPage() {
                     <td className="px-5 py-3 text-center tabular-nums text-muted-foreground whitespace-nowrap">
                       {format(new Date(t.transaction_date), "d MMM yyyy")}
                     </td>
-                    <td className="px-3 py-3 text-center font-medium text-foreground max-w-[180px] truncate">
+                    <td className="px-3 py-3 text-center font-medium text-foreground max-w-45 truncate">
                       {t.description || "—"}
                     </td>
-                    <td className="px-3 py-3 text-center text-muted-foreground hidden sm:table-cell truncate max-w-[120px]">
+                    <td className="px-3 py-3 text-center text-muted-foreground hidden sm:table-cell truncate max-w-30">
                       {t.category || "—"}
                     </td>
                     <td className="px-3 py-3 text-center capitalize text-muted-foreground">{t.type}</td>

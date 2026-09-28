@@ -128,7 +128,7 @@ function CategoryRow({
       {isOpen && (
         <div className="border-t border-border">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[520px]">
+            <table className="w-full text-xs min-w-130">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
@@ -154,7 +154,7 @@ function CategoryRow({
                   return (
                     <tr key={t.id} className="hover:bg-muted/20 transition-colors">
                       <td className="px-5 py-3">
-                        <span className="font-medium truncate block max-w-[220px]">
+                        <span className="font-medium truncate block max-w-55">
                           {t.description || "—"}
                         </span>
                         {t.reference_no && (
@@ -326,7 +326,7 @@ export default function CustomerExpenseBreakdownPage() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-5 max-w-[960px] mx-auto">
+    <div className="p-4 lg:p-6 space-y-5 max-w-240 mx-auto">
 
       {/* Header */}
       <div className="space-y-1">
@@ -457,7 +457,7 @@ export default function CustomerExpenseBreakdownPage() {
           placeholder="Search description or ref..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-8 text-xs flex-1 min-w-[180px]"
+          className="h-8 text-xs flex-1 min-w-45"
         />
 
         {/* Status filter */}

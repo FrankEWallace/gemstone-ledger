@@ -127,7 +127,7 @@ function CategoryRow({
       {isOpen && (
         <div className="border-t border-border">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[520px]">
+            <table className="w-full text-sm min-w-130">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-2.5 text-left font-medium text-muted-foreground">Description</th>
@@ -143,7 +143,7 @@ function CategoryRow({
                   return (
                     <tr key={t.id} className="hover:bg-muted/20 transition-colors">
                       <td className="px-5 py-3">
-                        <span className="font-medium truncate block max-w-[220px]">{t.description || "—"}</span>
+                        <span className="font-medium truncate block max-w-55">{t.description || "—"}</span>
                         {t.reference_no && <span className="text-xs text-muted-foreground">{t.reference_no}</span>}
                       </td>
                       <td className="px-3 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
@@ -454,7 +454,7 @@ export default function BreakdownReportPage({ type }: Props) {
           placeholder="Search description or ref…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-8 text-xs flex-1 min-w-[180px]"
+          className="h-8 text-xs flex-1 min-w-45"
         />
         <div className="flex gap-1">
           {(["all", "success", "pending", "refunded", "cancelled"] as const).map((s) => (

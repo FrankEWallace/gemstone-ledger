@@ -313,7 +313,7 @@ export default function MessagesPage() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              className="resize-none min-h-[40px] max-h-32"
+              className="resize-none min-h-10 max-h-32"
             />
             <Button
               size="icon"

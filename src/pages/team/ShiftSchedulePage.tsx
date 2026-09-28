@@ -390,7 +390,7 @@ export default function ShiftSchedulePage() {
       {/* Calendar grid */}
       {viewMode === "week" ? (
         // ── Week view: 7 vertical columns ──────────────────────────────────
-        <div className="grid grid-cols-7 gap-1 min-h-[400px]">
+        <div className="grid grid-cols-7 gap-1 min-h-100">
           {days.map((day) => {
             const dayShifts = shiftsForDay(day);
             const isToday = isSameDay(day, today);
@@ -398,7 +398,7 @@ export default function ShiftSchedulePage() {
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "rounded-lg border border-border flex flex-col min-h-[360px]",
+                  "rounded-lg border border-border flex flex-col min-h-90",
                   isToday && "border-primary/40 bg-primary/5"
                 )}
               >
@@ -466,7 +466,7 @@ export default function ShiftSchedulePage() {
           <div className="grid grid-cols-7">
             {/* Leading empty cells */}
             {Array.from({ length: (rangeStart.getDay() + 6) % 7 }).map((_, i) => (
-              <div key={`pre-${i}`} className="border-t border-r border-border min-h-[90px] bg-muted/10" />
+              <div key={`pre-${i}`} className="border-t border-r border-border min-h-22 bg-muted/10" />
             ))}
 
             {days.map((day) => {
@@ -477,7 +477,7 @@ export default function ShiftSchedulePage() {
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    "border-t border-r border-border min-h-[90px] p-1 flex flex-col",
+                    "border-t border-r border-border min-h-22 p-1 flex flex-col",
                     isToday && "bg-primary/5",
                     isWeekend && "bg-muted/20"
                   )}

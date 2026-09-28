@@ -616,7 +616,7 @@ export default function CustomersPage() {
 
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
+        <div className="relative flex-1 min-w-45 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search by name or contact…"
@@ -692,7 +692,7 @@ export default function CustomersPage() {
                   <th className="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
                     Net Revenue
                   </th>
-                  <th className="px-4 py-2.5 w-[88px]" />
+                  <th className="px-4 py-2.5 w-22" />
                 </tr>
               </thead>
               <tbody>
@@ -730,7 +730,7 @@ export default function CustomersPage() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Mail className="h-3 w-3 shrink-0" />
-                              <span className="truncate max-w-[160px]">{c.contact_email}</span>
+                              <span className="truncate max-w-40">{c.contact_email}</span>
                             </a>
                           )}
                           {c.contact_phone && (

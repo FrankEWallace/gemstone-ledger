@@ -181,7 +181,7 @@ export default function CommandPalette({ open, onClose }: Props) {
             </kbd>
           </div>
 
-          <Command.List className="max-h-[400px] overflow-y-auto p-2">
+          <Command.List className="max-h-100 overflow-y-auto p-2">
             {isSearching && (
               <Command.Loading>
                 <div className="py-6 text-center text-sm text-muted-foreground">Searching…</div>

@@ -283,7 +283,7 @@ export default function TimesheetPage() {
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
-        <table className="w-full text-sm min-w-[700px]">
+        <table className="w-full text-sm min-w-175">
           <thead>
             <tr className="border-b border-border text-muted-foreground">
               <th className="px-4 py-3 text-left font-medium w-40">Worker</th>
@@ -323,7 +323,7 @@ export default function TimesheetPage() {
                   key={worker.id}
                   className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
                 >
-                  <td className="px-4 py-3 font-medium truncate max-w-[160px]">
+                  <td className="px-4 py-3 font-medium truncate max-w-40">
                     {worker.full_name}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">

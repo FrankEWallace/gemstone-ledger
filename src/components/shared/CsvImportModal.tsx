@@ -269,7 +269,7 @@ export default function CsvImportModal<T extends Record<string, unknown>>({
                     {validRows.slice(0, 50).map((r) => (
                       <tr key={r.index} className="border-t border-border">
                         {columns.map((c) => (
-                          <td key={c.header} className="px-3 py-1.5 text-foreground max-w-[180px] truncate">
+                          <td key={c.header} className="px-3 py-1.5 text-foreground max-w-45 truncate">
                             {String((r.data as Record<string, unknown>)[c.key as string] ?? "—")}
                           </td>
                         ))}

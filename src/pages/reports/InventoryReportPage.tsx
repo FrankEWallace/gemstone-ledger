@@ -242,7 +242,7 @@ function CustomerRow({
       {isOpen && (
         <div className="border-t border-border">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[420px]">
+            <table className="w-full text-xs min-w-105">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
@@ -262,7 +262,7 @@ function CustomerRow({
               <tbody className="divide-y divide-border">
                 {lines.map((l, i) => (
                   <tr key={i} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-5 py-3 font-medium truncate max-w-[200px]">{l.itemName}</td>
+                    <td className="px-5 py-3 font-medium truncate max-w-50">{l.itemName}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
                       {l.quantityConsumed}
                     </td>
@@ -933,7 +933,7 @@ export default function InventoryReportPage() {
 
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs min-w-[480px]">
+                  <table className="w-full text-xs min-w-120">
                     <thead>
                       <tr className="border-b border-border bg-muted/30">
                         <th className="px-4 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Item</th>
@@ -946,7 +946,7 @@ export default function InventoryReportPage() {
                     <tbody className="divide-y divide-border">
                       {consumptionByItem.map((row, i) => (
                         <tr key={i} className="hover:bg-muted/20 transition-colors">
-                          <td className="px-4 py-3 font-medium truncate max-w-[180px]">{row.itemName}</td>
+                          <td className="px-4 py-3 font-medium truncate max-w-45">{row.itemName}</td>
                           <td className="px-3 py-3 text-muted-foreground hidden sm:table-cell">{row.category || "—"}</td>
                           <td className="px-3 py-3 text-muted-foreground hidden sm:table-cell">{row.unit || "—"}</td>
                           <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{row.quantityConsumed}</td>
@@ -1058,7 +1058,7 @@ export default function InventoryReportPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-xs min-w-[520px]">
+              <table className="w-full text-xs min-w-130">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Item</th>
@@ -1130,7 +1130,7 @@ export default function InventoryReportPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-xs min-w-[560px]">
+              <table className="w-full text-xs min-w-140">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Date</th>
@@ -1153,7 +1153,7 @@ export default function InventoryReportPage() {
                         <td className="px-5 py-3 text-muted-foreground tabular-nums whitespace-nowrap">
                           {format(parseISO(row.writtenOffAt.slice(0, 10)), "d MMM yyyy")}
                         </td>
-                        <td className="px-3 py-3 font-medium truncate max-w-[160px]">{row.itemName}</td>
+                        <td className="px-3 py-3 font-medium truncate max-w-40">{row.itemName}</td>
                         <td className="px-3 py-3 text-muted-foreground hidden sm:table-cell">{row.category || "—"}</td>
                         <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{row.quantity}</td>
                         <td className="px-3 py-3">
@@ -1166,7 +1166,7 @@ export default function InventoryReportPage() {
                         <td className="px-3 py-3 text-right tabular-nums font-semibold">
                           {fmtCurrency(row.value)}
                         </td>
-                        <td className="px-5 py-3 text-muted-foreground truncate max-w-[200px] hidden md:table-cell">
+                        <td className="px-5 py-3 text-muted-foreground truncate max-w-50 hidden md:table-cell">
                           {row.notes || "—"}
                         </td>
                       </tr>

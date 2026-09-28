@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { avatarSrc } from "@/lib/avatar";
 import EntityAvatar from "@/components/shared/EntityAvatar";
 
-export default function SitePicker() {
+export default function UserMenuButton() {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
 

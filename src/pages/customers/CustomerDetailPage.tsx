@@ -555,7 +555,7 @@ export default function CustomerDetailPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-6 space-y-5 max-w-[1100px] mx-auto">
+    <div className="p-4 lg:p-6 space-y-5 max-w-275 mx-auto">
 
       {/* Nav + Quick actions */}
       <div className="flex items-center justify-between gap-3">

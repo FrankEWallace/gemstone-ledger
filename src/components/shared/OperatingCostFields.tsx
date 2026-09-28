@@ -66,7 +66,7 @@ export function OperatingCostFields({
           {fmt(amount)}
         </div>
       </div>
-      <p className="-mt-1 text-[11px] text-muted-foreground">
+      <p className="-mt-1 text-xs text-muted-foreground">
         Days default from the production start date — edit to override the days counted.
       </p>
     </div>
