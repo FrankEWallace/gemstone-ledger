@@ -374,7 +374,7 @@ export default function ShiftSchedulePage() {
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-base font-semibold min-w-40 text-center">
+        <h2 className="text-sm font-semibold min-w-40 text-center">
           {viewMode === "week"
             ? `${format(rangeStart, "MMM d")} – ${format(rangeEnd, "MMM d, yyyy")}`
             : format(anchor, "MMMM yyyy")}

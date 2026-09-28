@@ -1,9 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { format, isThisYear, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { isDemoMode } from "@/lib/demo";
 import { updateTransactionStatus } from "@/services/transactions.service";
 import type { Transaction, TransactionStatus } from "@/lib/supabaseTypes";
+
+function rowDate(iso: string): string {
+  const d = parseISO(iso);
+  return format(d, isThisYear(d) ? "d MMM" : "d MMM yyyy");
+}
 
 const amountOf = (t: Transaction) => Number(t.quantity ?? 0) * Number(t.unit_price ?? 0);
 
@@ -85,7 +91,7 @@ export default function CaptureTxRow({
     >
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm">{title}</div>
-        <div className="truncate text-xs text-muted-foreground">{t.transaction_date}</div>
+        <div className="truncate text-xs text-muted-foreground">{rowDate(t.transaction_date)}</div>
       </div>
       <button
         type="button"
@@ -95,7 +101,7 @@ export default function CaptureTxRow({
           mutate(paid ? "pending" : "success");
         }}
         className={cn(
-          "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors disabled:opacity-50",
+          "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50",
           paid ? "bg-success/10 text-success" : "bg-warning/10 text-warning",
         )}
         aria-label={paid ? "Mark pending" : "Mark paid"}

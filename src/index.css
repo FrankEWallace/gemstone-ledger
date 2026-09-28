@@ -134,16 +134,17 @@
   --modal-shadow: 0 12px 45px 0 rgba(17,12,46,0.12);
 
   /* chart — 10 semantic color slots */
-  --chart-1:  oklch(0.59 0.17 155);   /* income / green    */
-  --chart-2:  oklch(0.63 0.23 30);    /* expense / red     */
-  --chart-3:  oklch(0.55 0.25 283);   /* net / purple      */
-  --chart-4:  oklch(0.60 0.20 255);   /* blue              */
-  --chart-5:  oklch(0.58 0.22 285);   /* indigo            */
-  --chart-6:  oklch(0.53 0.13 180);   /* teal              */
-  --chart-7:  oklch(0.75 0.17 60);    /* amber             */
-  --chart-8:  oklch(0.66 0.19 45);    /* orange            */
-  --chart-9:  oklch(0.65 0.22 10);    /* rose              */
-  --chart-10: oklch(0.72 0.10 205);   /* sky               */
+  /* Muted so series sit calmly on stone; income/expense stay green/red. */
+  --chart-1:  #2e8b62;   /* income / green  */
+  --chart-2:  #c0492c;   /* expense / red   */
+  --chart-3:  #0f766e;   /* net / teal      */
+  --chart-4:  #4f6d9a;   /* slate blue      */
+  --chart-5:  #8a5a8c;   /* plum            */
+  --chart-6:  #5b8f86;   /* sage            */
+  --chart-7:  #c28a2c;   /* ochre           */
+  --chart-8:  #b86b4b;   /* clay            */
+  --chart-9:  #b85c74;   /* rose            */
+  --chart-10: #5a9bb8;   /* sky             */
 
   /* semantic aliases — backward compat with existing chart code */
   --chart-income:   var(--chart-1);
@@ -223,16 +224,16 @@
   --modal-shadow: 0 4px 32px 0 rgba(8,9,10,0.6);
 
   /* chart dark — brighter for contrast on dark backgrounds */
-  --chart-1:  oklch(0.68 0.17 155);
-  --chart-2:  oklch(0.70 0.22 30);
-  --chart-3:  oklch(0.65 0.24 283);
-  --chart-4:  oklch(0.68 0.19 255);
-  --chart-5:  oklch(0.65 0.21 285);
-  --chart-6:  oklch(0.63 0.13 180);
-  --chart-7:  oklch(0.80 0.17 60);
-  --chart-8:  oklch(0.73 0.18 45);
-  --chart-9:  oklch(0.72 0.20 10);
-  --chart-10: oklch(0.77 0.10 205);
+  --chart-1:  #4cb782;
+  --chart-2:  #eb5757;
+  --chart-3:  #2bb3a3;
+  --chart-4:  #7d9bd1;
+  --chart-5:  #b58ab8;
+  --chart-6:  #7fb5aa;
+  --chart-7:  #e0a93a;
+  --chart-8:  #d98e6c;
+  --chart-9:  #d9829a;
+  --chart-10: #7fc0dc;
   --chart-existing: #62666d;
 
   --tint-clay-bg: #3a2c24;  --tint-clay-fg: #e0b9a0;

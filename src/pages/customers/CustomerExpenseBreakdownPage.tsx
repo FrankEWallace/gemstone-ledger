@@ -105,7 +105,7 @@ function CategoryRow({
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-semibold truncate">{category}</span>
-            <span className="text-sm font-bold tabular-nums shrink-0">{fmtCurrency(total)}</span>
+            <span className="text-sm font-semibold tabular-nums shrink-0">{fmtCurrency(total)}</span>
           </div>
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
             <div
@@ -185,7 +185,7 @@ function CategoryRow({
                   <td colSpan={4} className="px-5 py-2.5 text-xs font-semibold text-muted-foreground">
                     Category total
                   </td>
-                  <td className="px-5 py-2.5 text-right text-sm font-bold tabular-nums">
+                  <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums">
                     {fmtCurrency(total)}
                   </td>
                 </tr>
@@ -389,15 +389,15 @@ export default function CustomerExpenseBreakdownPage() {
       <div className="grid grid-cols-3 rounded-xl border border-border bg-card divide-x divide-border">
         <div className="px-5 py-4">
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Total Expenses</p>
-          <p className="font-display text-2xl font-bold tabular-nums mt-1">{fmtCurrency(grandTotal)}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{fmtCurrency(grandTotal)}</p>
         </div>
         <div className="px-5 py-4">
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Categories</p>
-          <p className="font-display text-2xl font-bold tabular-nums mt-1">{grouped.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{grouped.length}</p>
         </div>
         <div className="px-5 py-4">
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Transactions</p>
-          <p className="font-display text-2xl font-bold tabular-nums mt-1">{filteredTxs.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{filteredTxs.length}</p>
         </div>
       </div>
 

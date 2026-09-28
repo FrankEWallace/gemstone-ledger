@@ -334,7 +334,7 @@ function CloseActivityModal({
           </div>
           <div className="flex justify-between items-center border-t border-border pt-2">
             <span className="font-medium">Net</span>
-            <span className="font-bold" style={{ color: net >= 0 ? C.income : C.expense }}>
+            <span className="font-semibold" style={{ color: net >= 0 ? C.income : C.expense }}>
               {net < 0 ? "−" : ""}
               {fmtCompact(Math.abs(net))}
             </span>
@@ -492,7 +492,7 @@ export default function ActivityPage() {
                       <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
                         Net
                       </p>
-                      <p className="font-bold" style={{ color: net >= 0 ? C.income : C.expense }}>
+                      <p className="font-semibold" style={{ color: net >= 0 ? C.income : C.expense }}>
                         {net < 0 ? "−" : ""}
                         {fmtCompact(Math.abs(net))}
                       </p>

@@ -154,7 +154,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                 ) : (
                   <div
                     className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all",
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all",
                       isCurrent
                         ? "bg-foreground text-background"
                         : "border-2 border-border text-muted-foreground"

@@ -9,7 +9,7 @@ export default function CaptureMore() {
 
   return (
     <div className="p-4">
-      <h1 className="mb-3 text-2xl font-bold">More</h1>
+      <h1 className="mb-3 text-display">More</h1>
 
       {/* Capture — secondary captures live in the full app */}
       <Section title="Capture">
@@ -50,7 +50,7 @@ export default function CaptureMore() {
       <p className="mt-3 px-1 text-center text-xs text-muted-foreground">
         {userProfile?.full_name || user?.email}
       </p>
-      <p className="mt-1 px-1 text-center text-[11px] text-muted-foreground/70">
+      <p className="mt-1 px-1 text-center text-xs text-muted-foreground/70">
         Build {__BUILD_ID__}
       </p>
     </div>

@@ -220,7 +220,7 @@ export default function TimesheetPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">Timesheets</h1>
+          <h1 className="text-display">Timesheets</h1>
         </div>
         <div className="flex items-center gap-2">
           {/* Week navigation */}
@@ -261,19 +261,19 @@ export default function TimesheetPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total Hours</p>
-          <p className="text-2xl font-bold font-display mt-1">{grandTotal}</p>
+          <p className="font-display text-2xl font-medium tracking-tight mt-1">{grandTotal}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Workers Active</p>
-          <p className="text-2xl font-bold font-display mt-1">{workerTotals.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight mt-1">{workerTotals.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Shift Records</p>
-          <p className="text-2xl font-bold font-display mt-1">{weekRecords.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight mt-1">{weekRecords.length}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">Avg Hours / Worker</p>
-          <p className="text-2xl font-bold font-display mt-1">
+          <p className="font-display text-2xl font-medium tracking-tight mt-1">
             {workerTotals.length > 0
               ? (grandTotal / workerTotals.length).toFixed(1)
               : "—"}

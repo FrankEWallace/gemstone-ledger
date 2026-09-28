@@ -606,7 +606,7 @@ export default function CustomerDetailPage() {
             {/* Identity + meta */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display text-xl font-bold tracking-tight leading-tight">{customer.name}</h1>
+                <h1 className="text-display">{customer.name}</h1>
                 <Badge
                   variant="outline"
                   className={customer.type === "external" ? "text-info border-info/20" : "text-muted-foreground"}

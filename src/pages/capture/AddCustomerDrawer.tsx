@@ -142,7 +142,7 @@ export default function AddCustomerDrawer({
                 </Field>
               </div>
             )}
-            <p className="mt-2 text-[11px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               Daily rate × contract days projects the customer's contract value in their report.
             </p>
           </div>

@@ -107,7 +107,7 @@ export default function SyncHistoryPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Offline Sync</h1>
+        <h1 className="text-display">Offline Sync</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Track changes made offline and their sync status.
         </p>

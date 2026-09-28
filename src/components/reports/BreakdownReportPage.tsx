@@ -110,7 +110,7 @@ function CategoryRow({
                   {fmtCompact(prevTotal)}
                 </span>
               )}
-              <span className="text-sm font-bold tabular-nums">{fmtCurrency(total)}</span>
+              <span className="text-sm font-semibold tabular-nums">{fmtCurrency(total)}</span>
               {comparing && prevTotal != null && deltaBadge(total, prevTotal)}
             </div>
           </div>
@@ -166,7 +166,7 @@ function CategoryRow({
               <tfoot>
                 <tr className="border-t border-border bg-muted/20">
                   <td colSpan={4} className="px-5 py-2.5 text-xs font-medium text-muted-foreground">Category total</td>
-                  <td className="px-5 py-2.5 text-right text-sm font-bold tabular-nums">{fmtCurrency(total)}</td>
+                  <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums">{fmtCurrency(total)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -322,7 +322,7 @@ export default function BreakdownReportPage({ type }: Props) {
         <Link to="/reports" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1">
           <ArrowLeft className="h-3 w-3" /> Reports
         </Link>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
+        <h1 className="text-display">
           {isExpense ? "Expense Breakdown" : "Income Breakdown"}
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -388,7 +388,7 @@ export default function BreakdownReportPage({ type }: Props) {
         <div className="px-3 sm:px-5 py-4 min-w-0 overflow-hidden">
           <p className="text-xs text-muted-foreground truncate">{isExpense ? "Total Expenses" : "Total Income"}</p>
           <div className="flex items-baseline gap-2 mt-1 flex-wrap min-w-0">
-            <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums truncate">{fmtCurrency(grandTotal)}</p>
+            <p className="font-display text-2xl font-medium tracking-tight tabular-nums truncate">{fmtCurrency(grandTotal)}</p>
             {comparing && prevGrandTotal > 0 && deltaBadge(grandTotal, prevGrandTotal)}
           </div>
           {comparing && prevGrandTotal > 0 && (
@@ -399,11 +399,11 @@ export default function BreakdownReportPage({ type }: Props) {
         </div>
         <div className="px-3 sm:px-5 py-4 min-w-0">
           <p className="text-xs text-muted-foreground">Categories</p>
-          <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums mt-1">{grouped.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{grouped.length}</p>
         </div>
         <div className="px-3 sm:px-5 py-4 min-w-0">
           <p className="text-xs text-muted-foreground">Transactions</p>
-          <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums mt-1">{filteredTxs.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{filteredTxs.length}</p>
         </div>
       </div>
 

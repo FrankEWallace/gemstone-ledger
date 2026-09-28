@@ -58,6 +58,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Worker, ShiftRecord, WorkerStatus } from "@/lib/supabaseTypes";
+import { avatarSrc } from "@/lib/avatar";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 import {
   getWorkers,
   getShiftRecords,
@@ -498,9 +500,12 @@ export default function TeamPage() {
       header: "Name",
       sortable: true,
       render: (_, row) => (
-        <div>
-          <p className="font-medium">{row.full_name}</p>
-          {row.position && <p className="text-xs text-muted-foreground">{row.position}</p>}
+        <div className="flex items-center gap-3">
+          <EntityAvatar name={row.full_name} seed={row.id} src={avatarSrc(null, row.id)} className="h-8 w-8 text-xs" />
+          <div className="min-w-0">
+            <p className="font-medium">{row.full_name}</p>
+            {row.position && <p className="text-xs text-muted-foreground">{row.position}</p>}
+          </div>
         </div>
       ),
     },
@@ -637,7 +642,7 @@ export default function TeamPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Active Workers</p>
-            <p className="text-2xl font-bold">{activeCount}</p>
+            <p className="font-display text-2xl font-medium tracking-tight">{activeCount}</p>
           </div>
         </div>
         <div className="rounded-lg border border-border p-4 flex items-start gap-3">
@@ -646,7 +651,7 @@ export default function TeamPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Avg Hours / Shift</p>
-            <p className="text-2xl font-bold">{avgHours}h</p>
+            <p className="font-display text-2xl font-medium tracking-tight">{avgHours}h</p>
           </div>
         </div>
         <div className="rounded-lg border border-border p-4 flex items-start gap-3 col-span-2 sm:col-span-1">
@@ -655,7 +660,7 @@ export default function TeamPage() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Total Shifts Logged</p>
-            <p className="text-2xl font-bold">{shifts.length}</p>
+            <p className="font-display text-2xl font-medium tracking-tight">{shifts.length}</p>
           </div>
         </div>
       </div>

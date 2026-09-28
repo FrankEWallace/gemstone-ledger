@@ -961,7 +961,7 @@ export default function InventoryPage() {
             <Boxes className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Total Items</span>
           </div>
-          <p className="font-display text-2xl font-semibold tabular-nums leading-none">{items.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums leading-none">{items.length}</p>
           <p className="text-xs text-muted-foreground">{categoryFilter !== "all" ? `${filteredItems.length} in filter` : "across all categories"}</p>
         </div>
 
@@ -981,7 +981,7 @@ export default function InventoryPage() {
             <PackageX className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Out of Stock</span>
           </div>
-          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${outOfStockCount > 0 ? "text-destructive" : ""}`}>
+          <p className={`font-display text-2xl font-medium tracking-tight tabular-nums leading-none ${outOfStockCount > 0 ? "text-destructive" : ""}`}>
             {outOfStockCount}
           </p>
           <p className="text-xs text-muted-foreground">{statusFilter === "out" ? "click to clear filter" : "click to filter table"}</p>
@@ -1003,7 +1003,7 @@ export default function InventoryPage() {
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Low Stock</span>
           </div>
-          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${lowStockCount > 0 ? "text-warning" : ""}`}>
+          <p className={`font-display text-2xl font-medium tracking-tight tabular-nums leading-none ${lowStockCount > 0 ? "text-warning" : ""}`}>
             {lowStockCount}
           </p>
           <p className="text-xs text-muted-foreground">{statusFilter === "low" ? "click to clear filter" : "click to filter table"}</p>
@@ -1015,7 +1015,7 @@ export default function InventoryPage() {
             <Wallet className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Stock Value</span>
           </div>
-          <p className="font-display text-2xl font-semibold tabular-nums leading-none">{fmtCurrency(totalValue, 0)}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums leading-none">{fmtCurrency(totalValue, 0)}</p>
           <p className="text-xs text-muted-foreground">
             {items.length - itemsWithCost > 0
               ? `excl. ${items.length - itemsWithCost} item${items.length - itemsWithCost !== 1 ? "s" : ""} without cost`

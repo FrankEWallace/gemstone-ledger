@@ -42,7 +42,7 @@ export default function CapturePrices() {
   return (
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Prices</h1>
+        <h1 className="text-display">Prices</h1>
         <button
           onClick={() => setAdding(true)}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm active:scale-95"
@@ -79,7 +79,7 @@ export default function CapturePrices() {
                 <div className="font-medium tabular-nums text-primary">
                   {item.unit_cost != null ? fmtCurrency(Number(item.unit_cost)) : "—"}
                 </div>
-                <div className="text-[11px] text-muted-foreground">/ {item.unit || "unit"}</div>
+                <div className="text-xs text-muted-foreground">/ {item.unit || "unit"}</div>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
@@ -154,7 +154,7 @@ function ItemSheet({ item, onClose, onSaved }: { item: InventoryItem | null; onC
           <MoneyInput
             value={price}
             onValueChange={setPrice}
-            className="text-right text-lg font-semibold"
+            className="text-right font-display text-2xl font-medium tracking-tight"
           />
         </div>
 

@@ -225,7 +225,7 @@ function CustomerRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-semibold truncate">{customerName}</span>
-            <span className="text-sm font-bold tabular-nums shrink-0">{fmtCurrency(totalValue)}</span>
+            <span className="text-sm font-semibold tabular-nums shrink-0">{fmtCurrency(totalValue)}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {lines.length} item{lines.length !== 1 ? "s" : ""}
@@ -277,7 +277,7 @@ function CustomerRow({
                   <td colSpan={3} className="px-5 py-2.5 text-xs font-semibold text-muted-foreground">
                     Customer total
                   </td>
-                  <td className="px-5 py-2.5 text-right text-sm font-bold tabular-nums">
+                  <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums">
                     {fmtCurrency(totalValue)}
                   </td>
                 </tr>
@@ -956,7 +956,7 @@ export default function InventoryReportPage() {
                     <tfoot>
                       <tr className="border-t-2 border-border bg-muted/20">
                         <td colSpan={4} className="px-4 py-2.5 text-xs font-semibold text-muted-foreground">Total</td>
-                        <td className="px-4 py-2.5 text-right text-sm font-bold tabular-nums">{fmtCurrency(consumptionValue)}</td>
+                        <td className="px-4 py-2.5 text-right text-sm font-semibold tabular-nums">{fmtCurrency(consumptionValue)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -1175,7 +1175,7 @@ export default function InventoryReportPage() {
                 <tfoot>
                   <tr className="border-t-2 border-border bg-muted/20">
                     <td colSpan={5} className="px-5 py-2.5 text-xs font-semibold text-muted-foreground">Total write-off value</td>
-                    <td className="px-3 py-2.5 text-right text-sm font-bold tabular-nums">
+                    <td className="px-3 py-2.5 text-right text-sm font-semibold tabular-nums">
                       {fmtCurrency(writeOffRows.reduce((s, r) => s + r.value, 0))}
                     </td>
                     <td className="hidden md:table-cell" />

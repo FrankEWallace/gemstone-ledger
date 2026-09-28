@@ -338,7 +338,7 @@ function IdentityCard({
         {/* Identity */}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-xl font-bold truncate">{fullName ?? "Unnamed user"}</h2>
+            <h2 className="text-display truncate">{fullName ?? "Unnamed user"}</h2>
             {orgRole && (
               <Badge variant={orgRole === "owner" ? "default" : "secondary"}>
                 {ORG_ROLE_LABELS[orgRole]}
@@ -434,7 +434,7 @@ function AccountCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
           Account
         </CardTitle>
@@ -545,7 +545,7 @@ function SecurityCard({ email, demo }: { email: string | null; demo: boolean }) 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2">
           <Lock className="h-4 w-4 text-muted-foreground" />
           Security
         </CardTitle>
@@ -702,7 +702,7 @@ function PreferencesCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Preferences</CardTitle>
+        <CardTitle>Preferences</CardTitle>
         <CardDescription>Appearance and notifications.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -762,7 +762,7 @@ function SitesRolesCard({ sites }: { sites: { id: string; name: string; location
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-muted-foreground" />
           Sites & Roles
         </CardTitle>
@@ -809,7 +809,7 @@ function DangerZoneCard({ userId }: { userId: string }) {
   return (
     <Card className="border-destructive/40">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base text-destructive">
+        <CardTitle className="flex items-center gap-2 text-destructive">
           <AlertTriangle className="h-4 w-4" />
           Danger Zone
         </CardTitle>

@@ -628,7 +628,7 @@ export default function CustomerReportPage() {
                           <tspan className="fill-muted-foreground text-xs" x={viewBox.cx} y={(viewBox.cy ?? 0) - 8}>
                             Total
                           </tspan>
-                          <tspan className="fill-foreground font-bold text-sm tabular-nums" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
+                          <tspan className="fill-foreground font-semibold text-sm tabular-nums" x={viewBox.cx} y={(viewBox.cy ?? 0) + 10}>
                             {fmt(summary?.totalExpenses ?? 0)}
                           </tspan>
                         </text>
@@ -681,7 +681,7 @@ export default function CustomerReportPage() {
             <tfoot>
               <tr className="border-t-2 border-border bg-muted/20">
                 <td className="px-5 py-3 text-center font-semibold text-xs uppercase tracking-wider text-muted-foreground">Total</td>
-                <td className="px-3 py-3 text-center tabular-nums font-bold">{fmt(summary.totalExpenses)}</td>
+                <td className="px-3 py-3 text-center tabular-nums font-semibold">{fmt(summary.totalExpenses)}</td>
                 <td className="px-3 py-3 text-center text-muted-foreground hidden sm:table-cell">100%</td>
                 <td className="px-5 py-3 hidden md:table-cell" />
               </tr>

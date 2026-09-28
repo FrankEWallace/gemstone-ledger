@@ -24,7 +24,7 @@ export default function CaptureCustomers() {
   return (
     <div className="p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Customers</h1>
+        <h1 className="text-display">Customers</h1>
         <button
           onClick={() => setAdding(true)}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm active:scale-95"

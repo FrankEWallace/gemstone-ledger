@@ -352,7 +352,7 @@ export default function ProductionLogPage() {
               <span className="text-xs text-muted-foreground leading-tight">{label}</span>
               <span className="rounded-lg bg-muted p-1.5 shrink-0">{icon}</span>
             </div>
-            <p className="font-display text-xl font-semibold tabular-nums leading-none">{value}</p>
+            <p className="font-display text-2xl font-medium tracking-tight tabular-nums leading-none">{value}</p>
           </div>
         ))}
       </div>

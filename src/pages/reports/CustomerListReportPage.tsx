@@ -147,7 +147,7 @@ export default function CustomerListReportPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">Net Profit</p>
-                    <p className="text-lg font-bold tabular-nums" style={{ color: cs.netProfit >= 0 ? C.income : C.expense }}>
+                    <p className="text-sm font-semibold tabular-nums" style={{ color: cs.netProfit >= 0 ? C.income : C.expense }}>
                       {cs.netProfit >= 0 ? "+" : "−"}{fmtCurrency(Math.abs(cs.netProfit))}
                     </p>
                   </div>

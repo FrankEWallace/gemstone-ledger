@@ -214,7 +214,7 @@ export default function HelpSupportPage() {
         <div className="rounded-lg border border-success/20 bg-success/10 p-8 text-center space-y-4 max-w-lg">
           <CheckCircle className="h-12 w-12 text-success mx-auto" />
           <div>
-            <h2 className="text-lg font-semibold">Message Received</h2>
+            <h2 className="text-sm font-semibold">Message received</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Our support team typically responds within 1–2 business days.
             </p>
@@ -226,7 +226,7 @@ export default function HelpSupportPage() {
       ) : (
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-semibold">Contact Support</h2>
+            <h2 className="text-sm font-semibold">Contact support</h2>
             <p className="text-muted-foreground mt-1 text-sm">
               Submit a request and our team will get back to you.
             </p>

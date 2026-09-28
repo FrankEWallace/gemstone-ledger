@@ -166,7 +166,7 @@ export default function CsvImportModal<T extends Record<string, unknown>>({
         {importDone ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <CheckCircle2 className="h-12 w-12 text-success" />
-            <p className="font-semibold text-lg">Import complete</p>
+            <p className="text-sm font-semibold">Import complete</p>
             <p className="text-sm text-muted-foreground">
               {validRows.length} {entityName.toLowerCase()} imported successfully.
             </p>

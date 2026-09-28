@@ -509,7 +509,7 @@ export default function OverviewReportPage() {
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted/20">
                   <td className="px-5 py-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Total</td>
-                  <td className="px-3 py-3 text-right tabular-nums font-bold">{fmtCurrency(summary.totalExpenses)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums font-semibold">{fmtCurrency(summary.totalExpenses)}</td>
                   <td className="px-3 py-3 text-right text-muted-foreground hidden sm:table-cell">100%</td>
                   <td className="px-5 py-3 hidden md:table-cell" />
                 </tr>

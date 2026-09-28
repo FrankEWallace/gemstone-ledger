@@ -93,7 +93,7 @@ export default function SupportPage() {
         <div className="rounded-lg border border-success/20 bg-success/10 p-8 text-center space-y-4">
           <CheckCircle className="h-12 w-12 text-success mx-auto" />
           <div>
-            <h2 className="text-lg font-semibold">Message Received</h2>
+            <h2 className="text-sm font-semibold">Message received</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Thank you for reaching out. Our support team typically responds within 1–2 business days.
             </p>

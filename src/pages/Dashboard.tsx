@@ -15,6 +15,7 @@ import CustomerInsights from "@/components/dashboard/CustomerInsights";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import SiteStatusStrip from "@/components/dashboard/SiteStatusStrip";
 import { type DashboardPeriod, PERIOD_DAYS } from "@/components/dashboard/useBreakdownCard";
+import { bucketSeries } from "@/lib/sparkline";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,15 +46,16 @@ function PeriodPills({
   onChange: (p: DashboardPeriod) => void;
 }) {
   return (
-    <div className="flex items-center rounded-full bg-muted p-0.5 gap-0.5">
+    <div className="flex items-center gap-1" role="group" aria-label="Period">
       {(["7D", "1M", "3M", "6M", "12M"] as DashboardPeriod[]).map((p) => (
         <button
           key={p}
           onClick={() => onChange(p)}
-          className={`h-7 rounded-full px-3 text-xs font-semibold transition-colors ${
+          aria-pressed={value === p}
+          className={`h-7 rounded-full border px-3 text-xs font-medium transition-colors ${
             value === p
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "border-foreground bg-foreground text-background"
+              : "border-border text-muted-foreground hover:text-foreground"
           }`}
         >
           {p}
@@ -62,13 +64,6 @@ function PeriodPills({
     </div>
   );
 }
-
-// ─── Chart colors ─────────────────────────────────────────────────────────────
-
-const C = {
-  net:  "var(--chart-3)",
-  loss: "var(--destructive)",
-} as const;
 
 // ─── KPI derivation ───────────────────────────────────────────────────────────
 // Counts only status === "success" rows — a third status convention distinct
@@ -126,7 +121,30 @@ export default function Dashboard() {
   );
 
   const curr = useMemo(() => sumKpis(filteredTxs), [filteredTxs]);
-  const prev = useMemo(() => sumKpis(prevTxs), [prevTxs]);
+  const filteredPrevTxs = useMemo(
+    () => (selectedCustomerId ? prevTxs.filter((t) => t.customer_id === selectedCustomerId) : prevTxs),
+    [prevTxs, selectedCustomerId]
+  );
+  const prev = useMemo(() => sumKpis(filteredPrevTxs), [filteredPrevTxs]);
+
+  // Previous period first (drawn faded), then the current period.
+  const sparks = useMemo(() => {
+    const days = PERIOD_DAYS[period];
+    const buckets = period === "7D" ? 7 : 6;
+    const c = bucketSeries(filteredTxs, from, days, buckets);
+    const p = bucketSeries(filteredPrevTxs, prevFrom, days, buckets);
+    return {
+      dimFirst: buckets,
+      revenue: [...p.revenue, ...c.revenue],
+      expenses: [...p.expenses, ...c.expenses],
+      net: [...p.net, ...c.net],
+    };
+  }, [filteredTxs, filteredPrevTxs, period, from, prevFrom]);
+
+  const customerNames = useMemo(
+    () => new Map(customers.map((c) => [c.id, c.name])),
+    [customers]
+  );
 
   const selectedCustomerName = useMemo(
     () =>
@@ -151,7 +169,7 @@ export default function Dashboard() {
             <MapPin className="h-6 w-6 text-muted-foreground" />
           </div>
           <div>
-            <h2 className="font-semibold text-base">No site selected</h2>
+            <h2 className="text-sm font-semibold">No site selected</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Choose a site to start viewing your dashboard.
             </p>
@@ -212,7 +230,7 @@ export default function Dashboard() {
 
       {/* No-data prompt */}
       {txs.length === 0 && !txsLoading && (
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm">No transactions yet</p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -222,14 +240,14 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               to="/transactions"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               Add transaction
             </Link>
             <Link
               to="/transactions"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
             >
               <Upload className="h-3.5 w-3.5" />
               Import CSV
@@ -246,13 +264,16 @@ export default function Dashboard() {
           trendPct={revTrend}
           vsLabel="vs prev period"
           href="/transactions"
+          spark={{ values: sparks.revenue, dimFirst: sparks.dimFirst }}
         />
         <StatCard
           label="Expenses"
           rawValue={curr.expenses}
           trendPct={expTrend}
+          trendGoodWhen="down"
           vsLabel="vs prev period"
           href="/transactions"
+          spark={{ values: sparks.expenses, dimFirst: sparks.dimFirst, tone: "muted" }}
         />
         <StatCard
           label="Net Profit"
@@ -260,8 +281,8 @@ export default function Dashboard() {
           trendPct={netTrend}
           vsLabel={curr.net >= 0 ? "positive cashflow" : "net loss"}
           href="/reports"
-          color={curr.net >= 0 ? C.net : C.loss}
-          prominent
+          valueClassName={curr.net < 0 ? "text-destructive" : undefined}
+          spark={{ values: sparks.net, dimFirst: sparks.dimFirst }}
         />
       </div>
 
@@ -289,7 +310,7 @@ export default function Dashboard() {
       />
 
       {/* Recent Transactions */}
-      <RecentTransactions txs={filteredTxs} isLoading={txsLoading} />
+      <RecentTransactions txs={filteredTxs} isLoading={txsLoading} customerNames={customerNames} />
     </div>
   );
 }

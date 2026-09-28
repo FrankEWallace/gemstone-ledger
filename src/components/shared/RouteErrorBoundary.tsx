@@ -52,7 +52,7 @@ export default class RouteErrorBoundary extends Component<Props, State> {
           <div className="rounded-full bg-destructive/10 p-4 mb-4">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
-          <h2 className="text-lg font-semibold">Something went wrong</h2>
+          <h2 className="text-sm font-semibold">Something went wrong</h2>
           <p className="mt-1 text-sm text-muted-foreground max-w-md">
             An unexpected error occurred while rendering this page.
           </p>
