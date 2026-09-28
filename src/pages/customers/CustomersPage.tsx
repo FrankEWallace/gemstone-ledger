@@ -1,13 +1,10 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Plus, Pencil, Trash2, Mail, Phone, Receipt,
-  Search, ChevronRight,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Receipt, Search, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import EntityAvatar from "@/components/shared/EntityAvatar";
 import {
@@ -21,7 +18,6 @@ import { isDemoMode } from "@/lib/demo";
 import { invalidateCustomerCaches } from "@/lib/customerCache";
 import { fmtCurrency, fmtCompact, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import SharedStatusBadge from "@/components/shared/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/shared/MoneyInput";
@@ -59,6 +55,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 import type { Customer } from "@/lib/supabaseTypes";
 import {
@@ -76,19 +79,52 @@ import StatCard from "@/components/shared/StatCard";
 
 const C = {
   income:  "var(--chart-income)",
-  expense: "var(--chart-expense)",
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function TypeBadge({ type }: { type: Customer["type"] }) {
-  return type === "external"
-    ? <Badge variant="outline" className="text-info border-info/20 text-xs">External</Badge>
-    : <Badge variant="outline" className="text-muted-foreground text-xs">Internal</Badge>;
-}
-
 function StatusBadge({ status }: { status: Customer["status"] }) {
   return <SharedStatusBadge status={status} className="text-xs" />;
+}
+
+type StatusFilter = "all" | Customer["status"];
+type TypeFilter   = "all" | Customer["type"];
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: "all",       label: "All" },
+  { value: "active",    label: "Active" },
+  { value: "prospect",  label: "Prospect" },
+  { value: "inactive",  label: "Inactive" },
+  { value: "completed", label: "Completed" },
+];
+
+const TYPE_FILTERS: { value: Exclude<TypeFilter, "all">; label: string }[] = [
+  { value: "external", label: "External" },
+  { value: "internal", label: "Internal" },
+];
+
+function FilterPill({ active, count, onClick, children }: {
+  active: boolean;
+  count: number;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "h-7 rounded-full border px-3 text-xs font-medium transition-colors",
+        active
+          ? "border-foreground bg-foreground text-background"
+          : "border-border text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+      <span className={cn("ml-1.5 tabular-nums", active ? "opacity-60" : "text-muted-foreground/70")}>{count}</span>
+    </button>
+  );
 }
 
 // ─── Rent Charge Modal ────────────────────────────────────────────────────────
@@ -503,7 +539,6 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
 export default function CustomersPage() {
   const { activeSiteId } = useSite();
   const { orgId, user } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const today = new Date();
@@ -511,8 +546,8 @@ export default function CustomersPage() {
   const monthEnd   = format(endOfMonth(today),   "yyyy-MM-dd");
 
   const [search,       setSearch]       = useState("");
-  const [typeFilter,   setTypeFilter]   = useState<"all" | "external" | "internal">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "prospect" | "active" | "inactive" | "completed">("all");
+  const [typeFilter,   setTypeFilter]   = useState<TypeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [modalOpen,    setModalOpen]    = useState(false);
   const [editing,      setEditing]      = useState<Customer | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
@@ -553,10 +588,14 @@ export default function CustomersPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const byType = useMemo(
+    () => (typeFilter === "all" ? customers : customers.filter((c) => c.type === typeFilter)),
+    [customers, typeFilter],
+  );
+
   const filtered = useMemo(
     () =>
-      customers.filter((c) => {
-        if (typeFilter !== "all" && c.type !== typeFilter) return false;
+      byType.filter((c) => {
         if (statusFilter !== "all" && c.status !== statusFilter) return false;
         if (search) {
           const q = search.toLowerCase();
@@ -568,7 +607,7 @@ export default function CustomersPage() {
         }
         return true;
       }),
-    [customers, typeFilter, statusFilter, search],
+    [byType, statusFilter, search],
   );
 
   return (
@@ -615,51 +654,55 @@ export default function CustomersPage() {
       </div>
 
       {/* ── Toolbar ── */}
-      <div className="flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-45 max-w-xs">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter customers">
+          {STATUS_FILTERS.map((f) => (
+            <FilterPill
+              key={f.value}
+              active={statusFilter === f.value}
+              count={f.value === "all" ? byType.length : byType.filter((c) => c.status === f.value).length}
+              onClick={() => setStatusFilter(f.value)}
+            >
+              {f.label}
+            </FilterPill>
+          ))}
+          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+          {TYPE_FILTERS.map((f) => (
+            <FilterPill
+              key={f.value}
+              active={typeFilter === f.value}
+              count={customers.filter((c) => c.type === f.value).length}
+              onClick={() => setTypeFilter(typeFilter === f.value ? "all" : f.value)}
+            >
+              {f.label}
+            </FilterPill>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Search by name or contact…"
+            aria-label="Search customers"
+            placeholder="Search name or contact"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8 h-9"
           />
         </div>
-
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-          <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="external">External</SelectItem>
-            <SelectItem value="internal">Internal</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="prospect">Prospect</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* ── Table ── */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      {/* ── List ── */}
+      <div className="rounded-lg border border-border bg-card shadow-card overflow-hidden">
         {isLoading ? (
-          <div className="space-y-0">
+          <div>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-border last:border-0">
-                <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
+              <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0">
+                <div className="h-10 w-10 rounded-full bg-muted animate-pulse shrink-0" />
                 <div className="flex-1 space-y-1.5">
                   <div className="h-3 w-32 bg-muted animate-pulse rounded" />
                   <div className="h-2.5 w-48 bg-muted/60 animate-pulse rounded" />
                 </div>
-                <div className="h-3 w-20 bg-muted animate-pulse rounded hidden sm:block" />
-                <div className="h-3 w-24 bg-muted animate-pulse rounded hidden lg:block" />
+                <div className="h-3 w-16 bg-muted animate-pulse rounded" />
               </div>
             ))}
           </div>
@@ -670,170 +713,72 @@ export default function CustomersPage() {
               : "No customers match your filters."}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                    Customer
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden sm:table-cell">
-                    Contact
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden md:table-cell">
-                    Started
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                    Status
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
-                    End Date
-                  </th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hidden lg:table-cell">
-                    Net Revenue
-                  </th>
-                  <th className="px-4 py-2.5 w-22" />
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c) => {
-                  const summary      = summaryMap[c.id];
-                  const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
+          <ul>
+            {filtered.map((c) => {
+              const summary      = summaryMap[c.id];
+              const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
+              const meta = [
+                c.type === "external" ? "External" : "Internal",
+                c.contact_name,
+                c.contract_start && `since ${format(parseISO(c.contract_start), "d MMM yyyy")}`,
+              ].filter(Boolean).join(" · ");
 
-                  return (
-                    <tr
-                      key={c.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer group"
-                      onClick={() => navigate(`/customers/${c.id}`)}
-                    >
-                      {/* Customer */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <EntityAvatar name={c.name} seed={c.id} className="h-8 w-8 text-xs" />
-                          <div className="min-w-0">
-                            <p className="font-medium leading-tight truncate">{c.name}</p>
-                            <TypeBadge type={c.type} />
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Contact */}
-                      <td className="px-4 py-3.5 hidden sm:table-cell">
-                        <div className="space-y-0.5 text-xs text-muted-foreground">
-                          {c.contact_name && (
-                            <p className="font-medium text-foreground">{c.contact_name}</p>
-                          )}
-                          {c.contact_email && (
-                            <a
-                              href={`mailto:${c.contact_email}`}
-                              className="flex items-center gap-1 hover:text-foreground transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Mail className="h-3 w-3 shrink-0" />
-                              <span className="truncate max-w-40">{c.contact_email}</span>
-                            </a>
-                          )}
-                          {c.contact_phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 shrink-0" />
-                              {c.contact_phone}
-                            </span>
-                          )}
-                          {!c.contact_name && !c.contact_email && !c.contact_phone && (
-                            <span className="text-muted-foreground/50">—</span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Started */}
-                      <td className="px-4 py-3.5 hidden md:table-cell">
-                        {c.contract_start ? (
-                          <span className="text-xs text-foreground tabular-nums">
-                            {format(parseISO(c.contract_start), "d MMM yyyy")}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3.5">
+              return (
+                <li
+                  key={c.id}
+                  className="flex items-center gap-2 border-b border-border pr-2 last:border-0 hover:bg-muted/30 transition-colors"
+                >
+                  <Link
+                    to={`/customers/${c.id}`}
+                    className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 focus-visible:outline-none focus-visible:bg-muted/30"
+                  >
+                    <EntityAvatar name={c.name} seed={c.id} className="h-10 w-10 text-xs" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-foreground">{c.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{meta}</span>
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
+                        {summary ? `${summary.netProfit < 0 ? "-" : ""}${fmtCompact(Math.abs(summary.netProfit))}` : "—"}
+                      </span>
+                      {c.status === "active" ? (
+                        <span className="text-xs text-muted-foreground">This month</span>
+                      ) : (
                         <StatusBadge status={c.status} />
-                      </td>
+                      )}
+                    </span>
+                  </Link>
 
-                      {/* End Date */}
-                      <td className="px-4 py-3.5 hidden lg:table-cell">
-                        {c.contract_end ? (
-                          <span className="text-xs text-foreground tabular-nums">
-                            {format(parseISO(c.contract_end), "d MMM yyyy")}
-                          </span>
-                        ) : (
-                          <span
-                            className="text-xs font-medium"
-                            style={{ color: c.status === "active" ? C.income : undefined }}
-                          >
-                            {c.status === "active" ? "Ongoing" : <span className="text-muted-foreground/50">—</span>}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Net Revenue */}
-                      <td className="px-4 py-3.5 text-right hidden lg:table-cell">
-                        {summary ? (
-                          <div>
-                            <p className="font-semibold tabular-nums text-sm" style={{ color: summary.netProfit >= 0 ? C.income : C.expense }}>
-                              {summary.netProfit < 0 ? "-" : ""}
-                              {fmtCompact(Math.abs(summary.netProfit))}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {summary.transactionCount} txn{summary.transactionCount !== 1 ? "s" : ""}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td
-                        className="px-3 py-3.5"
-                        onClick={(e) => e.stopPropagation()}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground" aria-label={`Actions for ${c.name}`}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {hasDailyRate && (
+                        <DropdownMenuItem className="gap-2" onSelect={() => setRentTarget(c)}>
+                          <Receipt className="h-4 w-4" />
+                          Charge daily rent
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="gap-2" onSelect={() => { setEditing(c); setModalOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="gap-2 text-destructive focus:text-destructive"
+                        onSelect={() => setDeleteTarget(c)}
                       >
-                        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {hasDailyRate && (
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-7 w-7 text-info hover:text-info"
-                              title="Charge daily rent"
-                              onClick={() => setRentTarget(c)}
-                            >
-                              <Receipt className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7"
-                            title="Edit"
-                            onClick={() => { setEditing(c); setModalOpen(true); }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            title="Delete"
-                            onClick={() => setDeleteTarget(c)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-0.5" />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
 
