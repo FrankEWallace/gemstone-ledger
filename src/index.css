@@ -4,11 +4,11 @@
 
 @theme inline {
   /* radius scale */
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-sm: calc(var(--radius) - 6px);   /* 4  — badges, chips      */
+  --radius-md: calc(var(--radius) - 4px);   /* 6  — inputs, menu items */
+  --radius-lg: var(--radius);               /* 10 — cards              */
+  --radius-xl: calc(var(--radius) + 2px);   /* 12 — large panels       */
+  --radius-2xl: calc(var(--radius) + 6px);  /* 16 — sheets, dialogs    */
 
   /* core colors */
   --color-background: var(--background);
@@ -157,6 +157,14 @@
   --chart-new:      var(--chart-10);
   --chart-existing: #a8a29e;
 
+  /* identity tints — avatars and site tiles; muted so they never read as status */
+  --tint-clay-bg: #ecdfd6;  --tint-clay-fg: #7c5138;
+  --tint-slate-bg: #dfe4ec; --tint-slate-fg: #465066;
+  --tint-plum-bg: #e9dfe8;  --tint-plum-fg: #6d4a68;
+  --tint-teal-bg: #d8e8e6;  --tint-teal-fg: #35625c;
+  --tint-sand-bg: #ece3d2;  --tint-sand-fg: #6f5a2a;
+  --tint-rose-bg: #f0dfe2;  --tint-rose-fg: #85495a;
+
   /* sidebar */
   --sidebar: #ffffff;
   --sidebar-foreground: #44403c;
@@ -226,6 +234,13 @@
   --chart-9:  oklch(0.72 0.20 10);
   --chart-10: oklch(0.77 0.10 205);
   --chart-existing: #62666d;
+
+  --tint-clay-bg: #3a2c24;  --tint-clay-fg: #e0b9a0;
+  --tint-slate-bg: #262c38; --tint-slate-fg: #b6c0d6;
+  --tint-plum-bg: #33273a;  --tint-plum-fg: #d3b3cf;
+  --tint-teal-bg: #1f3432;  --tint-teal-fg: #9fd0c8;
+  --tint-sand-bg: #3a3222;  --tint-sand-fg: #dcc79a;
+  --tint-rose-bg: #3c262b;  --tint-rose-fg: #e6b1bd;
 
   --sidebar: #0f1011;
   --sidebar-foreground: #d0d6e0;

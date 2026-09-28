@@ -49,13 +49,13 @@ export default function StatCard({
 
   const content = (
     <>
-      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         {icon}
         {label}
       </div>
       <p
         className={cn(
-          "font-display font-semibold tracking-tight tabular-nums leading-none",
+          "font-display font-medium tracking-tight tabular-nums leading-none",
           prominent ? "text-3xl" : "text-2xl",
           valueClassName,
         )}
@@ -68,7 +68,7 @@ export default function StatCard({
           {hasTrend && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
+                "inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full tabular-nums",
                 up ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
               )}
             >
@@ -84,11 +84,11 @@ export default function StatCard({
     </>
   );
 
-  const base = "rounded-xl border border-border bg-card p-4 flex flex-col gap-2";
+  const base = "rounded-lg border border-border bg-card shadow-card p-4 flex flex-col gap-3";
 
   if (href) {
     return (
-      <Link to={href} className={cn(base, "group hover:border-foreground/20 transition-colors", className)}>
+      <Link to={href} className={cn(base, "group hover:border-input hover:bg-accent/40 transition-colors", className)}>
         {content}
       </Link>
     );

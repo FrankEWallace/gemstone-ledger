@@ -75,6 +75,7 @@ import { getTransactions, getTransactionCategories, createTransaction, updateTra
 import { getCustomerMonthlyTrend } from "@/services/contract.service";
 import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
 import TransactionEditSheet from "@/pages/transactions/TransactionEditSheet";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -600,16 +601,7 @@ export default function CustomerDetailPage() {
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
-              customer.status === "active"    ? "bg-success/10 text-success" :
-              customer.status === "prospect"  ? "bg-info/10 text-info"       :
-              customer.status === "completed" ? "bg-info/10 text-info"       :
-              "bg-muted text-muted-foreground"
-            }`}>
-              <span className="text-base font-bold uppercase">
-                {customer.name.slice(0, 2)}
-              </span>
-            </div>
+            <EntityAvatar name={customer.name} seed={customer.id} className="h-12 w-12 text-sm" />
 
             {/* Identity + meta */}
             <div className="flex-1 min-w-0">

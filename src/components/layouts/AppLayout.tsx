@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, X, ChevronDown, Pickaxe, Search, Plus } from "lucide-react";
+import { FlaskConical, X, ChevronDown, Search, Plus } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
 import NotificationBell from "@/components/shared/NotificationBell";
 import ThemeToggle from "@/components/shared/ThemeToggle";
@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 
 
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
@@ -74,7 +75,7 @@ function SiteSwitcher() {
   if (sites.length <= 1 && !canCreate) {
     return (
       <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground">
-        <Pickaxe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <EntityAvatar name={activeSite.name} seed={activeSite.id} shape="square" className="h-6 w-6 text-xs" />
         <span className="truncate max-w-32">{activeSite.name}</span>
       </div>
     );
@@ -85,7 +86,7 @@ function SiteSwitcher() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground hover:bg-accent transition-colors">
-            <Pickaxe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <EntityAvatar name={activeSite.name} seed={activeSite.id} shape="square" className="h-6 w-6 text-xs" />
             <span className="truncate max-w-32">{activeSite.name}</span>
             <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
           </button>
@@ -97,9 +98,7 @@ function SiteSwitcher() {
               onClick={() => setActiveSite(s.id)}
               className={cn("gap-2", s.id === activeSite.id && "font-medium text-primary")}
             >
-              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10 text-primary text-xs font-bold">
-                {s.name.slice(0, 2).toUpperCase()}
-              </div>
+              <EntityAvatar name={s.name} seed={s.id} shape="square" className="h-6 w-6 text-xs" />
               <span className="truncate">{s.name}</span>
             </DropdownMenuItem>
           ))}

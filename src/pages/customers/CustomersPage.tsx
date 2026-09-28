@@ -9,6 +9,7 @@ import {
   Search, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 import {
   format, differenceInCalendarDays, parseISO,
   startOfMonth, endOfMonth,
@@ -699,13 +700,6 @@ export default function CustomersPage() {
                   const summary      = summaryMap[c.id];
                   const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
 
-                  const avatarCls: Record<string, string> = {
-                    active:    "bg-success/10 text-success",
-                    prospect:  "bg-info/10 text-info",
-                    completed: "bg-info/10 text-info",
-                    inactive:  "bg-muted text-muted-foreground",
-                  };
-
                   return (
                     <tr
                       key={c.id}
@@ -715,11 +709,7 @@ export default function CustomersPage() {
                       {/* Customer */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${avatarCls[c.status] ?? "bg-muted text-muted-foreground"}`}>
-                            <span className="text-xs font-semibold uppercase">
-                              {c.name.slice(0, 2)}
-                            </span>
-                          </div>
+                          <EntityAvatar name={c.name} seed={c.id} className="h-8 w-8 text-xs" />
                           <div className="min-w-0">
                             <p className="font-medium leading-tight truncate">{c.name}</p>
                             <TypeBadge type={c.type} />

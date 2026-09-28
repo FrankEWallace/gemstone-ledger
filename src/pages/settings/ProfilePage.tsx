@@ -60,7 +60,7 @@ import {
   CardContent,
   CardAction,
 } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 import {
   Dialog,
   DialogContent,
@@ -114,15 +114,6 @@ const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   admin: "Org Admin",
   member: "Member",
 };
-
-function initialsOf(name: string | null): string {
-  return (name ?? "?")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
@@ -267,11 +258,7 @@ function AvatarPicker({
                 aria-label="Select avatar"
                 aria-pressed={active}
               >
-                <img
-                  src={renderAvatar({ style, seed })}
-                  alt=""
-                  className="h-14 w-14 rounded-full"
-                />
+                <EntityAvatar name={null} seed={userId} src={renderAvatar({ style, seed })} className="h-14 w-14" />
               </button>
             );
           })}
@@ -325,10 +312,7 @@ function IdentityCard({
       <CardContent className="flex flex-col gap-5 pt-6 sm:flex-row sm:items-center">
         {/* Avatar */}
         <div className="relative shrink-0 self-start sm:self-center">
-          <Avatar className="h-20 w-20 border-2 border-border">
-            <AvatarImage src={src} alt={fullName ?? "Avatar"} className="object-cover" />
-            <AvatarFallback className="text-xl font-semibold">{initialsOf(fullName)}</AvatarFallback>
-          </Avatar>
+          <EntityAvatar name={fullName} seed={userId} src={src} className="h-20 w-20 text-sm" />
           {!demo && (
             <>
               <button
