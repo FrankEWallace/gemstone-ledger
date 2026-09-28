@@ -218,14 +218,14 @@ export default function AppLayout() {
         <OfflineBanner />
 
         {demoActive && (
-          <div className="flex items-center gap-3 bg-warning px-4 py-2 text-warning-foreground text-sm">
+          <div className="flex items-center gap-3 border-b border-warning/20 bg-warning/10 px-4 py-2 text-warning text-sm">
             <FlaskConical className="h-4 w-4 shrink-0" />
             <span className="flex-1 font-medium">
               Demo mode — you're exploring FW Mining OS with sample data. Nothing is saved.
             </span>
             <button
               onClick={handleExitDemo}
-              className="flex items-center gap-1.5 rounded-lg bg-white/20 hover:bg-white/30 px-3 py-1 text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 rounded-full border border-warning/30 hover:bg-warning/10 px-3 py-1 text-xs font-semibold transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               Exit demo

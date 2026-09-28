@@ -114,7 +114,7 @@ export default function Register() {
   return (
     <div className="flex min-h-screen">
       {/* ── Left: brand panel ── */}
-      <div className="hidden lg:flex lg:w-[400px] xl:w-[460px] shrink-0 flex-col justify-between bg-[#0f1117] p-10 text-white">
+      <div className="hidden lg:flex lg:w-[400px] xl:w-[460px] shrink-0 flex-col justify-between bg-[#1c1917] p-10 text-white">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
