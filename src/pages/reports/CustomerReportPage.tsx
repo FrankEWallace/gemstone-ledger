@@ -39,6 +39,7 @@ import { getCustomers } from "@/services/customers.service";
 import { getCustomerDetail } from "@/services/reports.service";
 import { getTransactions } from "@/services/transactions.service";
 import { getCustomerMonthlyTrend } from "@/services/contract.service";
+import { PDF } from "@/lib/pdfPalette";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -156,40 +157,36 @@ export default function CustomerReportPage() {
       const { pdf, Document, Page, Text, View, StyleSheet } =
         await import("@react-pdf/renderer");
 
-      const NAVY  = "#1a2035";
-      const GREEN = "#2a9d50";
-      const RED   = "#ef4444";
-
       const s = StyleSheet.create({
-        page:         { paddingTop: 60, paddingBottom: 48, paddingLeft: 40, paddingRight: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
+        page:         { paddingTop: 60, paddingBottom: 48, paddingLeft: 40, paddingRight: 40, fontFamily: "Helvetica", fontSize: 10, color: PDF.ink },
         // Fixed header band
-        header:       { position: "absolute", top: 0, left: 0, right: 0, height: 40, backgroundColor: NAVY, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
-        headerLeft:   { color: "#ffffff", fontSize: 8, fontWeight: "bold", letterSpacing: 1 },
-        headerRight:  { color: "#8a9dbe", fontSize: 7 },
+        header:       { position: "absolute", top: 0, left: 0, right: 0, height: 40, backgroundColor: PDF.soot, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
+        headerLeft:   { color: PDF.onDark, fontSize: 8, fontWeight: "bold", letterSpacing: 1 },
+        headerRight:  { color: PDF.onDarkMuted, fontSize: 7 },
         // Fixed footer band
-        footer:       { position: "absolute", bottom: 0, left: 0, right: 0, height: 28, backgroundColor: NAVY, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
-        footerText:   { color: "#7b8ea8", fontSize: 7 },
+        footer:       { position: "absolute", bottom: 0, left: 0, right: 0, height: 28, backgroundColor: PDF.soot, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingLeft: 40, paddingRight: 40 },
+        footerText:   { color: PDF.onDarkMuted, fontSize: 7 },
         // Title block
         titleBlock:   { marginBottom: 20 },
-        title:        { fontSize: 22, fontWeight: "bold", color: NAVY, marginBottom: 4 },
-        subtitle:     { fontSize: 9, color: "#888" },
+        title:        { fontSize: 22, fontWeight: "bold", color: PDF.soot, marginBottom: 4 },
+        subtitle:     { fontSize: 9, color: PDF.muted },
         // Sections
         section:      { marginBottom: 22 },
-        sectionTitle: { fontSize: 7, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: NAVY, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10 },
+        sectionTitle: { fontSize: 7, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: PDF.soot, borderBottomWidth: 1, borderBottomColor: PDF.border, paddingBottom: 5, marginBottom: 10 },
         // KPI row
         row:          { flexDirection: "row", marginBottom: 6 },
-        statBox:      { flex: 1, marginRight: 8, borderRadius: 3, borderWidth: 1, borderColor: "#e5e7eb", borderLeftWidth: 3, borderLeftColor: NAVY, padding: 10 },
-        statLabel:    { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
-        statValue:    { fontSize: 14, fontWeight: "bold", color: "#111" },
+        statBox:      { flex: 1, marginRight: 8, borderRadius: 3, borderWidth: 1, borderColor: PDF.border, borderLeftWidth: 3, borderLeftColor: PDF.soot, padding: 10 },
+        statLabel:    { fontSize: 7, color: PDF.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+        statValue:    { fontSize: 14, fontWeight: "bold", color: PDF.ink },
         // Table
-        tableHeader:  { flexDirection: "row", backgroundColor: NAVY, padding: "6 8", borderRadius: 3, marginBottom: 0 },
-        trOdd:        { flexDirection: "row", padding: "5 8", backgroundColor: "#ffffff" },
-        trEven:       { flexDirection: "row", padding: "5 8", backgroundColor: "#f4f6f9" },
-        thCell:       { flex: 1, fontSize: 8, fontWeight: "bold", color: "#ffffff" },
-        thCellRight:  { flex: 1, fontSize: 8, fontWeight: "bold", color: "#ffffff", textAlign: "right" },
-        tdCell:       { flex: 1, fontSize: 9, color: "#444" },
-        tdCellRight:  { flex: 1, fontSize: 9, color: "#444", textAlign: "right" },
-        tdCellBold:   { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111", textAlign: "right" },
+        tableHeader:  { flexDirection: "row", backgroundColor: PDF.soot, padding: "6 8", borderRadius: 3, marginBottom: 0 },
+        trOdd:        { flexDirection: "row", padding: "5 8", backgroundColor: PDF.paper },
+        trEven:       { flexDirection: "row", padding: "5 8", backgroundColor: PDF.zebra },
+        thCell:       { flex: 1, fontSize: 8, fontWeight: "bold", color: PDF.onDark },
+        thCellRight:  { flex: 1, fontSize: 8, fontWeight: "bold", color: PDF.onDark, textAlign: "right" },
+        tdCell:       { flex: 1, fontSize: 9, color: PDF.body },
+        tdCellRight:  { flex: 1, fontSize: 9, color: PDF.body, textAlign: "right" },
+        tdCellBold:   { flex: 1, fontSize: 9, fontWeight: "bold", color: PDF.ink, textAlign: "right" },
       });
 
       const blob = await pdf(
@@ -218,9 +215,9 @@ export default function CustomerReportPage() {
               <Text style={s.sectionTitle}>Summary</Text>
               <View style={s.row}>
                 {[
-                  { label: "Total Income",   val: fmt(summary.totalIncome),   accent: GREEN },
-                  { label: "Total Expenses", val: fmt(summary.totalExpenses), accent: RED },
-                  { label: "Net Profit",     val: fmt(summary.netProfit),     accent: summary.netProfit >= 0 ? GREEN : RED },
+                  { label: "Total Income",   val: fmt(summary.totalIncome),   accent: PDF.income },
+                  { label: "Total Expenses", val: fmt(summary.totalExpenses), accent: PDF.expense },
+                  { label: "Net Profit",     val: fmt(summary.netProfit),     accent: summary.netProfit >= 0 ? PDF.income : PDF.expense },
                 ].map((item) => (
                   <View key={item.label} style={[s.statBox, { borderLeftColor: item.accent }]}>
                     <Text style={s.statLabel}>{item.label}</Text>
@@ -234,7 +231,7 @@ export default function CustomerReportPage() {
                   { label: "Transactions", val: String(summary.transactionCount) },
                   { label: "Days Worked",  val: String(daysWorked) },
                 ].map((item) => (
-                  <View key={item.label} style={[s.statBox, { borderLeftColor: NAVY }]}>
+                  <View key={item.label} style={[s.statBox, { borderLeftColor: PDF.soot }]}>
                     <Text style={s.statLabel}>{item.label}</Text>
                     <Text style={s.statValue}>{item.val}</Text>
                   </View>

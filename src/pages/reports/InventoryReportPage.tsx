@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PDF } from "@/lib/pdfPalette";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -609,21 +610,21 @@ export default function InventoryReportPage() {
         await import("@react-pdf/renderer");
 
       const s = StyleSheet.create({
-        page:              { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
+        page:              { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: PDF.ink },
         title:             { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-        subtitle:          { fontSize: 10, color: "#666", marginBottom: 28 },
+        subtitle:          { fontSize: 10, color: PDF.muted, marginBottom: 28 },
         section:           { marginBottom: 22 },
-        sectionTitle:      { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#888", borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10 },
+        sectionTitle:      { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: PDF.muted, borderBottomWidth: 1, borderBottomColor: PDF.border, paddingBottom: 5, marginBottom: 10 },
         row:               { flexDirection: "row", marginBottom: 6 },
-        statBox:           { flex: 1, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4, marginRight: 8 },
-        statLabel:         { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+        statBox:           { flex: 1, padding: 10, backgroundColor: PDF.surface, borderRadius: 4, marginRight: 8 },
+        statLabel:         { fontSize: 7, color: PDF.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
         statValue:         { fontSize: 15, fontWeight: "bold" },
-        tableHeader:       { flexDirection: "row", backgroundColor: "#f3f4f6", padding: "6 8", borderRadius: 3, marginBottom: 2 },
-        tableRow:          { flexDirection: "row", padding: "5 8", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-        tableCell:         { flex: 1, fontSize: 9, color: "#555" },
-        tableCellBold:     { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111" },
-        tableCellRight:    { flex: 1, fontSize: 9, textAlign: "right", color: "#555" },
-        tableCellRightBold:{ flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: "#111" },
+        tableHeader:       { flexDirection: "row", backgroundColor: PDF.zebra, padding: "6 8", borderRadius: 3, marginBottom: 2 },
+        tableRow:          { flexDirection: "row", padding: "5 8", borderBottomWidth: 1, borderBottomColor: PDF.zebra },
+        tableCell:         { flex: 1, fontSize: 9, color: PDF.body },
+        tableCellBold:     { flex: 1, fontSize: 9, fontWeight: "bold", color: PDF.ink },
+        tableCellRight:    { flex: 1, fontSize: 9, textAlign: "right", color: PDF.body },
+        tableCellRightBold:{ flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: PDF.ink },
       });
 
       const siteName = activeSite?.name ?? "Site";
