@@ -33,12 +33,6 @@ export default function CustomerInsights({ summaries, selectedId, onSelect }: Cu
         </button>
         <div className="flex items-center gap-3">
           <Link
-            to="/activity"
-            className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Activity <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-          <Link
             to="/customers"
             className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >

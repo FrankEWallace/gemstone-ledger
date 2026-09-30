@@ -149,7 +149,7 @@ export default function OverviewReportPage() {
           <Page size="A4" style={s.page}>
             <View fixed style={s.header}>
               <Text style={s.headerLeft}>FW MINING OS  ·  {siteName.toUpperCase()}</Text>
-              <Text style={s.headerRight}>Financial Overview  ·  {periodLabel}</Text>
+              <Text style={s.headerRight}>Finance Overview  ·  {periodLabel}</Text>
             </View>
             <View fixed style={s.footer}>
               <Text style={s.footerText}>Confidential  ·  Generated {format(new Date(), "d MMM yyyy")}</Text>
@@ -157,7 +157,7 @@ export default function OverviewReportPage() {
             </View>
 
             <View style={s.titleBlock}>
-              <Text style={s.title}>Financial Overview</Text>
+              <Text style={s.title}>Finance Overview</Text>
               <Text style={s.subtitle}>{siteName}  ·  {periodLabel}</Text>
             </View>
 
@@ -238,7 +238,7 @@ export default function OverviewReportPage() {
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href     = url;
-      a.download = `financial-overview-${dateFrom}-${dateTo}.pdf`;
+      a.download = `finance-overview-${dateFrom}-${dateTo}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -255,7 +255,7 @@ export default function OverviewReportPage() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-display">Financial Overview</h1>
+        <h1 className="text-display">Finance Overview</h1>
         <button
           onClick={handleExportPDF}
           disabled={isExporting || !summary}

@@ -4,11 +4,12 @@ import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Receipt, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Pencil, Trash2, Receipt, Search, MoreHorizontal, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import EntityAvatar from "@/components/shared/EntityAvatar";
+import KpiCell from "@/components/shared/KpiCell";
 import {
-  format, differenceInCalendarDays, parseISO,
+  format, differenceInCalendarDays, differenceInDays, parseISO,
   startOfMonth, endOfMonth,
 } from "date-fns";
 
@@ -73,7 +74,6 @@ import {
 } from "@/services/customers.service";
 import { createTransaction } from "@/services/transactions.service";
 import { getCustomerSummaries } from "@/services/reports.service";
-import StatCard from "@/components/shared/StatCard";
 
 // ─── Chart colors (matches Dashboard palette) ─────────────────────────────────
 
@@ -219,6 +219,111 @@ function RentChargeModal({ open, onClose, customer, siteId, userId }: RentCharge
           <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
           <Button onClick={() => mutate()} disabled={isPending || dailyRate <= 0}>
             {isPending ? "Creating…" : "Create Invoice"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Close Activity Modal ─────────────────────────────────────────────────────
+
+const TODAY = format(new Date(), "yyyy-MM-dd");
+
+function CloseActivityModal({ open, onClose, customer, siteId }: {
+  open: boolean;
+  onClose: () => void;
+  customer: Customer;
+  siteId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [endDate, setEndDate] = useState(TODAY);
+
+  // Lifetime totals for this customer, fetched only while the modal is open.
+  const { data: summaries = [] } = useQuery({
+    queryKey: ["customer-lifetime-summary", siteId, customer.id],
+    queryFn: () => getCustomerSummaries(siteId, "2000-01-01", TODAY),
+    enabled: open,
+  });
+  const summary = summaries.find((s) => s.customerId === customer.id);
+  const totalIncome = summary?.totalIncome ?? 0;
+  const totalExpenses = summary?.totalExpenses ?? 0;
+  const net = totalIncome - totalExpenses;
+
+  const daysActive =
+    customer.contract_start && endDate
+      ? differenceInDays(new Date(endDate), parseISO(customer.contract_start))
+      : null;
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => {
+      if (isDemoMode()) {
+        toast.info("Demo mode — changes are not persisted.");
+        return Promise.resolve({} as Customer);
+      }
+      return updateCustomer(customer.id, { contract_end: endDate, status: "completed" });
+    },
+    onSuccess: () => {
+      if (!isDemoMode()) invalidateCustomerCaches(queryClient);
+      toast.success(`${customer.name} activity closed`);
+      onClose();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Close Activity</DialogTitle>
+          <p className="text-sm text-muted-foreground">{customer.name}</p>
+        </DialogHeader>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="ca-end">End Date</Label>
+          <Input
+            id="ca-end"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+          {customer.contract_start && (
+            <p className="text-xs text-muted-foreground">
+              Active since{" "}
+              {format(parseISO(customer.contract_start), "MMM d, yyyy")}
+              {daysActive !== null && daysActive >= 0 && ` · ${daysActive} day${daysActive !== 1 ? "s" : ""}`}
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Total Income</span>
+            <span className="font-semibold" style={{ color: "var(--chart-income)" }}>{fmtCompact(totalIncome)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Total Expenses</span>
+            <span className="font-semibold" style={{ color: "var(--chart-expense)" }}>{fmtCompact(totalExpenses)}</span>
+          </div>
+          <div className="flex justify-between items-center border-t border-border pt-2">
+            <span className="font-medium">Net</span>
+            <span className="font-semibold" style={{ color: net >= 0 ? "var(--chart-income)" : "var(--chart-expense)" }}>
+              {net < 0 ? "−" : ""}
+              {fmtCompact(Math.abs(net))}
+            </span>
+          </div>
+        </div>
+
+        {net < 0 && (
+          <p className="text-xs text-warning bg-warning/10 px-3 py-2 rounded-lg">
+            Expenses exceed income for this period.
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button onClick={() => mutate()} disabled={isPending}>
+            {isPending ? "Closing…" : "Confirm & Close"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -552,6 +657,7 @@ export default function CustomersPage() {
   const [editing,      setEditing]      = useState<Customer | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const [rentTarget,   setRentTarget]   = useState<Customer | null>(null);
+  const [closeTarget,  setCloseTarget]  = useState<Customer | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers", activeSiteId],
@@ -615,40 +721,24 @@ export default function CustomersPage() {
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-display">Customers</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Financial metrics reflect {format(startOfMonth(today), "MMMM yyyy")}
-          </p>
-        </div>
+        <h1 className="text-display">Customers</h1>
         <Button size="sm" onClick={() => { setEditing(null); setModalOpen(true); }}>
           <Plus className="h-4 w-4 mr-1.5" />
           Add Customer
         </Button>
       </div>
 
-      {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Customers"
-          value={customers.length.toString()}
-          sub={`${customers.filter((c) => c.type === "external").length} external · ${customers.filter((c) => c.type === "internal").length} internal`}
-        />
-        <StatCard
+      {/* ── KPI strip ── */}
+      <div className="grid grid-cols-3 rounded-xl border border-border bg-card divide-x divide-border">
+        <KpiCell label="Total Customers" value={customers.length.toString()} />
+        <KpiCell
           label="Active"
           value={customers.filter((c) => c.status === "active").length.toString()}
-          sub="currently active"
           color="var(--chart-income)"
         />
-        <StatCard
-          label="Prospects"
-          value={customers.filter((c) => c.status === "prospect").length.toString()}
-          sub="not yet active"
-        />
-        <StatCard
+        <KpiCell
           label="Revenue This Month"
           value={fmtCompact(summaries.reduce((sum, s) => sum + s.netProfit, 0))}
-          sub={`${summaries.filter((s) => s.netProfit > 0).length} customers with income`}
           color="var(--chart-income)"
         />
       </div>
@@ -666,28 +756,30 @@ export default function CustomersPage() {
               {f.label}
             </FilterPill>
           ))}
-          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-          {TYPE_FILTERS.map((f) => (
-            <FilterPill
-              key={f.value}
-              active={typeFilter === f.value}
-              count={customers.filter((c) => c.type === f.value).length}
-              onClick={() => setTypeFilter(typeFilter === f.value ? "all" : f.value)}
-            >
-              {f.label}
-            </FilterPill>
-          ))}
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-          <Input
-            aria-label="Search customers"
-            placeholder="Search name or contact"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-9"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
+            <SelectTrigger className="h-9 w-32 shrink-0" aria-label="Filter by type">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {TYPE_FILTERS.map((f) => (
+                <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              aria-label="Search customers"
+              placeholder="Search name or contact"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 h-9"
+            />
+          </div>
         </div>
       </div>
 
@@ -762,6 +854,12 @@ export default function CustomersPage() {
                           Charge daily rent
                         </DropdownMenuItem>
                       )}
+                      {c.status === "active" && (
+                        <DropdownMenuItem className="gap-2" onSelect={() => setCloseTarget(c)}>
+                          <CheckCircle2 className="h-4 w-4" />
+                          Close activity
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem className="gap-2" onSelect={() => { setEditing(c); setModalOpen(true); }}>
                         <Pencil className="h-4 w-4" />
                         Edit
@@ -829,6 +927,15 @@ export default function CustomersPage() {
           customer={rentTarget}
           siteId={activeSiteId!}
           userId={user?.id}
+        />
+      )}
+
+      {closeTarget && (
+        <CloseActivityModal
+          open={!!closeTarget}
+          onClose={() => setCloseTarget(null)}
+          customer={closeTarget}
+          siteId={activeSiteId!}
         />
       )}
     </div>

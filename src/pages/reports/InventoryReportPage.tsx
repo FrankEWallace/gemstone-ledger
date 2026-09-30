@@ -24,7 +24,6 @@ import { ArrowLeft, Download, ChevronRight, ChevronDown, Package, AlertTriangle 
 
 import { useSite } from "@/hooks/useSite";
 import { useReportDateRange } from "@/hooks/useReportDateRange";
-import ReportsSubNav from "@/components/reports/ReportsSubNav";
 import { supabase } from "@/lib/supabase";
 import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtTick, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
@@ -754,8 +753,6 @@ export default function InventoryReportPage() {
   return (
     <div className="p-4 lg:p-6 space-y-5">
 
-      <ReportsSubNav />
-
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="space-y-1">
         <Link
@@ -766,7 +763,7 @@ export default function InventoryReportPage() {
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-display">Inventory Report</h1>
+            <h1 className="text-display">Inventory Overview</h1>
             <p className="text-sm text-muted-foreground">Stock levels, consumption, low stock alerts and write-offs</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
