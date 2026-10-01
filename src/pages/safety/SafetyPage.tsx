@@ -137,7 +137,7 @@ function ResolutionNotesModal({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-base">Resolution — {incident.title}</DialogTitle>
+          <DialogTitle>Resolution — {incident.title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-1">
           <div className="space-y-1.5">
@@ -443,7 +443,7 @@ export default function SafetyPage() {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {stat.icon} {stat.label}
             </div>
-            <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${stat.color}`}>{stat.value}</p>
+            <p className={`font-display text-2xl font-medium tracking-tight tabular-nums leading-none ${stat.color}`}>{stat.value}</p>
           </div>
         ))}
       </div>

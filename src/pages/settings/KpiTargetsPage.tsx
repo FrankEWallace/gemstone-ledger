@@ -178,7 +178,7 @@ export default function KpiTargetsPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">KPI Targets</h1>
+          <h1 className="text-display">KPI Targets</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -260,7 +260,7 @@ export default function KpiTargetsPage() {
       {/* Target form */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
+          <CardTitle>
             Targets for {displayMonth(viewMonth)}
           </CardTitle>
         </CardHeader>

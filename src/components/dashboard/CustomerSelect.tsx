@@ -20,7 +20,7 @@ export default function CustomerSelect({
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
-        className="h-9 rounded-lg border border-border bg-card pl-8 pr-8 text-sm appearance-none cursor-pointer hover:border-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-ring max-w-[180px] text-foreground"
+        className="h-9 rounded-lg border border-border bg-card pl-8 pr-8 text-sm appearance-none cursor-pointer hover:border-foreground/30 transition-colors focus:outline-none focus:ring-1 focus:ring-ring max-w-45 text-foreground"
       >
         <option value="">{placeholder}</option>
         {customers.map((c) => (

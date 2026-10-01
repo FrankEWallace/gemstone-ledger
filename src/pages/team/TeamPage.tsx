@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, ClipboardList, Users, Clock, TrendingUp } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardList, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -19,7 +19,14 @@ import {
 import { useSite } from "@/hooks/useSite";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import StatusBadge from "@/components/shared/StatusBadge";
+import KpiCell from "@/components/shared/KpiCell";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -58,6 +65,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { Worker, ShiftRecord, WorkerStatus } from "@/lib/supabaseTypes";
+import { avatarSrc } from "@/lib/avatar";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 import {
   getWorkers,
   getShiftRecords,
@@ -498,9 +507,12 @@ export default function TeamPage() {
       header: "Name",
       sortable: true,
       render: (_, row) => (
-        <div>
-          <p className="font-medium">{row.full_name}</p>
-          {row.position && <p className="text-xs text-muted-foreground">{row.position}</p>}
+        <div className="flex items-center gap-3">
+          <EntityAvatar name={row.full_name} seed={row.id} src={avatarSrc(null, row.id)} className="h-8 w-8 text-xs" />
+          <div className="min-w-0">
+            <p className="font-medium">{row.full_name}</p>
+            {row.position && <p className="text-xs text-muted-foreground">{row.position}</p>}
+          </div>
         </div>
       ),
     },
@@ -519,38 +531,38 @@ export default function TeamPage() {
     {
       key: "id",
       header: "",
-      className: "w-28 text-right",
+      className: "w-10 text-right",
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs gap-1"
-            onClick={() => {
-              setPreselectedWorkerId(row.id);
-              setShiftModal(true);
-            }}
-          >
-            <ClipboardList className="h-3.5 w-3.5" />
-            Log
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => { setEditingWorker(row); setWorkerModal(true); }}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-destructive hover:text-destructive"
-            onClick={() => setDeleteWorkerTarget(row)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`Actions for ${row.full_name}`}>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="gap-2"
+              onSelect={() => {
+                setPreselectedWorkerId(row.id);
+                setShiftModal(true);
+              }}
+            >
+              <ClipboardList className="h-4 w-4" />
+              Log shift
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2" onSelect={() => { setEditingWorker(row); setWorkerModal(true); }}>
+              <Pencil className="h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="gap-2 text-destructive focus:text-destructive"
+              onSelect={() => setDeleteWorkerTarget(row)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     },
   ];
@@ -629,49 +641,28 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border p-4 flex items-start gap-3">
-          <div className="rounded-md bg-primary/10 p-2">
-            <Users className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Active Workers</p>
-            <p className="text-2xl font-bold">{activeCount}</p>
-          </div>
-        </div>
-        <div className="rounded-lg border border-border p-4 flex items-start gap-3">
-          <div className="rounded-md bg-primary/10 p-2">
-            <Clock className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Avg Hours / Shift</p>
-            <p className="text-2xl font-bold">{avgHours}h</p>
-          </div>
-        </div>
-        <div className="rounded-lg border border-border p-4 flex items-start gap-3 col-span-2 sm:col-span-1">
-          <div className="rounded-md bg-primary/10 p-2">
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Total Shifts Logged</p>
-            <p className="text-2xl font-bold">{shifts.length}</p>
-          </div>
-        </div>
+      {/* Stat strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-border bg-card divide-y divide-border sm:divide-y-0 sm:divide-x">
+        <KpiCell label="Active Workers" value={String(activeCount)} />
+        <KpiCell label="Avg Hours / Shift" value={`${avgHours}h`} />
+        <KpiCell label="Total Shifts Logged" value={String(shifts.length)} />
       </div>
 
       {/* Top workers chart */}
       {chartData.length > 0 && (
         <div className="rounded-lg border border-border p-4">
           <p className="text-sm font-medium mb-4">Hours by Worker (all-time)</p>
-          <ResponsiveContainer width="100%" height={CHART_H.sm}>
-            <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+          <ResponsiveContainer width="100%" height={CHART_H.sm + 30}>
+            <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 24, left: -20 }}>
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
                 interval={0}
+                angle={-35}
+                textAnchor="end"
+                height={50}
               />
               <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
               <Tooltip

@@ -9,11 +9,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { avatarSrc } from "@/lib/avatar";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 import type { Message, MessageChannel } from "@/lib/supabaseTypes";
 import {
   getMessages,
   sendMessage,
   subscribeToMessages,
+  getMessageSender,
+  type MessageSender,
 } from "@/services/messages.service";
 import { supabase } from "@/lib/supabase";
 
@@ -34,26 +38,33 @@ function dateLabel(isoString: string): string {
   return format(d, "MMM d 'at' h:mm a");
 }
 
-function userInitials(name: string | null | undefined) {
-  if (!name) return "??";
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
 // ─── Message bubble ───────────────────────────────────────────────────────────
 
+// undefined = not fetched yet, null = fetch in flight or failed
 interface SenderCache {
-  [userId: string]: string | null;
+  [userId: string]: MessageSender | null;
 }
 
-function MessageBubble({ msg, isMine, senderName }: { msg: Message; isMine: boolean; senderName: string | null }) {
+function MessageBubble({
+  msg,
+  isMine,
+  senderName,
+  senderAvatar,
+}: {
+  msg: Message;
+  isMine: boolean;
+  senderName: string | null;
+  /** Resolved face, or null to fall back to initials (e.g. profile not loaded). */
+  senderAvatar: string | null;
+}) {
   return (
     <div className={cn("flex gap-2.5 group", isMine && "flex-row-reverse")}>
-      <div className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-        isMine ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-      )}>
-        {userInitials(senderName)}
-      </div>
+      <EntityAvatar
+        name={senderName}
+        seed={msg.sender_id ?? undefined}
+        src={senderAvatar}
+        className="h-8 w-8 text-xs"
+      />
       <div className={cn("max-w-[75%] space-y-1", isMine && "items-end flex flex-col")}>
         <div className={cn(
           "flex items-center gap-2 text-xs text-muted-foreground",
@@ -123,15 +134,18 @@ export default function MessagesPage() {
     async (senderId: string | null) => {
       if (!senderId || senderCache[senderId] !== undefined) return;
       setSenderCache((prev) => ({ ...prev, [senderId]: null })); // mark as fetching
-      const { data } = await supabase
-        .from("user_profiles")
-        .select("full_name")
-        .eq("id", senderId)
-        .single();
-      setSenderCache((prev) => ({ ...prev, [senderId]: data?.full_name ?? null }));
+      const sender = await getMessageSender(senderId);
+      setSenderCache((prev) => ({ ...prev, [senderId]: sender }));
     },
     [senderCache]
   );
+
+  const senderAvatarFor = (senderId: string | null): string | null => {
+    if (!senderId) return null;
+    if (senderId === user?.id) return avatarSrc(userProfile?.avatar_url, senderId);
+    const sender = senderCache[senderId];
+    return sender ? avatarSrc(sender.avatar_url, senderId) : null;
+  };
 
   // Resolve sender names for all visible messages
   useEffect(() => {
@@ -281,8 +295,9 @@ export default function MessagesPage() {
                 senderName={
                   msg.sender_id === user?.id
                     ? userProfile?.full_name ?? null
-                    : senderCache[msg.sender_id ?? ""] ?? null
+                    : senderCache[msg.sender_id ?? ""]?.full_name ?? null
                 }
+                senderAvatar={senderAvatarFor(msg.sender_id)}
               />
             ))
           )}
@@ -298,7 +313,7 @@ export default function MessagesPage() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              className="resize-none min-h-[40px] max-h-32"
+              className="resize-none min-h-10 max-h-32"
             />
             <Button
               size="icon"

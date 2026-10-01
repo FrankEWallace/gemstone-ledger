@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { BarChart3, TrendingDown, TrendingUp, Users, Package, ArrowRight, AlertTriangle } from "lucide-react";
+import { BarChart3, Package, Pickaxe, ArrowRight, AlertTriangle } from "lucide-react";
 
 import { useSite } from "@/hooks/useSite";
 import { useReportDateRange } from "@/hooks/useReportDateRange";
@@ -164,37 +164,23 @@ export default function ReportsPage() {
         <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-3">Reports</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <ReportCard
+            to="/reports/production"
+            icon={Pickaxe}
+            title="Production"
+            description="Ore, waste, strip ratio and cost-per-tonne across the site."
+            dateQuery=""
+          />
+          <ReportCard
             to="/reports/overview"
             icon={BarChart3}
-            title="Financial Overview"
-            description="Revenue trends, monthly financials and expense category breakdown with PDF export."
-            dateQuery={dateQuery}
-          />
-          <ReportCard
-            to="/reports/expenses"
-            icon={TrendingDown}
-            title="Expense Breakdown"
-            description="All expenses grouped by category with full transaction drill-down and CSV export."
-            dateQuery={dateQuery}
-          />
-          <ReportCard
-            to="/reports/income"
-            icon={TrendingUp}
-            title="Income Breakdown"
-            description="Income transactions by category with period-over-period comparison."
-            dateQuery={dateQuery}
-          />
-          <ReportCard
-            to="/reports/customers"
-            icon={Users}
-            title="Customer Reports"
-            description="Profitability, net margin and expense breakdown per customer with export."
+            title="Finance Overview"
+            description="Revenue, expenses, income and customer profitability — with drill-down and export."
             dateQuery={dateQuery}
           />
           <ReportCard
             to="/reports/inventory"
             icon={Package}
-            title="Inventory Report"
+            title="Inventory Overview"
             description="Stock levels, consumption rates, low-stock alerts and write-offs."
             badge={
               lowStockCount > 0 ? (

@@ -78,13 +78,13 @@ export default function CaptureCustomerReport() {
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <h1 className="truncate px-11 text-base font-semibold">{customer?.name ?? "Customer"}</h1>
+        <h1 className="truncate px-11 text-sm font-semibold">{customer?.name ?? "Customer"}</h1>
       </div>
 
       {/* Net position hero — plain, centered, no card (matches the native app) */}
       <div className="mb-8 mt-6 text-center">
         <div className="text-sm text-muted-foreground">Net position</div>
-        <div className={cn("mt-1 text-4xl font-semibold tracking-tight tabular-nums", stats.net < 0 ? "text-destructive" : "text-success")}>
+        <div className={cn("mt-1 font-display text-2xl font-medium tracking-tight tabular-nums", stats.net < 0 ? "text-destructive" : "text-success")}>
           {grp(stats.net)}
         </div>
         <div className="mt-0.5 text-xs text-muted-foreground">TZS</div>
@@ -108,7 +108,7 @@ export default function CaptureCustomerReport() {
             <span className="text-sm text-muted-foreground">{grp(contract.rate)} / day</span>
           </div>
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-lg font-medium tabular-nums">{grp(contract.value)}</span>
+            <span className="font-display text-2xl font-medium tracking-tight tabular-nums">{grp(contract.value)}</span>
             {contract.daysRemaining != null && (
               <span className="text-xs text-muted-foreground">{contract.daysRemaining} days left</span>
             )}
@@ -119,7 +119,7 @@ export default function CaptureCustomerReport() {
 
       {/* Recent — header inside the card */}
       <div className="mt-4 rounded-2xl bg-card p-4 shadow-sm">
-        <div className="mb-1 text-base font-semibold">Recent</div>
+        <div className="mb-1 text-sm font-semibold">Recent</div>
         {isLoading ? (
           <div className="space-y-2 pt-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
         ) : recent.length === 0 ? (
@@ -145,7 +145,7 @@ function MiniStat({ label, value, className }: { label: string; value: string; c
   return (
     <div className="rounded-xl bg-card p-3 shadow-sm">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={cn("mt-1.5 text-lg font-medium tabular-nums", className)}>{value}</div>
+      <div className={cn("mt-1.5 text-sm font-semibold tabular-nums", className)}>{value}</div>
     </div>
   );
 }

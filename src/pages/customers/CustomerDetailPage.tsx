@@ -22,27 +22,14 @@ import {
   ChevronRight,
   Package,
 } from "lucide-react";
-import StatCard from "@/components/shared/StatCard";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
 import { toast } from "sonner";
+import KpiCell from "@/components/shared/KpiCell";
 
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
 import { isDemoMode } from "@/lib/demo";
-import { fmtCurrency, fmtTick } from "@/lib/formatCurrency";
-import { CHART_H } from "@/lib/chartHeights";
+import { fmtCurrency } from "@/lib/formatCurrency";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/shared/MoneyInput";
 import { Label } from "@/components/ui/label";
@@ -72,16 +59,11 @@ import { useOperatingCost, operatingLabel, isOperatingCategory } from "@/lib/ope
 import { OperatingCostFields } from "@/components/shared/OperatingCostFields";
 import { getCustomerDetail } from "@/services/reports.service";
 import { getTransactions, getTransactionCategories, createTransaction, updateTransactionStatus, type TransactionPayload } from "@/services/transactions.service";
-import { getCustomerMonthlyTrend } from "@/services/contract.service";
 import { UseInventoryModal } from "@/pages/transactions/TransactionActions";
 import TransactionEditSheet from "@/pages/transactions/TransactionEditSheet";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const PIE_COLORS = [
-  "var(--chart-4)",  "var(--chart-3)",  "var(--chart-6)",  "var(--chart-7)",
-  "var(--chart-8)",  "var(--chart-5)",  "var(--chart-10)", "var(--chart-9)",
-];
 
 const C = {
   income:  "var(--chart-income)",
@@ -100,36 +82,6 @@ function typeIcon(type: TransactionType) {
   if (type === "income")  return <ArrowUpCircle className="h-3.5 w-3.5" style={{ color: C.income }} />;
   if (type === "expense") return <ArrowDownCircle className="h-3.5 w-3.5" style={{ color: C.expense }} />;
   return <RefreshCw className="h-3.5 w-3.5" style={{ color: C.net }} />;
-}
-
-// ─── Tooltips ─────────────────────────────────────────────────────────────────
-
-function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
-      <p className="font-semibold text-foreground mb-0.5">{payload[0].name}</p>
-      <p className="tabular-nums text-muted-foreground">{fmt(payload[0].value)}</p>
-    </div>
-  );
-}
-
-function BarTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg text-xs">
-      <p className="font-semibold mb-1">
-        {label ? format(parseISO(String(label) + "-01"), "MMMM yyyy") : ""}
-      </p>
-      {payload.map((p: any) => (
-        <p key={p.dataKey} className="flex items-center gap-2 text-muted-foreground">
-          <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.fill }} />
-          {p.name}:{" "}
-          <span className="font-semibold text-foreground">{fmt(p.value)}</span>
-        </p>
-      ))}
-    </div>
-  );
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -318,12 +270,63 @@ function QuickAddTxModal({ open, onClose, type, customerId, siteId, userId, dail
   );
 }
 
-// ─── Empty chart state ────────────────────────────────────────────────────────
+// ─── Category summary (replaces the old pie charts — ranked list, no chart chrome) ─
 
-function ChartEmpty({ message }: { message: string }) {
+function CategorySummary({
+  title, total, categories, color, emptyMessage, detailHref,
+}: {
+  title: string;
+  total: number;
+  categories: { category: string; total: number }[];
+  color: string;
+  emptyMessage: string;
+  detailHref?: string;
+}) {
+  const top = categories.slice(0, 4);
+  const rest = categories.length - top.length;
+
   return (
-    <div className="h-chart-md flex items-center justify-center text-sm text-muted-foreground">
-      {message}
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+          {title}
+        </p>
+        {detailHref && (
+          <Link
+            to={detailHref}
+            className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            View detail <ChevronRight className="h-3 w-3" />
+          </Link>
+        )}
+      </div>
+      <p className="font-display text-xl font-medium tracking-tight tabular-nums mb-3" style={{ color }}>
+        {fmt(total)}
+      </p>
+
+      {top.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-2">{emptyMessage}</p>
+      ) : (
+        <div className="space-y-2.5">
+          {top.map((c) => {
+            const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
+            return (
+              <div key={c.category} className="space-y-1">
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate text-muted-foreground">{c.category}</span>
+                  <span className="shrink-0 tabular-nums font-medium">{fmt(c.total)}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                </div>
+              </div>
+            );
+          })}
+          {rest > 0 && (
+            <p className="text-xs text-muted-foreground pt-1">+{rest} more categor{rest === 1 ? "y" : "ies"}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -409,6 +412,7 @@ export default function CustomerDetailPage() {
   const [addTxType, setAddTxType] = useState<"income" | "expense" | null>(null);
   const [useInventoryOpen, setUseInventoryOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Transaction | null>(null);
+  const [txTypeFilter, setTxTypeFilter] = useState<"all" | "income" | "expense">("all");
 
   const opts = { enabled: !!activeSiteId && !!id };
 
@@ -429,12 +433,6 @@ export default function CustomerDetailPage() {
   const { data: transactions = [], isLoading: loadingTx } = useQuery({
     queryKey: ["transactions", activeSiteId, "all", "all", "all", id],
     queryFn: () => getTransactions(activeSiteId!, { customerId: id, dateFrom, dateTo }),
-    ...opts,
-  });
-
-  const { data: monthlyTrend = [] } = useQuery({
-    queryKey: ["customer-trend", activeSiteId, id, dateFrom, dateTo],
-    queryFn: () => getCustomerMonthlyTrend(activeSiteId!, id!, dateFrom, dateTo),
     ...opts,
   });
 
@@ -476,6 +474,10 @@ export default function CustomerDetailPage() {
   const expenseByCategory = summary?.expensesByCategory ?? [];
 
   const txRows = [...sortedTx].reverse();
+  const filteredTxRows = useMemo(
+    () => (txTypeFilter === "all" ? txRows : txRows.filter((t) => t.type === txTypeFilter)),
+    [txRows, txTypeFilter],
+  );
 
   // ── Table columns ───────────────────────────────────────────────────────────
 
@@ -554,7 +556,7 @@ export default function CustomerDetailPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-6 space-y-5 max-w-[1100px] mx-auto">
+    <div className="p-4 lg:p-6 space-y-5 max-w-275 mx-auto">
 
       {/* Nav + Quick actions */}
       <div className="flex items-center justify-between gap-3">
@@ -600,21 +602,12 @@ export default function CustomerDetailPage() {
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
-              customer.status === "active"    ? "bg-success/10 text-success" :
-              customer.status === "prospect"  ? "bg-info/10 text-info"       :
-              customer.status === "completed" ? "bg-info/10 text-info"       :
-              "bg-muted text-muted-foreground"
-            }`}>
-              <span className="text-base font-bold uppercase">
-                {customer.name.slice(0, 2)}
-              </span>
-            </div>
+            <EntityAvatar name={customer.name} seed={customer.id} className="h-12 w-12 text-sm" />
 
             {/* Identity + meta */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display text-xl font-bold tracking-tight leading-tight">{customer.name}</h1>
+                <h1 className="text-display">{customer.name}</h1>
                 <Badge
                   variant="outline"
                   className={customer.type === "external" ? "text-info border-info/20" : "text-muted-foreground"}
@@ -685,46 +678,51 @@ export default function CustomerDetailPage() {
       )}
 
       {/* ── Date range filter ── */}
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground self-center mr-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground shrink-0">
           Period
-        </p>
-        <div className="space-y-1.5">
-          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">From</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-38 h-8 text-xs" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">To</Label>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-38 h-8 text-xs" />
-        </div>
+        </span>
+        <Input
+          type="date"
+          aria-label="From date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          className="h-8 w-36 text-xs"
+        />
+        <span className="text-muted-foreground text-xs">–</span>
+        <Input
+          type="date"
+          aria-label="To date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          className="h-8 w-36 text-xs"
+        />
       </div>
 
       {/* ── KPI strip ── */}
       {loadingSummary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 animate-pulse bg-muted rounded-xl" />)}
-        </div>
+        <div className="h-20 animate-pulse bg-muted rounded-xl" />
       ) : summary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard
+        <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border bg-card divide-y divide-border sm:divide-y-0 sm:divide-x">
+          <KpiCell
             label="Total Income"
             value={fmt(summary.totalIncome)}
             sub={`${summary.transactionCount} transactions`}
             color={C.income}
           />
-          <StatCard
+          <KpiCell
             label="Total Expenses"
             value={fmt(summary.totalExpenses)}
             sub={expenseByCategory.length > 0 ? `${expenseByCategory[0].category} is largest` : "No expenses"}
             color={C.expense}
           />
-          <StatCard
+          <KpiCell
             label="Net Profit"
             value={fmt(summary.netProfit)}
             sub={summary.totalIncome > 0 ? `${Math.round((summary.netProfit / summary.totalIncome) * 100)}% margin` : undefined}
             color={summary.netProfit >= 0 ? C.income : C.expense}
           />
-          <StatCard
+          <KpiCell
             label="Days Worked"
             value={daysWorked > 0 ? String(daysWorked) : "—"}
             sub={daysWorked > 0 ? "days with income" : "no income recorded"}
@@ -732,120 +730,28 @@ export default function CustomerDetailPage() {
         </div>
       ) : null}
 
-      {/* ── Breakdown charts ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        {/* Expense breakdown */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-              Expense Breakdown
-            </p>
-            <Link
-              to={`/customers/${id}/expenses`}
-              className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              View detail <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-          {expenseByCategory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={CHART_H.md}>
-              <PieChart>
-                <Pie
-                  data={expenseByCategory}
-                  dataKey="total"
-                  nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={85}
-                  innerRadius={42}
-                  paddingAngle={2}
-                >
-                  {expenseByCategory.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<PieTooltip />} />
-                <Legend
-                  iconType="circle"
-                  iconSize={7}
-                  wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <ChartEmpty message="No expense data for this period" />
-          )}
-        </div>
-
-        {/* Income breakdown */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4">
-            Income Breakdown
-          </p>
-          {incomeByCategory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={CHART_H.md}>
-              <PieChart>
-                <Pie
-                  data={incomeByCategory}
-                  dataKey="total"
-                  nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={85}
-                  innerRadius={42}
-                  paddingAngle={2}
-                >
-                  {incomeByCategory.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<PieTooltip />} />
-                <Legend
-                  iconType="circle"
-                  iconSize={7}
-                  wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : monthlyTrend.length > 1 ? (
-            /* Fall back to monthly trend if income has no categories */
-            <ResponsiveContainer width="100%" height={CHART_H.md}>
-              <BarChart data={monthlyTrend} barGap={3} barCategoryGap="30%">
-                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-                  tickFormatter={(v) => format(parseISO(v + "-01"), "MMM yy")}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-                  tickFormatter={(v) => fmtTick(v)}
-                  axisLine={false}
-                  tickLine={false}
-                  width={42}
-                />
-                <Tooltip content={<BarTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.5 }} />
-                <Bar dataKey="income" fill={C.income} radius={[3, 3, 0, 0]} name="Income" />
-                <Bar dataKey="expenses" fill={C.expense} opacity={0.85} radius={[3, 3, 0, 0]} name="Expenses" />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <ChartEmpty message="No income data for this period" />
-          )}
-        </div>
+      {/* ── Breakdown summary ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <CategorySummary
+          title="Expense Breakdown"
+          total={summary?.totalExpenses ?? 0}
+          categories={expenseByCategory}
+          color={C.expense}
+          emptyMessage="No expenses in this period"
+          detailHref={`/customers/${id}/expenses`}
+        />
+        <CategorySummary
+          title="Income Breakdown"
+          total={summary?.totalIncome ?? 0}
+          categories={incomeByCategory}
+          color={C.income}
+          emptyMessage="No income in this period"
+        />
       </div>
 
       {/* ── Transaction table ── */}
-      {canEdit && txRows.length > 0 && (
-        <p className="text-xs text-muted-foreground -mb-2">
-          Tap a row to edit, or tap its status to change it directly.
-        </p>
-      )}
       <DataTable
-        data={txRows as unknown as Record<string, unknown>[]}
+        data={filteredTxRows as unknown as Record<string, unknown>[]}
         columns={columns as DataTableColumn<Record<string, unknown>>[]}
         keyField="id"
         searchable
@@ -853,8 +759,28 @@ export default function CustomerDetailPage() {
         searchPlaceholder="Search transactions…"
         pageSize={15}
         isLoading={loadingTx}
-        emptyMessage="No transactions in this date range."
+        emptyMessage="No transactions match this filter."
         onRowClick={canEdit ? (row) => setEditTarget(row as unknown as Transaction) : undefined}
+        toolbar={
+          <div className="flex items-center gap-1.5" role="group" aria-label="Filter by type">
+            {(["all", "income", "expense"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTxTypeFilter(t)}
+                aria-pressed={txTypeFilter === t}
+                className={cn(
+                  "h-7 rounded-full border px-3 text-xs font-medium capitalize transition-colors",
+                  txTypeFilter === t
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        }
       />
 
       {/* ── Modals ── */}

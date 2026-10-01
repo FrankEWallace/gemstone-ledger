@@ -24,7 +24,6 @@ import { ArrowLeft, Download, ChevronRight, ChevronDown, Package, AlertTriangle 
 
 import { useSite } from "@/hooks/useSite";
 import { useReportDateRange } from "@/hooks/useReportDateRange";
-import ReportsSubNav from "@/components/reports/ReportsSubNav";
 import { supabase } from "@/lib/supabase";
 import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency, fmtTick, CURRENCY_SYMBOL } from "@/lib/formatCurrency";
@@ -38,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PDF } from "@/lib/pdfPalette";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -225,7 +225,7 @@ function CustomerRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-semibold truncate">{customerName}</span>
-            <span className="text-sm font-bold tabular-nums shrink-0">{fmtCurrency(totalValue)}</span>
+            <span className="text-sm font-semibold tabular-nums shrink-0">{fmtCurrency(totalValue)}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {lines.length} item{lines.length !== 1 ? "s" : ""}
@@ -241,7 +241,7 @@ function CustomerRow({
       {isOpen && (
         <div className="border-t border-border">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[420px]">
+            <table className="w-full text-xs min-w-105">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
@@ -261,7 +261,7 @@ function CustomerRow({
               <tbody className="divide-y divide-border">
                 {lines.map((l, i) => (
                   <tr key={i} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-5 py-3 font-medium truncate max-w-[200px]">{l.itemName}</td>
+                    <td className="px-5 py-3 font-medium truncate max-w-50">{l.itemName}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">
                       {l.quantityConsumed}
                     </td>
@@ -277,7 +277,7 @@ function CustomerRow({
                   <td colSpan={3} className="px-5 py-2.5 text-xs font-semibold text-muted-foreground">
                     Customer total
                   </td>
-                  <td className="px-5 py-2.5 text-right text-sm font-bold tabular-nums">
+                  <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums">
                     {fmtCurrency(totalValue)}
                   </td>
                 </tr>
@@ -609,21 +609,21 @@ export default function InventoryReportPage() {
         await import("@react-pdf/renderer");
 
       const s = StyleSheet.create({
-        page:              { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#111" },
+        page:              { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: PDF.ink },
         title:             { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-        subtitle:          { fontSize: 10, color: "#666", marginBottom: 28 },
+        subtitle:          { fontSize: 10, color: PDF.muted, marginBottom: 28 },
         section:           { marginBottom: 22 },
-        sectionTitle:      { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#888", borderBottomWidth: 1, borderBottomColor: "#e5e7eb", paddingBottom: 5, marginBottom: 10 },
+        sectionTitle:      { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: PDF.muted, borderBottomWidth: 1, borderBottomColor: PDF.border, paddingBottom: 5, marginBottom: 10 },
         row:               { flexDirection: "row", marginBottom: 6 },
-        statBox:           { flex: 1, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4, marginRight: 8 },
-        statLabel:         { fontSize: 7, color: "#999", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+        statBox:           { flex: 1, padding: 10, backgroundColor: PDF.surface, borderRadius: 4, marginRight: 8 },
+        statLabel:         { fontSize: 7, color: PDF.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
         statValue:         { fontSize: 15, fontWeight: "bold" },
-        tableHeader:       { flexDirection: "row", backgroundColor: "#f3f4f6", padding: "6 8", borderRadius: 3, marginBottom: 2 },
-        tableRow:          { flexDirection: "row", padding: "5 8", borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-        tableCell:         { flex: 1, fontSize: 9, color: "#555" },
-        tableCellBold:     { flex: 1, fontSize: 9, fontWeight: "bold", color: "#111" },
-        tableCellRight:    { flex: 1, fontSize: 9, textAlign: "right", color: "#555" },
-        tableCellRightBold:{ flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: "#111" },
+        tableHeader:       { flexDirection: "row", backgroundColor: PDF.zebra, padding: "6 8", borderRadius: 3, marginBottom: 2 },
+        tableRow:          { flexDirection: "row", padding: "5 8", borderBottomWidth: 1, borderBottomColor: PDF.zebra },
+        tableCell:         { flex: 1, fontSize: 9, color: PDF.body },
+        tableCellBold:     { flex: 1, fontSize: 9, fontWeight: "bold", color: PDF.ink },
+        tableCellRight:    { flex: 1, fontSize: 9, textAlign: "right", color: PDF.body },
+        tableCellRightBold:{ flex: 1, fontSize: 9, textAlign: "right", fontWeight: "bold", color: PDF.ink },
       });
 
       const siteName = activeSite?.name ?? "Site";
@@ -753,8 +753,6 @@ export default function InventoryReportPage() {
   return (
     <div className="p-4 lg:p-6 space-y-5">
 
-      <ReportsSubNav />
-
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="space-y-1">
         <Link
@@ -765,7 +763,7 @@ export default function InventoryReportPage() {
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-display">Inventory Report</h1>
+            <h1 className="text-display">Inventory Overview</h1>
             <p className="text-sm text-muted-foreground">Stock levels, consumption, low stock alerts and write-offs</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -932,7 +930,7 @@ export default function InventoryReportPage() {
 
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs min-w-[480px]">
+                  <table className="w-full text-xs min-w-120">
                     <thead>
                       <tr className="border-b border-border bg-muted/30">
                         <th className="px-4 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Item</th>
@@ -945,7 +943,7 @@ export default function InventoryReportPage() {
                     <tbody className="divide-y divide-border">
                       {consumptionByItem.map((row, i) => (
                         <tr key={i} className="hover:bg-muted/20 transition-colors">
-                          <td className="px-4 py-3 font-medium truncate max-w-[180px]">{row.itemName}</td>
+                          <td className="px-4 py-3 font-medium truncate max-w-45">{row.itemName}</td>
                           <td className="px-3 py-3 text-muted-foreground hidden sm:table-cell">{row.category || "—"}</td>
                           <td className="px-3 py-3 text-muted-foreground hidden sm:table-cell">{row.unit || "—"}</td>
                           <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{row.quantityConsumed}</td>
@@ -956,7 +954,7 @@ export default function InventoryReportPage() {
                     <tfoot>
                       <tr className="border-t-2 border-border bg-muted/20">
                         <td colSpan={4} className="px-4 py-2.5 text-xs font-semibold text-muted-foreground">Total</td>
-                        <td className="px-4 py-2.5 text-right text-sm font-bold tabular-nums">{fmtCurrency(consumptionValue)}</td>
+                        <td className="px-4 py-2.5 text-right text-sm font-semibold tabular-nums">{fmtCurrency(consumptionValue)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -1057,7 +1055,7 @@ export default function InventoryReportPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-xs min-w-[520px]">
+              <table className="w-full text-xs min-w-130">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Item</th>
@@ -1129,7 +1127,7 @@ export default function InventoryReportPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-xs min-w-[560px]">
+              <table className="w-full text-xs min-w-140">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">Date</th>
@@ -1152,7 +1150,7 @@ export default function InventoryReportPage() {
                         <td className="px-5 py-3 text-muted-foreground tabular-nums whitespace-nowrap">
                           {format(parseISO(row.writtenOffAt.slice(0, 10)), "d MMM yyyy")}
                         </td>
-                        <td className="px-3 py-3 font-medium truncate max-w-[160px]">{row.itemName}</td>
+                        <td className="px-3 py-3 font-medium truncate max-w-40">{row.itemName}</td>
                         <td className="px-3 py-3 text-muted-foreground hidden sm:table-cell">{row.category || "—"}</td>
                         <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{row.quantity}</td>
                         <td className="px-3 py-3">
@@ -1165,7 +1163,7 @@ export default function InventoryReportPage() {
                         <td className="px-3 py-3 text-right tabular-nums font-semibold">
                           {fmtCurrency(row.value)}
                         </td>
-                        <td className="px-5 py-3 text-muted-foreground truncate max-w-[200px] hidden md:table-cell">
+                        <td className="px-5 py-3 text-muted-foreground truncate max-w-50 hidden md:table-cell">
                           {row.notes || "—"}
                         </td>
                       </tr>
@@ -1175,7 +1173,7 @@ export default function InventoryReportPage() {
                 <tfoot>
                   <tr className="border-t-2 border-border bg-muted/20">
                     <td colSpan={5} className="px-5 py-2.5 text-xs font-semibold text-muted-foreground">Total write-off value</td>
-                    <td className="px-3 py-2.5 text-right text-sm font-bold tabular-nums">
+                    <td className="px-3 py-2.5 text-right text-sm font-semibold tabular-nums">
                       {fmtCurrency(writeOffRows.reduce((s, r) => s + r.value, 0))}
                     </td>
                     <td className="hidden md:table-cell" />

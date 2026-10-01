@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Download, FileText, Clock } from "lucide-rea
 import { useSite } from "@/hooks/useSite";
 import { getWorkers, getShiftRecords } from "@/services/team.service";
 import type { Worker, ShiftRecord } from "@/lib/supabaseTypes";
+import KpiCell from "@/components/shared/KpiCell";
 import { Button } from "@/components/ui/button";
 
 // ─── CSV export ───────────────────────────────────────────────────────────────
@@ -220,7 +221,7 @@ export default function TimesheetPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">Timesheets</h1>
+          <h1 className="text-display">Timesheets</h1>
         </div>
         <div className="flex items-center gap-2">
           {/* Week navigation */}
@@ -257,33 +258,20 @@ export default function TimesheetPage() {
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Total Hours</p>
-          <p className="text-2xl font-bold font-display mt-1">{grandTotal}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Workers Active</p>
-          <p className="text-2xl font-bold font-display mt-1">{workerTotals.length}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Shift Records</p>
-          <p className="text-2xl font-bold font-display mt-1">{weekRecords.length}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Avg Hours / Worker</p>
-          <p className="text-2xl font-bold font-display mt-1">
-            {workerTotals.length > 0
-              ? (grandTotal / workerTotals.length).toFixed(1)
-              : "—"}
-          </p>
-        </div>
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border bg-card divide-y divide-border lg:divide-y-0 lg:divide-x">
+        <KpiCell label="Total Hours" value={String(grandTotal)} />
+        <KpiCell label="Workers Active" value={String(workerTotals.length)} />
+        <KpiCell label="Shift Records" value={String(weekRecords.length)} />
+        <KpiCell
+          label="Avg Hours / Worker"
+          value={workerTotals.length > 0 ? (grandTotal / workerTotals.length).toFixed(1) : "—"}
+        />
       </div>
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
-        <table className="w-full text-sm min-w-[700px]">
+        <table className="w-full text-sm min-w-175">
           <thead>
             <tr className="border-b border-border text-muted-foreground">
               <th className="px-4 py-3 text-left font-medium w-40">Worker</th>
@@ -323,7 +311,7 @@ export default function TimesheetPage() {
                   key={worker.id}
                   className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
                 >
-                  <td className="px-4 py-3 font-medium truncate max-w-[160px]">
+                  <td className="px-4 py-3 font-medium truncate max-w-40">
                     {worker.full_name}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">

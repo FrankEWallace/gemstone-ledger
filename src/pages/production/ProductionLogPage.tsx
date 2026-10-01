@@ -352,7 +352,7 @@ export default function ProductionLogPage() {
               <span className="text-xs text-muted-foreground leading-tight">{label}</span>
               <span className="rounded-lg bg-muted p-1.5 shrink-0">{icon}</span>
             </div>
-            <p className="font-display text-xl font-semibold tabular-nums leading-none">{value}</p>
+            <p className="font-display text-2xl font-medium tracking-tight tabular-nums leading-none">{value}</p>
           </div>
         ))}
       </div>
@@ -454,7 +454,7 @@ export default function ProductionLogPage() {
                     <td className="px-4 py-3 text-right tabular-nums">
                       {log.water_m3 != null ? log.water_m3.toLocaleString() : "—"}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell max-w-[180px] truncate">
+                    <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell max-w-45 truncate">
                       {log.notes ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-right">

@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid, Type, MapPin, Pencil, X, Check } from "lucide-react";
-import FontPicker from "@/components/shared/FontPicker";
+import { Upload, Building2, Globe, DollarSign, Mail, Send, Database, Server, AlertTriangle, CheckCircle2, Loader2, ExternalLink, LayoutGrid, MapPin, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { getBackendConfig } from "@/lib/providers/backendConfig";
@@ -566,24 +565,10 @@ export default function SystemSettingsPage() {
           <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
           <p className="text-sm text-muted-foreground">
             Organization settings can only be changed by an organization owner or admin.
-            You can view them here, and your personal appearance preference below still applies.
+            You can view them here.
           </p>
         </div>
       )}
-
-      {/* Appearance */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Type className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-sm">Appearance</h2>
-        </div>
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">Interface font — saved to this browser.</p>
-          <FontPicker />
-        </div>
-      </div>
-
-      <div className="border-t border-border" />
 
       {/* Logo */}
       <div>

@@ -25,6 +25,7 @@ const ReportsPage              = lazy(() => import("@/pages/reports/ReportsPage"
 const OverviewReportPage       = lazy(() => import("@/pages/reports/OverviewReportPage"));
 const CustomerListReportPage   = lazy(() => import("@/pages/reports/CustomerListReportPage"));
 const CustomerReportPage       = lazy(() => import("@/pages/reports/CustomerReportPage"));
+const ProductionReportPage     = lazy(() => import("@/pages/reports/ProductionReportPage"));
 const ExpenseBreakdownPage     = lazy(() => import("@/pages/reports/ExpenseBreakdownPage"));
 const IncomeBreakdownPage      = lazy(() => import("@/pages/reports/IncomeBreakdownPage"));
 const InventoryReportPage      = lazy(() => import("@/pages/reports/InventoryReportPage"));
@@ -56,7 +57,6 @@ const EquipmentPage     = lazy(() => import("@/pages/equipment/EquipmentPage"));
 const SafetyPage        = lazy(() => import("@/pages/safety/SafetyPage"));
 const ShiftSchedulePage = lazy(() => import("@/pages/team/ShiftSchedulePage"));
 const DocumentsPage     = lazy(() => import("@/pages/documents/DocumentsPage"));
-const ActivityPage      = lazy(() => import("@/pages/activity/ActivityPage"));
 const ProfilePage       = lazy(() => import("@/pages/settings/ProfilePage"));
 const NotFound          = lazy(() => import("@/pages/NotFound"));
 
@@ -112,9 +112,6 @@ export default function Router() {
           <Route path="/" element={<BoundedRoute element={<Dashboard />} />} />
           <Route path="/notifications" element={<BoundedRoute element={<NotificationsPage />} />} />
 
-          {/* Activity */}
-          <Route path="/activity" element={<BoundedRoute element={<ActivityPage />} />} />
-
           {/* Phase 2 */}
           <Route path="/inventory"    element={<BoundedRoute element={<InventoryPage />} />} />
           <Route path="/transactions" element={<BoundedRoute element={<TransactionsPage />} />} />
@@ -131,6 +128,7 @@ export default function Router() {
           <Route path="/reports/inventory"          element={<BoundedRoute element={<InventoryReportPage />} />} />
           <Route path="/reports/customers"          element={<BoundedRoute element={<CustomerListReportPage />} />} />
           <Route path="/reports/customers/:id"      element={<BoundedRoute element={<CustomerReportPage />} />} />
+          <Route path="/reports/production"         element={<BoundedRoute element={<ProductionReportPage />} />} />
           <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
           <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />
 

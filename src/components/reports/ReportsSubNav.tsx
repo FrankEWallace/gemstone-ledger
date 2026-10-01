@@ -1,5 +1,5 @@
 import { NavLink, useSearchParams } from "react-router-dom";
-import { BarChart3, TrendingDown, TrendingUp, Users, Package } from "lucide-react";
+import { BarChart3, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { DEFAULT_FROM, DEFAULT_TO } from "@/hooks/useReportDateRange";
 
 const LINKS = [
@@ -7,7 +7,6 @@ const LINKS = [
   { to: "/reports/expenses",  label: "Expenses",  icon: TrendingDown },
   { to: "/reports/income",    label: "Income",    icon: TrendingUp },
   { to: "/reports/customers", label: "Customers", icon: Users },
-  { to: "/reports/inventory", label: "Inventory", icon: Package },
 ];
 
 export default function ReportsSubNav() {

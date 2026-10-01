@@ -6,7 +6,8 @@ import { getCustomers } from "@/services/customers.service";
 import { invalidateCustomerCaches } from "@/lib/customerCache";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight, Plus, Users } from "lucide-react";
-import { CustomerAvatar, TypeBadge } from "./CustomerAvatar";
+import { TypeBadge } from "./CustomerAvatar";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 import AddCustomerDrawer from "./AddCustomerDrawer";
 
 export default function CaptureCustomers() {
@@ -23,7 +24,7 @@ export default function CaptureCustomers() {
   return (
     <div className="p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Customers</h1>
+        <h1 className="text-display">Customers</h1>
         <button
           onClick={() => setAdding(true)}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm active:scale-95"
@@ -53,7 +54,7 @@ export default function CaptureCustomers() {
               to={`/capture/customers/${c.id}`}
               className={`flex items-center gap-3 px-3 py-3 ${i > 0 ? "border-t" : ""}`}
             >
-              <CustomerAvatar name={c.name} className="h-9 w-9 text-sm" />
+              <EntityAvatar name={c.name} seed={c.id} className="h-9 w-9 text-xs" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{c.name}</div>
                 <div className="mt-0.5 flex items-center gap-2">

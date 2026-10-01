@@ -4,7 +4,7 @@ import { restGet, restPost } from "@/lib/providers/rest/client";
 import type { Message, MessageChannel } from "@/lib/supabaseTypes";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_MESSAGES } from "@/lib/demo/data";
+import { DEMO_MESSAGES, DEMO_WORKERS } from "@/lib/demo/data";
 
 export async function getMessages(
   siteId: string,
@@ -27,6 +27,25 @@ export async function getMessages(
     .limit(limit);
   if (error) throw error;
   return (data ?? []).reverse();
+}
+
+export interface MessageSender {
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
+export async function getMessageSender(senderId: string): Promise<MessageSender | null> {
+  if (isDemoMode()) {
+    const worker = DEMO_WORKERS.find((w) => w.id === senderId);
+    return worker ? { full_name: worker.full_name, avatar_url: null } : null;
+  }
+
+  const { data } = await supabase
+    .from("user_profiles")
+    .select("full_name, avatar_url")
+    .eq("id", senderId)
+    .maybeSingle();
+  return data ?? null;
 }
 
 export async function sendMessage(

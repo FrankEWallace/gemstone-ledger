@@ -451,7 +451,7 @@ function CreateOrderModal({
 
               <div className="flex justify-end mt-3">
                 <p className="text-sm font-medium">
-                  Order Total: <span className="text-base">{fmtCurrency(orderTotal, 2)}</span>
+                  Order Total: <span className="font-semibold">{fmtCurrency(orderTotal, 2)}</span>
                 </p>
               </div>
             </div>

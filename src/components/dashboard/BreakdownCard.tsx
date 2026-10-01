@@ -36,21 +36,21 @@ export default function BreakdownCard({ type, siteId, period, selectedCustomerId
   );
 
   return (
-    <div className={`rounded-xl border border-border bg-card p-5 flex flex-col gap-5 h-full${isExpense ? " border-t-2 border-t-foreground/20" : ""}`}>
+    <div className="rounded-lg border border-border bg-card shadow-card p-4 flex flex-col gap-4 h-full">
       {/* Header */}
       <Link
         to={href}
-        className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors self-start"
+        className="inline-flex items-center gap-1 text-sm font-semibold hover:text-muted-foreground transition-colors self-start"
       >
         {title} <ChevronRight className="h-3.5 w-3.5" />
       </Link>
 
       {/* Hero number */}
       <div>
-        <p className="font-display text-3xl font-semibold tracking-tight tabular-nums leading-none">
+        <p className="font-display text-2xl font-medium tracking-tight tabular-nums leading-none">
           {fmtCompact(periodTotal)}
         </p>
-        <p className="text-sm text-muted-foreground mt-1.5">
+        <p className="text-xs text-muted-foreground mt-2">
           over {PERIOD_LABEL[period]}
           {(todayTotal > 0 || yesterdayTotal > 0) && (
             <>
@@ -98,7 +98,7 @@ export default function BreakdownCard({ type, siteId, period, selectedCustomerId
                       <text dominantBaseline="middle" textAnchor="middle" x={viewBox.cx} y={viewBox.cy}>
                         <tspan
                           className="fill-muted-foreground"
-                          fontSize={10}
+                          fontSize={12}
                           x={viewBox.cx}
                           y={(viewBox.cy ?? 0) - 8}
                         >
@@ -106,7 +106,7 @@ export default function BreakdownCard({ type, siteId, period, selectedCustomerId
                         </tspan>
                         <tspan
                           className="fill-foreground font-semibold"
-                          fontSize={13}
+                          fontSize={14}
                           x={viewBox.cx}
                           y={(viewBox.cy ?? 0) + 10}
                         >

@@ -324,7 +324,7 @@ function MaintenanceLogSheet({
       <Sheet open onOpenChange={(o) => !o && onClose()}>
         <SheetContent className="w-full sm:max-w-lg flex flex-col gap-0 p-0 overflow-hidden">
           <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
-            <SheetTitle className="text-base">
+            <SheetTitle>
               Maintenance Log — {equipment.name}
             </SheetTitle>
             {equipment.type && (

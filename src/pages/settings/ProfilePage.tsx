@@ -60,7 +60,7 @@ import {
   CardContent,
   CardAction,
 } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import EntityAvatar from "@/components/shared/EntityAvatar";
 import {
   Dialog,
   DialogContent,
@@ -114,15 +114,6 @@ const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   admin: "Org Admin",
   member: "Member",
 };
-
-function initialsOf(name: string | null): string {
-  return (name ?? "?")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
@@ -267,11 +258,7 @@ function AvatarPicker({
                 aria-label="Select avatar"
                 aria-pressed={active}
               >
-                <img
-                  src={renderAvatar({ style, seed })}
-                  alt=""
-                  className="h-14 w-14 rounded-full"
-                />
+                <EntityAvatar name={null} seed={userId} src={renderAvatar({ style, seed })} className="h-14 w-14" />
               </button>
             );
           })}
@@ -325,10 +312,7 @@ function IdentityCard({
       <CardContent className="flex flex-col gap-5 pt-6 sm:flex-row sm:items-center">
         {/* Avatar */}
         <div className="relative shrink-0 self-start sm:self-center">
-          <Avatar className="h-20 w-20 border-2 border-border">
-            <AvatarImage src={src} alt={fullName ?? "Avatar"} className="object-cover" />
-            <AvatarFallback className="text-xl font-semibold">{initialsOf(fullName)}</AvatarFallback>
-          </Avatar>
+          <EntityAvatar name={fullName} seed={userId} src={src} className="h-20 w-20 text-sm" />
           {!demo && (
             <>
               <button
@@ -354,7 +338,7 @@ function IdentityCard({
         {/* Identity */}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-xl font-bold truncate">{fullName ?? "Unnamed user"}</h2>
+            <h2 className="text-display truncate">{fullName ?? "Unnamed user"}</h2>
             {orgRole && (
               <Badge variant={orgRole === "owner" ? "default" : "secondary"}>
                 {ORG_ROLE_LABELS[orgRole]}
@@ -450,7 +434,7 @@ function AccountCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
           Account
         </CardTitle>
@@ -561,7 +545,7 @@ function SecurityCard({ email, demo }: { email: string | null; demo: boolean }) 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2">
           <Lock className="h-4 w-4 text-muted-foreground" />
           Security
         </CardTitle>
@@ -718,7 +702,7 @@ function PreferencesCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Preferences</CardTitle>
+        <CardTitle>Preferences</CardTitle>
         <CardDescription>Appearance and notifications.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -778,7 +762,7 @@ function SitesRolesCard({ sites }: { sites: { id: string; name: string; location
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-muted-foreground" />
           Sites & Roles
         </CardTitle>
@@ -825,7 +809,7 @@ function DangerZoneCard({ userId }: { userId: string }) {
   return (
     <Card className="border-destructive/40">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base text-destructive">
+        <CardTitle className="flex items-center gap-2 text-destructive">
           <AlertTriangle className="h-4 w-4" />
           Danger Zone
         </CardTitle>

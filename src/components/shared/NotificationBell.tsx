@@ -99,7 +99,7 @@ export default function NotificationBell() {
                 )} />
               )}
               <span className={cn(
-                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-destructive-foreground",
+                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-semibold text-destructive-foreground",
                 "bg-destructive"
               )}>
                 {totalBadge > 9 ? "9+" : totalBadge}

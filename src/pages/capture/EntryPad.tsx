@@ -537,7 +537,7 @@ function ExpenseItemField({
         </div>
       )}
       {q.length > 0 && matches.length === 0 && (
-        <p className="text-[11px] text-muted-foreground">Not in catalog — saved as a one-off expense.</p>
+        <p className="text-xs text-muted-foreground">Not in catalog — saved as a one-off expense.</p>
       )}
     </div>
   );
