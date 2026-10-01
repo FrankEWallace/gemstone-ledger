@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Download, FileText, Clock } from "lucide-rea
 import { useSite } from "@/hooks/useSite";
 import { getWorkers, getShiftRecords } from "@/services/team.service";
 import type { Worker, ShiftRecord } from "@/lib/supabaseTypes";
+import KpiCell from "@/components/shared/KpiCell";
 import { Button } from "@/components/ui/button";
 
 // ─── CSV export ───────────────────────────────────────────────────────────────
@@ -257,28 +258,15 @@ export default function TimesheetPage() {
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Total Hours</p>
-          <p className="font-display text-2xl font-medium tracking-tight mt-1">{grandTotal}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Workers Active</p>
-          <p className="font-display text-2xl font-medium tracking-tight mt-1">{workerTotals.length}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Shift Records</p>
-          <p className="font-display text-2xl font-medium tracking-tight mt-1">{weekRecords.length}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Avg Hours / Worker</p>
-          <p className="font-display text-2xl font-medium tracking-tight mt-1">
-            {workerTotals.length > 0
-              ? (grandTotal / workerTotals.length).toFixed(1)
-              : "—"}
-          </p>
-        </div>
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border bg-card divide-y divide-border lg:divide-y-0 lg:divide-x">
+        <KpiCell label="Total Hours" value={String(grandTotal)} />
+        <KpiCell label="Workers Active" value={String(workerTotals.length)} />
+        <KpiCell label="Shift Records" value={String(weekRecords.length)} />
+        <KpiCell
+          label="Avg Hours / Worker"
+          value={workerTotals.length > 0 ? (grandTotal / workerTotals.length).toFixed(1) : "—"}
+        />
       </div>
 
       {/* Table */}

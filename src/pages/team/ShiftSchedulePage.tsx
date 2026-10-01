@@ -79,7 +79,8 @@ type ShiftFormValues = z.infer<typeof shiftSchema>;
 function shiftDuration(start: string, end: string): string {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  const mins = eh * 60 + em - sh * 60 - sm;
+  // Overnight shifts (end time earlier than start time) wrap past midnight.
+  const mins = (((eh * 60 + em) - (sh * 60 + sm)) + 24 * 60) % (24 * 60);
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
@@ -249,8 +250,8 @@ function ShiftChip({
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="group relative rounded-md bg-primary/10 border border-primary/20 px-2 py-1 text-xs">
-      <p className="font-medium text-primary truncate">{workerName}</p>
+    <div className="group relative rounded-md bg-primary/10 border border-primary/20 px-2 py-1 text-xs" title={workerName}>
+      <p className="font-medium text-primary truncate">{workerName.split(" ")[0]}</p>
       <p className="text-muted-foreground tabular-nums">
         {shift.start_time.slice(0, 5)}–{shift.end_time.slice(0, 5)}
         {" "}
@@ -331,7 +332,8 @@ export default function ShiftSchedulePage() {
   const totalHours = shifts.reduce((sum, s) => {
     const [sh, sm] = s.start_time.split(":").map(Number);
     const [eh, em] = s.end_time.split(":").map(Number);
-    return sum + (eh * 60 + em - sh * 60 - sm) / 60;
+    const mins = (((eh * 60 + em) - (sh * 60 + sm)) + 24 * 60) % (24 * 60);
+    return sum + mins / 60;
   }, 0);
 
   return (
