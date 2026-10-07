@@ -24,6 +24,8 @@ function monthStart(monthsAgo: number): string {
 export const DEMO_CUSTOMER_ID_INTERNAL = "dc-int";
 export const DEMO_CUSTOMER_ID_EXT1     = "dc-ext1";
 export const DEMO_CUSTOMER_ID_EXT2     = "dc-ext2";
+export const DEMO_TYPE_PULP            = "dct-pulp";
+export const DEMO_TYPE_CONTRACT        = "dct-contract";
 
 // ─── Category IDs ─────────────────────────────────────────────────────────────
 const DEC_CHEMICALS  = "dec1";
@@ -101,9 +103,15 @@ export const DEMO_INVENTORY = [
 
 // ─── Customers ────────────────────────────────────────────────────────────────
 
+export const DEMO_CUSTOMER_TYPES = [
+  { id: DEMO_TYPE_PULP,     org_id: DEMO_ORG_ID, name: "Carbon Pulp",     sort_order: 0, archived: false, created_at: tsAgo(8760) },
+  { id: DEMO_TYPE_CONTRACT, org_id: DEMO_ORG_ID, name: "Contract Mining", sort_order: 1, archived: false, created_at: tsAgo(8760) },
+];
+
 export const DEMO_CUSTOMERS = [
   {
     id: DEMO_CUSTOMER_ID_INTERNAL, site_id: DEMO_SITE_ID, org_id: DEMO_ORG_ID,
+    customer_type_id: null,
     name: "Internal Operations", type: "internal" as const,
     contact_name: null, contact_email: null, contact_phone: null,
     contract_start: null, contract_end: null, daily_rate: null,
@@ -112,6 +120,7 @@ export const DEMO_CUSTOMERS = [
   },
   {
     id: DEMO_CUSTOMER_ID_EXT1, site_id: DEMO_SITE_ID, org_id: DEMO_ORG_ID,
+    customer_type_id: DEMO_TYPE_PULP,
     name: "Goldfield Contractors Pty Ltd", type: "external" as const,
     contact_name: "Mark Lawson", contact_email: "m.lawson@gfc.demo", contact_phone: "+61 418 000 001",
     contract_start: daysAgo(180), contract_end: daysAgo(-180), daily_rate: 4500,
@@ -120,6 +129,7 @@ export const DEMO_CUSTOMERS = [
   },
   {
     id: DEMO_CUSTOMER_ID_EXT2, site_id: DEMO_SITE_ID, org_id: DEMO_ORG_ID,
+    customer_type_id: DEMO_TYPE_CONTRACT,
     name: "Apex Drilling Services", type: "external" as const,
     contact_name: "Sarah Kim", contact_email: "s.kim@apexdrill.demo", contact_phone: "+61 427 000 002",
     contract_start: daysAgo(90), contract_end: daysAgo(-90), daily_rate: 3200,

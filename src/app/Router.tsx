@@ -55,6 +55,7 @@ function LegacyRedirect({ from, to }: { from: string; to: string }) {
 const CustomersPage                  = lazy(() => import("@/pages/customers/CustomersPage"));
 const CustomerDetailPage             = lazy(() => import("@/pages/customers/CustomerDetailPage"));
 const CustomerExpenseBreakdownPage   = lazy(() => import("@/pages/customers/CustomerExpenseBreakdownPage"));
+const ClientTypesPage = lazy(() => import("@/pages/settings/ClientTypesPage"));
 const ExpenseCategoriesPage = lazy(() => import("@/pages/settings/ExpenseCategoriesPage"));
 const ProductionLogPage   = lazy(() => import("@/pages/production/ProductionLogPage"));
 const TimesheetPage       = lazy(() => import("@/pages/team/TimesheetPage"));
@@ -162,6 +163,7 @@ export default function Router() {
           <Route path="/settings" element={<SettingsLayout />}>
             <Route index element={<Navigate to="/settings/profile" replace />} />
             <Route path="profile"            element={<BoundedRoute element={<ProfilePage />} />} />
+            <Route path="client-types" element={<BoundedRoute element={<ClientTypesPage />} />} />
             <Route path="expense-categories" element={<BoundedRoute element={<ExpenseCategoriesPage />} />} />
             <Route path="targets-alerts"     element={<BoundedRoute element={<TargetsAlertsPage />} />} />
             <Route path="system"             element={<BoundedRoute element={<SystemSettingsPage />} />} />

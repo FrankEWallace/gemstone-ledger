@@ -72,6 +72,7 @@ import {
   deleteCustomer,
   type CustomerPayload,
 } from "@/services/customers.service";
+import { getClientTypes } from "@/services/client-types.service";
 import { createTransaction } from "@/services/transactions.service";
 import { getCustomerSummaries } from "@/services/reports.service";
 
@@ -88,7 +89,8 @@ function StatusBadge({ status }: { status: Customer["status"] }) {
 }
 
 type StatusFilter = "all" | Customer["status"];
-type TypeFilter   = "all" | Customer["type"];
+/** "all", the coarse "internal" flag, "untyped", or a client-type id. */
+type TypeFilter   = string;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all",       label: "All" },
@@ -98,10 +100,6 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "completed", label: "Completed" },
 ];
 
-const TYPE_FILTERS: { value: Exclude<TypeFilter, "all">; label: string }[] = [
-  { value: "external", label: "External" },
-  { value: "internal", label: "Internal" },
-];
 
 function FilterPill({ active, count, onClick, children }: {
   active: boolean;
@@ -336,6 +334,7 @@ function CloseActivityModal({ open, onClose, customer, siteId }: {
 const customerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   type: z.enum(["external", "internal"]),
+  customer_type_id: z.string().optional(),
   status: z.enum(["prospect", "active", "inactive", "completed"]),
   contact_name: z.string().optional(),
   contact_email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -360,6 +359,12 @@ interface CustomerModalProps {
 
 function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalProps) {
   const queryClient = useQueryClient();
+  const { data: clientTypes = [] } = useQuery({
+    queryKey: ["client-types", orgId],
+    queryFn: () => getClientTypes(orgId),
+    retry: false,
+  });
+  const selectableTypes = clientTypes.filter((t) => !t.archived || t.id === editing?.customer_type_id);
 
   // Infer from existing data whether this customer has a timed contract
   const [hasTimedContract, setHasTimedContract] = useState<boolean>(
@@ -372,6 +377,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
       ? ({
           name: editing.name,
           type: editing.type,
+          customer_type_id: editing.customer_type_id ?? "",
           status: editing.status,
           contact_name: editing.contact_name ?? "",
           contact_email: editing.contact_email ?? "",
@@ -384,6 +390,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
       : {
           name: "",
           type: "external",
+          customer_type_id: "",
           status: "prospect",
           contact_name: "",
           contact_email: "",
@@ -413,6 +420,10 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
         daily_rate:     hasTimedContract && values.daily_rate !== "" ? Number(values.daily_rate) : undefined,
         notes: values.notes || undefined,
       };
+      // Only external clients carry a type. Send the field only when it matters, so
+      // saves keep working on databases that predate client types.
+      const typeId = values.type === "external" ? (values.customer_type_id || null) : null;
+      if (typeId || editing?.customer_type_id) payload.customer_type_id = typeId;
       return editing
         ? updateCustomer(editing.id, payload)
         : createCustomer(siteId, orgId, payload);
@@ -472,6 +483,33 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
                   </FormItem>
                 )}
               />
+
+              {form.watch("type") === "external" && selectableTypes.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="customer_type_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client type</FormLabel>
+                      <Select
+                        value={field.value || "none"}
+                        onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                      >
+                        <FormControl>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">No type</SelectItem>
+                          {selectableTypes.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -665,6 +703,17 @@ export default function CustomersPage() {
     enabled: !!activeSiteId,
   });
 
+  const { data: clientTypes = [] } = useQuery({
+    queryKey: ["client-types", orgId],
+    queryFn: () => getClientTypes(orgId!),
+    enabled: !!orgId,
+    retry: false,
+  });
+  const typeName = useMemo(
+    () => Object.fromEntries(clientTypes.map((t) => [t.id, t.name])),
+    [clientTypes],
+  );
+
   const { data: summaries = [] } = useQuery({
     queryKey: ["customerSummaries", activeSiteId, monthStart, monthEnd],
     queryFn: () => getCustomerSummaries(activeSiteId!, monthStart, monthEnd),
@@ -695,7 +744,12 @@ export default function CustomersPage() {
   });
 
   const byType = useMemo(
-    () => (typeFilter === "all" ? customers : customers.filter((c) => c.type === typeFilter)),
+    () => {
+      if (typeFilter === "all") return customers;
+      if (typeFilter === "internal") return customers.filter((c) => c.type === "internal");
+      if (typeFilter === "untyped") return customers.filter((c) => c.type === "external" && !c.customer_type_id);
+      return customers.filter((c) => c.customer_type_id === typeFilter);
+    },
     [customers, typeFilter],
   );
 
@@ -760,14 +814,16 @@ export default function CustomersPage() {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
-            <SelectTrigger className="h-9 w-32 shrink-0" aria-label="Filter by type">
+            <SelectTrigger className="h-9 w-36 shrink-0" aria-label="Filter by type">
               <SelectValue placeholder="All types" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
-              {TYPE_FILTERS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+              {clientTypes.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
               ))}
+              {clientTypes.length > 0 && <SelectItem value="untyped">No type</SelectItem>}
+              <SelectItem value="internal">Internal</SelectItem>
             </SelectContent>
           </Select>
           <div className="relative w-full sm:w-64">
@@ -810,7 +866,7 @@ export default function CustomersPage() {
               const summary      = summaryMap[c.id];
               const hasDailyRate = c.daily_rate != null && Number(c.daily_rate) > 0;
               const meta = [
-                c.type === "external" ? "External" : "Internal",
+                c.type === "internal" ? "Internal" : (c.customer_type_id && typeName[c.customer_type_id]) || "External",
                 c.contact_name,
                 c.contract_start && `since ${format(parseISO(c.contract_start), "d MMM yyyy")}`,
               ].filter(Boolean).join(" · ");

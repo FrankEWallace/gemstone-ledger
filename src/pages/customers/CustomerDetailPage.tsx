@@ -27,6 +27,7 @@ import KpiCell from "@/components/shared/KpiCell";
 
 import { useSite } from "@/hooks/useSite";
 import { useAuth } from "@/hooks/useAuth";
+import { getClientTypes } from "@/services/client-types.service";
 import { isDemoMode } from "@/lib/demo";
 import { fmtCurrency } from "@/lib/formatCurrency";
 import { cn } from "@/lib/utils";
@@ -402,7 +403,7 @@ function StatusSelect({ tx, onChanged }: { tx: Transaction; onChanged?: () => vo
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { activeSiteId } = useSite();
-  const { user, activeRole } = useAuth();
+  const { user, activeRole, orgId } = useAuth();
   const queryClient = useQueryClient();
 
   const canEdit = activeRole === "admin";
@@ -415,6 +416,13 @@ export default function CustomerDetailPage() {
   const [txTypeFilter, setTxTypeFilter] = useState<"all" | "income" | "expense">("all");
 
   const opts = { enabled: !!activeSiteId && !!id };
+
+  const { data: clientTypes = [] } = useQuery({
+    queryKey: ["client-types", orgId],
+    queryFn: () => getClientTypes(orgId!),
+    enabled: !!orgId,
+    retry: false,
+  });
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers", activeSiteId],
@@ -612,7 +620,9 @@ export default function CustomerDetailPage() {
                   variant="outline"
                   className={customer.type === "external" ? "text-info border-info/20" : "text-muted-foreground"}
                 >
-                  {customer.type}
+                  {customer.type === "internal"
+                    ? "internal"
+                    : clientTypes.find((t) => t.id === customer.customer_type_id)?.name ?? customer.type}
                 </Badge>
                 <StatusBadge status={customer.status} />
               </div>
