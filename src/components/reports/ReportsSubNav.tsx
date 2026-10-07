@@ -1,11 +1,11 @@
 import { NavLink, useSearchParams } from "react-router-dom";
-import { BarChart3, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { BarChart3, ArrowDown, ArrowUp, Users } from "lucide-react";
 import { DEFAULT_FROM, DEFAULT_TO } from "@/hooks/useReportDateRange";
 
 const LINKS = [
   { to: "/reports/overview",  label: "Overview",  icon: BarChart3 },
-  { to: "/reports/expenses",  label: "Expenses",  icon: TrendingDown },
-  { to: "/reports/income",    label: "Income",    icon: TrendingUp },
+  { to: "/reports/expenses",  label: "Expenses",  icon: ArrowDown },
+  { to: "/reports/income",    label: "Income",    icon: ArrowUp },
   { to: "/reports/customers", label: "Customers", icon: Users },
 ];
 

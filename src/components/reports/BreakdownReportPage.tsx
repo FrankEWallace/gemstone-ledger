@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subMonths, startOfMonth, endOfMonth, differenceInDays, parseISO } from "date-fns";
 import {
   ChevronRight, ChevronDown, ArrowLeft, Download,
-  ChevronsUpDown, ArrowLeftRight, TrendingUp, TrendingDown,
+  ChevronsUpDown, ArrowLeftRight, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Label as ChartLabel, Pie, PieChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -67,7 +67,7 @@ function deltaBadge(curr: number, prev: number) {
   const up = pct >= 0;
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full ${up ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
-      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {up ? "+" : ""}{pct}%
     </span>
   );

@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { fmtCompact } from "@/lib/formatCurrency";
 import { cn } from "@/lib/utils";
 
@@ -99,7 +99,7 @@ export default function StatCard({
                     : "bg-destructive/10 text-destructive",
               )}
             >
-              {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
               {up ? "+" : ""}
               {trendPct!.toFixed(1)}%
             </span>
