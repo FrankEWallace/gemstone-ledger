@@ -11,6 +11,7 @@ import { Download } from "lucide-react";
 import { useSite } from "@/hooks/useSite";
 import { useReportDateRange } from "@/hooks/useReportDateRange";
 import ReportsSubNav from "@/components/reports/ReportsSubNav";
+import ReportsTopNav from "@/components/reports/ReportsTopNav";
 import StatCard from "@/components/shared/StatCard";
 import {
   getReportSummary, getMonthlyTrend, getExpensesByCategory,
@@ -251,7 +252,8 @@ export default function OverviewReportPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
 
-      <ReportsSubNav />
+      <ReportsTopNav />
+      <ReportsSubNav topOffset={44} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

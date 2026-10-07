@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   format,
@@ -20,7 +19,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { ArrowLeft, Download, ChevronRight, ChevronDown, Package, AlertTriangle } from "lucide-react";
+import { Download, ChevronRight, ChevronDown, Package, AlertTriangle } from "lucide-react";
 
 import { useSite } from "@/hooks/useSite";
 import { useReportDateRange } from "@/hooks/useReportDateRange";
@@ -37,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ReportsTopNav from "@/components/reports/ReportsTopNav";
 import { PDF } from "@/lib/pdfPalette";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -753,14 +753,10 @@ export default function InventoryReportPage() {
   return (
     <div className="p-4 lg:p-6 space-y-5">
 
+      <ReportsTopNav />
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="space-y-1">
-        <Link
-          to="/reports"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
-        >
-          <ArrowLeft className="h-3 w-3" /> Reports
-        </Link>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-display">Inventory Overview</h1>

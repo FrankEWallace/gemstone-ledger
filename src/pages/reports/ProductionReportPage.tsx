@@ -5,7 +5,7 @@ import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { useSite } from "@/hooks/useSite";
 import { useReportDateRange } from "@/hooks/useReportDateRange";
@@ -16,6 +16,7 @@ import { fmtCurrency, fmtCompactNum } from "@/lib/formatCurrency";
 import { CHART_H } from "@/lib/chartHeights";
 import { Input } from "@/components/ui/input";
 import KpiCell from "@/components/shared/KpiCell";
+import ReportsTopNav from "@/components/reports/ReportsTopNav";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -125,11 +126,10 @@ export default function ProductionReportPage() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
 
+      <ReportsTopNav />
+
       {/* Header */}
       <div className="space-y-1">
-        <Link to="/reports" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1">
-          <ArrowLeft className="h-3 w-3" /> Reports
-        </Link>
         <h1 className="text-display">Production Overview</h1>
         <p className="text-sm text-muted-foreground">Ore, waste and cost-per-tonne across the site</p>
       </div>
