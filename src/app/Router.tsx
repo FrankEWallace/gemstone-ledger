@@ -47,6 +47,11 @@ const CaptureCustomers  = lazy(() => import("@/pages/capture/CaptureCustomers"))
 const CaptureCustomerReport = lazy(() => import("@/pages/capture/CaptureCustomerReport"));
 const CaptureMore       = lazy(() => import("@/pages/capture/CaptureMore"));
 const CaptureBreakdown  = lazy(() => import("@/pages/capture/CaptureBreakdown"));
+function LegacyRedirect({ from, to }: { from: string; to: string }) {
+  const { pathname, search } = useLocation();
+  return <Navigate to={pathname.replace(from, to) + search} replace />;
+}
+
 const CustomersPage                  = lazy(() => import("@/pages/customers/CustomersPage"));
 const CustomerDetailPage             = lazy(() => import("@/pages/customers/CustomerDetailPage"));
 const CustomerExpenseBreakdownPage   = lazy(() => import("@/pages/customers/CustomerExpenseBreakdownPage"));
@@ -100,8 +105,9 @@ export default function Router() {
         <Route path="/capture" element={<BoundedRoute element={<CaptureLayout />} />}>
           <Route index                element={<BoundedRoute element={<CaptureLedger />} />} />
           <Route path="prices"        element={<BoundedRoute element={<CapturePrices />} />} />
-          <Route path="customers"     element={<BoundedRoute element={<CaptureCustomers />} />} />
-          <Route path="customers/:id" element={<BoundedRoute element={<CaptureCustomerReport />} />} />
+          <Route path="clients"       element={<BoundedRoute element={<CaptureCustomers />} />} />
+          <Route path="clients/:id"   element={<BoundedRoute element={<CaptureCustomerReport />} />} />
+          <Route path="customers/*" element={<Navigate to="/capture/clients" replace />} />
           <Route path="more"          element={<BoundedRoute element={<CaptureMore />} />} />
           <Route path="breakdown/:type" element={<BoundedRoute element={<CaptureBreakdown />} />} />
         </Route>
@@ -115,9 +121,9 @@ export default function Router() {
           {/* Phase 2 */}
           <Route path="/inventory"    element={<BoundedRoute element={<InventoryPage />} />} />
           <Route path="/transactions" element={<BoundedRoute element={<TransactionsPage />} />} />
-          <Route path="/customers"                   element={<BoundedRoute element={<CustomersPage />} />} />
-          <Route path="/customers/:id"              element={<BoundedRoute element={<CustomerDetailPage />} />} />
-          <Route path="/customers/:id/expenses"     element={<BoundedRoute element={<CustomerExpenseBreakdownPage />} />} />
+          <Route path="/clients"                   element={<BoundedRoute element={<CustomersPage />} />} />
+          <Route path="/clients/:id"              element={<BoundedRoute element={<CustomerDetailPage />} />} />
+          <Route path="/clients/:id/expenses"     element={<BoundedRoute element={<CustomerExpenseBreakdownPage />} />} />
           <Route path="/team"         element={<BoundedRoute element={<TeamPage />} />} />
 
           {/* Phase 4 */}
@@ -126,8 +132,8 @@ export default function Router() {
           <Route path="/reports/expenses"           element={<BoundedRoute element={<ExpenseBreakdownPage />} />} />
           <Route path="/reports/income"             element={<BoundedRoute element={<IncomeBreakdownPage />} />} />
           <Route path="/reports/inventory"          element={<BoundedRoute element={<InventoryReportPage />} />} />
-          <Route path="/reports/customers"          element={<BoundedRoute element={<CustomerListReportPage />} />} />
-          <Route path="/reports/customers/:id"      element={<BoundedRoute element={<CustomerReportPage />} />} />
+          <Route path="/reports/clients"          element={<BoundedRoute element={<CustomerListReportPage />} />} />
+          <Route path="/reports/clients/:id"      element={<BoundedRoute element={<CustomerReportPage />} />} />
           <Route path="/reports/production"         element={<BoundedRoute element={<ProductionReportPage />} />} />
           <Route path="/messages"   element={<BoundedRoute element={<MessagesPage />} />} />
           <Route path="/campaigns"  element={<BoundedRoute element={<CampaignsPage />} />} />
@@ -147,6 +153,9 @@ export default function Router() {
           <Route path="/management/roles"        element={<BoundedRoute element={<RolesPermissionsPage />} />} />
           <Route path="/management/audit"        element={<BoundedRoute element={<AuditLogPage />} />} />
           {/* Legacy redirects — keep old bookmarks working */}
+          {/* Customers were renamed to Clients — keep old links and bookmarks working */}
+          <Route path="/customers/*"                 element={<LegacyRedirect from="/customers" to="/clients" />} />
+          <Route path="/reports/customers/*"         element={<LegacyRedirect from="/reports/customers" to="/reports/clients" />} />
           <Route path="/management/billing"      element={<Navigate to="/settings/profile" replace />} />
 
           {/* Settings — nested under SettingsLayout for the tab bar */}

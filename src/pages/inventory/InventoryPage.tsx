@@ -434,13 +434,13 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
 
           {customers.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-xs">Customer (optional)</Label>
+              <Label className="text-xs">Client (optional)</Label>
               <Select value={customerId || "none"} onValueChange={(v) => setCustomerId(v === "none" ? "" : v)}>
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="No customer" />
+                  <SelectValue placeholder="No client" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No customer</SelectItem>
+                  <SelectItem value="none">No client</SelectItem>
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}

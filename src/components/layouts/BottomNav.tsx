@@ -43,7 +43,7 @@ export default function BottomNav() {
             <Plus className="h-5 w-5" />
           </Link>
         </div>
-        <Tab to="/customers" label="Customers" icon={Users} />
+        <Tab to="/clients" label="Clients" icon={Users} />
         <button
           type="button"
           onClick={() => setOpenMobile(true)}

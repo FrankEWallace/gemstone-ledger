@@ -48,7 +48,7 @@ const LEVEL_META = {
 
 const CATEGORY_META: Record<SystemAlertCategory, { icon: React.ElementType; label: string }> = {
   contracts: { icon: FileText, label: "Contracts" },
-  customers: { icon: Users,    label: "Customers" },
+  customers: { icon: Users,    label: "Clients" },
   financials: { icon: ArrowDown, label: "Financials" },
   inventory:  { icon: Package, label: "Inventory" },
 };

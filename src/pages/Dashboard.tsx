@@ -222,7 +222,7 @@ export default function Dashboard() {
             onClick={() => setSelectedCustomerId(null)}
             className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium hover:bg-primary/15 transition-colors"
           >
-            {selectedCustomerName ?? "customer"}
+            {selectedCustomerName ?? "client"}
             <X className="h-3.5 w-3.5" />
           </button>
         </div>

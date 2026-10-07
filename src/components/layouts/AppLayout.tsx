@@ -23,7 +23,7 @@ import BottomNav from "@/components/layouts/BottomNav";
 const PAGE_TITLES: Record<string, { breadcrumb: string; title: string }> = {
   "/":                   { breadcrumb: "",          title: "Dashboard" },
   "/notifications":      { breadcrumb: "",          title: "Notifications" },
-  "/customers":          { breadcrumb: "",          title: "Customers" },
+  "/clients":          { breadcrumb: "",          title: "Clients" },
   "/transactions":       { breadcrumb: "",          title: "Transactions" },
   "/inventory":          { breadcrumb: "",          title: "Inventory" },
   "/reports":            { breadcrumb: "",          title: "Reports" },

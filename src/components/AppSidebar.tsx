@@ -63,7 +63,7 @@ interface NavItem {
 
 const coreItems: NavItem[] = [
   { label: "Dashboard",    icon: LayoutDashboard, to: "/" },
-  { label: "Customers",    icon: Users,           to: "/customers",     module: "customers" },
+  { label: "Clients",    icon: Users,           to: "/clients",     module: "customers" },
   { label: "Transactions", icon: ArrowLeftRight,  to: "/transactions" },
   { label: "Inventory",    icon: Package,         to: "/inventory" },
   { label: "Reports",      icon: BarChart3,       to: "/reports",       module: "reports" },

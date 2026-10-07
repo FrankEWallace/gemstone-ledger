@@ -201,7 +201,7 @@ export default function ProductionReportPage() {
       {byCustomer.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5">
           <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-3">
-            Ore by Customer
+            Ore by Client
           </p>
           <div className="space-y-2.5">
             {byCustomer.map((c) => {

@@ -72,13 +72,13 @@ export default function CaptureCustomerReport() {
       {/* Nav row: circular back + centered name (matches the native app) */}
       <div className="relative mb-4 flex min-h-9 items-center justify-center">
         <Link
-          to="/capture/customers"
+          to="/capture/clients"
           className="absolute left-0 flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm"
-          aria-label="Back to customers"
+          aria-label="Back to clients"
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <h1 className="truncate px-11 text-sm font-semibold">{customer?.name ?? "Customer"}</h1>
+        <h1 className="truncate px-11 text-sm font-semibold">{customer?.name ?? "Client"}</h1>
       </div>
 
       {/* Net position hero — plain, centered, no card (matches the native app) */}

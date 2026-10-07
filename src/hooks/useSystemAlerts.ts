@@ -76,7 +76,7 @@ export function useSystemAlerts(siteId: string | null) {
             level: daysLeft <= 3 ? "critical" : "warning",
             category: "contracts",
             message: `Contract expiring in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}: ${c.name}`,
-            href: `/customers/${c.id}`,
+            href: `/clients/${c.id}`,
           });
         }
       });
@@ -90,7 +90,7 @@ export function useSystemAlerts(siteId: string | null) {
           level: "warning",
           category: "customers",
           message: `${cs.customerName} is unprofitable this month (net −$${Math.abs(Math.round(cs.netProfit)).toLocaleString()})`,
-          href: `/customers/${cs.customerId}`,
+          href: `/clients/${cs.customerId}`,
         });
       });
 

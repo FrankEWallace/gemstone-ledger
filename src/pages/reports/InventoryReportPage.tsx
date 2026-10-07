@@ -275,7 +275,7 @@ function CustomerRow({
               <tfoot>
                 <tr className="border-t border-border bg-muted/20">
                   <td colSpan={3} className="px-5 py-2.5 text-xs font-semibold text-muted-foreground">
-                    Customer total
+                    Client total
                   </td>
                   <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums">
                     {fmtCurrency(totalValue)}
@@ -474,7 +474,7 @@ export default function InventoryReportPage() {
 
     for (const row of enrichedUsage) {
       const key = row.customerId ?? "__unattributed__";
-      const name = row.customerId ? (row.customerName ?? "Unknown Customer") : "Unattributed";
+      const name = row.customerId ? (row.customerName ?? "Unknown Client") : "Unattributed";
       if (!map[key]) {
         map[key] = { customerName: name, totalValue: 0, lines: [] };
       }
@@ -545,7 +545,7 @@ export default function InventoryReportPage() {
     sections.push([]);
 
     // Consumption by customer (flat)
-    sections.push(["=== CONSUMPTION BY CUSTOMER ==="], ["Customer", "Item", "Qty Consumed", "Unit", "Value"]);
+    sections.push(["=== CONSUMPTION BY CLIENT ==="], ["Client", "Item", "Qty Consumed", "Unit", "Value"]);
     for (const cust of consumptionByCustomer) {
       for (const line of cust.lines) {
         sections.push([
@@ -1009,7 +1009,7 @@ export default function InventoryReportPage() {
 
       {/* ── Section 3: By Customer ─────────────────────────────────────────── */}
       <div>
-        <SectionLabel>By Customer</SectionLabel>
+        <SectionLabel>By Client</SectionLabel>
         {loadingUsage ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (

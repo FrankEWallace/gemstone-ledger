@@ -193,16 +193,16 @@ export default function TransactionFiltersPopover({
         {/* Customer */}
         {customers.length > 0 && (
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Customer</Label>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Client</Label>
             <Select
               value={filters.customerFilter}
               onValueChange={(v) => onChange({ customerFilter: v })}
             >
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="All customers" />
+                <SelectValue placeholder="All clients" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All customers</SelectItem>
+                <SelectItem value="all">All clients</SelectItem>
                 {customers.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}

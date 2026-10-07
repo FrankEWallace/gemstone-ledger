@@ -80,7 +80,7 @@ function statusBadge(status: TransactionStatus) {
 }
 
 function exportCSV(txs: Transaction[], customerMap: Map<string, string>, phaseMap: Map<string, string>) {
-  const header = "Date,Reference,Description,Category,Customer,Phase,Type,Status,Qty,Unit Price,Total";
+  const header = "Date,Reference,Description,Category,Client,Phase,Type,Status,Qty,Unit Price,Total";
   const rows = txs.map((t) =>
     [
       t.transaction_date,
@@ -325,7 +325,7 @@ export default function TransactionsPage() {
     },
     {
       key: "customer_id",
-      header: "Customer",
+      header: "Client",
       className: "hidden md:table-cell",
       render: (val) => {
         const name = val ? customerMap.get(String(val)) : null;

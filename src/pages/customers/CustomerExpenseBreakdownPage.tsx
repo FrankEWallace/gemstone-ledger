@@ -114,7 +114,7 @@ function CategoryRow({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            {transactions.length} transaction{transactions.length !== 1 ? "s" : ""} · {pct}% of customer expenses
+            {transactions.length} transaction{transactions.length !== 1 ? "s" : ""} · {pct}% of client expenses
           </p>
         </div>
 
@@ -331,11 +331,11 @@ export default function CustomerExpenseBreakdownPage() {
       {/* Header */}
       <div className="space-y-1">
         <Link
-          to={`/customers/${id}`}
+          to={`/clients/${id}`}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
         >
           <ArrowLeft className="h-3 w-3" />
-          {customer?.name ?? "Customer"}
+          {customer?.name ?? "Client"}
         </Link>
         <h1 className="text-display">Expense Breakdown</h1>
         {customer && (
@@ -532,7 +532,7 @@ export default function CustomerExpenseBreakdownPage() {
         <div className="rounded-xl border border-border bg-card p-10 text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             {txs.length === 0
-              ? `No expense transactions found for ${customer?.name ?? "this customer"} in this period.`
+              ? `No expense transactions found for ${customer?.name ?? "this client"} in this period.`
               : "No transactions match the current filters."}
           </p>
           {(search || statusFilter !== "all") && (
@@ -546,10 +546,10 @@ export default function CustomerExpenseBreakdownPage() {
           {txs.length === 0 && (
             <div>
               <Link
-                to={`/customers/${id}`}
+                to={`/clients/${id}`}
                 className="text-xs font-semibold text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
               >
-                Go back to {customer?.name ?? "customer"} to add a transaction
+                Go back to {customer?.name ?? "client"} to add a transaction
               </Link>
             </div>
           )}

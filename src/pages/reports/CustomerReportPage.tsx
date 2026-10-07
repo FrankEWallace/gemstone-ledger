@@ -147,7 +147,7 @@ export default function CustomerReportPage() {
   // ── Export helpers ────────────────────────────────────────────────────────────
 
   const siteName     = activeSite?.name ?? "Site";
-  const customerName = customer?.name ?? "Customer";
+  const customerName = customer?.name ?? "Client";
   const periodLabel  = `${dateFrom} → ${dateTo}`;
 
   async function handleExportPDF() {
@@ -334,7 +334,7 @@ export default function CustomerReportPage() {
 
       // ── Sheet 1: Summary ────────────────────────────────────────────────────
       const summaryData = [
-        ["Customer Report", customerName],
+        ["Client Report", customerName],
         ["Site", siteName],
         ["Period", periodLabel],
         ["Generated", format(new Date(), "d MMM yyyy")],
@@ -419,15 +419,15 @@ export default function CustomerReportPage() {
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="space-y-1">
           <Link
-            to="/reports/customers"
+            to="/reports/clients"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-1"
           >
             <ArrowLeft className="h-4 w-4" />
-            Customer Reports
+            Client Reports
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-display">
-              {customer?.name ?? "Customer Report"}
+              {customer?.name ?? "Client Report"}
             </h1>
             {customer && (
               <>
@@ -695,10 +695,10 @@ export default function CustomerReportPage() {
           </p>
           {customer && (
             <Link
-              to={`/customers/${customer.id}`}
+              to={`/clients/${customer.id}`}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              View customer profile →
+              View client profile →
             </Link>
           )}
         </div>

@@ -57,7 +57,7 @@ export default function CaptureLedger() {
       segment === "phase"
         ? t.phase_id ? phaseName[t.phase_id] ?? "Unknown phase" : "No phase"
         : segment === "customer"
-        ? t.customer_id ? customerName[t.customer_id] ?? "Unknown customer" : "No customer"
+        ? t.customer_id ? customerName[t.customer_id] ?? "Unknown client" : "No client"
         : t.category || "Uncategorized";
 
     const by = new Map<string, Transaction[]>();
@@ -94,7 +94,7 @@ export default function CaptureLedger() {
               segment === s ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
             )}
           >
-            {s}
+            {s === "customer" ? "client" : s}
           </button>
         ))}
       </div>

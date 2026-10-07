@@ -28,15 +28,15 @@ export default function CustomerInsights({ summaries, selectedId, onSelect }: Cu
           <ChevronRight
             className={`h-4 w-4 text-muted-foreground transition-transform duration-[var(--duration-base)] ease-standard ${open ? "rotate-90" : ""}`}
           />
-          Customer Profitability
+          Client Profitability
           <span className="text-xs font-normal text-muted-foreground">({sorted.length})</span>
         </button>
         <div className="flex items-center gap-3">
           <Link
-            to="/customers"
+            to="/clients"
             className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            All customers <ChevronRight className="h-3.5 w-3.5" />
+            All clients <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>

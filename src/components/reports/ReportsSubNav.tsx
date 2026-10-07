@@ -6,7 +6,7 @@ const LINKS = [
   { to: "/reports/overview",  label: "Overview",  icon: BarChart3 },
   { to: "/reports/expenses",  label: "Expenses",  icon: ArrowDown },
   { to: "/reports/income",    label: "Income",    icon: ArrowUp },
-  { to: "/reports/customers", label: "Customers", icon: Users },
+  { to: "/reports/clients", label: "Clients", icon: Users },
 ];
 
 export default function ReportsSubNav({ topOffset = 0 }: { topOffset?: number }) {

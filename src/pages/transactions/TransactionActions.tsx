@@ -77,7 +77,7 @@ export function generateRefNo(transactions: { reference_no?: string | null }[]):
 // Creates: type='income', source='payment', customer required
 
 const paymentSchema = z.object({
-  customer_id: z.string().min(1, "Customer is required"),
+  customer_id: z.string().min(1, "Client is required"),
   description: z.string().min(1, "Description is required"),
   reference_no: z.string().optional(),
   category: z.string().optional(),
@@ -174,11 +174,11 @@ export function RecordPaymentModal({
               name="customer_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer *</FormLabel>
+                  <FormLabel>Client *</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select customer…" />
+                        <SelectValue placeholder="Select client…" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -915,7 +915,7 @@ export function UseInventoryModal({
                   name="customer_id"
                   render={({ field }) => (
                     <FormItem className="col-span-2">
-                      <FormLabel>Customer (optional)</FormLabel>
+                      <FormLabel>Client (optional)</FormLabel>
                       <Select
                         value={field.value || "__none__"}
                         onValueChange={field.onChange}

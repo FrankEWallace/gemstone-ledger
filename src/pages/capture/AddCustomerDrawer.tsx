@@ -71,11 +71,11 @@ export default function AddCustomerDrawer({
         contract_end: hasContract ? end : undefined,
         notes: notes.trim() || undefined,
       });
-      toast.success("Customer added");
+      toast.success("Client added");
       onCreated(created);
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not add customer");
+      toast.error(e?.message ?? "Could not add client");
     } finally {
       setSaving(false);
     }
@@ -85,12 +85,12 @@ export default function AddCustomerDrawer({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-w-md">
         <DrawerHeader className="pb-2">
-          <DrawerTitle>New customer</DrawerTitle>
+          <DrawerTitle>New client</DrawerTitle>
         </DrawerHeader>
 
         <div className="max-h-[70dvh] space-y-4 overflow-y-auto px-4">
           <Field label="Name">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Customer name" autoFocus />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Client name" autoFocus />
           </Field>
 
           <Field label="Type">
@@ -143,7 +143,7 @@ export default function AddCustomerDrawer({
               </div>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
-              Daily rate × contract days projects the customer's contract value in their report.
+              Daily rate × contract days projects the client's contract value in their report.
             </p>
           </div>
 

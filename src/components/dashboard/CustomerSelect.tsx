@@ -11,7 +11,7 @@ export default function CustomerSelect({
   customers,
   value,
   onChange,
-  placeholder = "All customers",
+  placeholder = "All clients",
 }: CustomerSelectProps) {
   if (!customers.length) return null;
   return (

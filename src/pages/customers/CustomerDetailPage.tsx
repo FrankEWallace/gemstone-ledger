@@ -561,11 +561,11 @@ export default function CustomerDetailPage() {
       {/* Nav + Quick actions */}
       <div className="flex items-center justify-between gap-3">
         <Link
-          to="/customers"
+          to="/clients"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Customers
+          Clients
         </Link>
         <div className="flex items-center gap-2">
           <Button
@@ -738,7 +738,7 @@ export default function CustomerDetailPage() {
           categories={expenseByCategory}
           color={C.expense}
           emptyMessage="No expenses in this period"
-          detailHref={`/customers/${id}/expenses`}
+          detailHref={`/clients/${id}/expenses`}
         />
         <CategorySummary
           title="Income Breakdown"

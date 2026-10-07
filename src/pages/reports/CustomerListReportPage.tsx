@@ -44,7 +44,7 @@ export default function CustomerListReportPage() {
   const sorted = [...customerSummaries].sort((a, b) => b.netProfit - a.netProfit);
 
   function handleExportCSV() {
-    const header = "Customer,Type,Income,Expenses,Net Profit,Margin %,Transactions,Top Expense Category,Top Category Amount";
+    const header = "Client,Type,Income,Expenses,Net Profit,Margin %,Transactions,Top Expense Category,Top Category Amount";
     const rows = sorted.map((cs) => {
       const margin = cs.totalIncome > 0
         ? ((cs.netProfit / cs.totalIncome) * 100).toFixed(1)
@@ -79,7 +79,7 @@ export default function CustomerListReportPage() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-display">Customer Reports</h1>
+        <h1 className="text-display">Client Reports</h1>
         {sorted.length > 0 && (
           <button
             onClick={handleExportCSV}
@@ -122,7 +122,7 @@ export default function CustomerListReportPage() {
         </div>
       ) : sorted.length === 0 ? (
         <div className="flex items-center justify-center h-48 text-sm text-muted-foreground rounded-xl border border-border bg-card">
-          No customer data for this period.
+          No client data for this period.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -131,7 +131,7 @@ export default function CustomerListReportPage() {
             return (
               <Link
                 key={cs.customerId}
-                to={`/reports/customers/${cs.customerId}${dateQuery}`}
+                to={`/reports/clients/${cs.customerId}${dateQuery}`}
                 className="group rounded-xl border border-border bg-card p-5 space-y-4 hover:border-foreground/30 transition-colors block"
               >
                 {/* Header */}

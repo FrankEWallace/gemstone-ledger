@@ -14,7 +14,7 @@ export type CaptureContext = { openEntry: (tx?: Transaction) => void };
 const TABS = [
   { to: "/capture", label: "Ledger", icon: LayoutList, end: true },
   { to: "/capture/prices", label: "Prices", icon: Tag, end: false },
-  { to: "/capture/customers", label: "Customers", icon: Users, end: false },
+  { to: "/capture/clients", label: "Clients", icon: Users, end: false },
   { to: "/capture/more", label: "More", icon: Ellipsis, end: false },
 ];
 

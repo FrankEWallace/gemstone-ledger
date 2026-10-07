@@ -131,7 +131,7 @@ export default function CaptureBreakdown() {
         <FilterSelect
           value={cust}
           onChange={setCust}
-          allLabel="All customers"
+          allLabel="All clients"
           options={[
             ...(hasUnassigned ? [{ value: UNASSIGNED, label: "Unassigned" }] : []),
             ...custOptions.map((c) => ({ value: c.id, label: c.name })),

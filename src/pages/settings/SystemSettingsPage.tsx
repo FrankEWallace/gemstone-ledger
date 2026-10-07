@@ -209,7 +209,7 @@ function WeeklyReportSection({
 
 const MODULE_CONFIG: { key: ModuleKey; label: string; description: string }[] = [
   { key: "messages",     label: "Messages",            description: "Internal site messaging — general, safety, and operations channels" },
-  { key: "customers",    label: "Customers",           description: "Customer accounts, contracts, and drill-down views" },
+  { key: "customers",    label: "Clients",           description: "Client accounts, contracts, and drill-down views" },
   { key: "reports",      label: "Reports & Analytics", description: "Financial and operational reporting with data exports" },
   { key: "team",         label: "Team & Scheduling",   description: "Team performance, shift scheduling, and timesheets" },
   { key: "supply_chain", label: "Supply Chain",        description: "Supplier list, distribution channels, and order management" },

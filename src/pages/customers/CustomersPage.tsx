@@ -423,7 +423,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
         return;
       }
       invalidateCustomerCaches(queryClient);
-      toast.success(editing ? "Customer updated." : "Customer added.");
+      toast.success(editing ? "Client updated." : "Client added.");
       onClose();
     },
     onError: (err: Error) => toast.error(err.message),
@@ -433,7 +433,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit Customer" : "Add Customer"}</DialogTitle>
+          <DialogTitle>{editing ? "Edit Client" : "Add Client"}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -629,7 +629,7 @@ function CustomerModal({ open, onClose, siteId, orgId, editing }: CustomerModalP
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? "Saving…" : editing ? "Save Changes" : "Add Customer"}
+                {isPending ? "Saving…" : editing ? "Save Changes" : "Add Client"}
               </Button>
             </DialogFooter>
           </form>
@@ -688,7 +688,7 @@ export default function CustomersPage() {
       if (!isDemoMode()) {
         invalidateCustomerCaches(queryClient);
       }
-      toast.success("Customer deleted.");
+      toast.success("Client deleted.");
       setDeleteTarget(null);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -721,16 +721,16 @@ export default function CustomersPage() {
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-display">Customers</h1>
+        <h1 className="text-display">Clients</h1>
         <Button size="sm" onClick={() => { setEditing(null); setModalOpen(true); }}>
           <Plus className="h-4 w-4 mr-1.5" />
-          Add Customer
+          Add Client
         </Button>
       </div>
 
       {/* ── KPI strip ── */}
       <div className="grid grid-cols-3 rounded-xl border border-border bg-card divide-x divide-border">
-        <KpiCell label="Total Customers" value={customers.length.toString()} />
+        <KpiCell label="Total Clients" value={customers.length.toString()} />
         <KpiCell
           label="Active"
           value={customers.filter((c) => c.status === "active").length.toString()}
@@ -745,7 +745,7 @@ export default function CustomersPage() {
 
       {/* ── Toolbar ── */}
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter customers">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter clients">
           {STATUS_FILTERS.map((f) => (
             <FilterPill
               key={f.value}
@@ -773,7 +773,7 @@ export default function CustomersPage() {
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
-              aria-label="Search customers"
+              aria-label="Search clients"
               placeholder="Search name or contact"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -801,8 +801,8 @@ export default function CustomersPage() {
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground text-sm">
             {customers.length === 0
-              ? "No customers yet. Add your first customer."
-              : "No customers match your filters."}
+              ? "No clients yet. Add your first client."
+              : "No clients match your filters."}
           </div>
         ) : (
           <ul>
@@ -821,7 +821,7 @@ export default function CustomersPage() {
                   className="flex items-center gap-2 border-b border-border pr-2 last:border-0 hover:bg-muted/30 transition-colors"
                 >
                   <Link
-                    to={`/customers/${c.id}`}
+                    to={`/clients/${c.id}`}
                     className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 focus-visible:outline-none focus-visible:bg-muted/30"
                   >
                     <EntityAvatar name={c.name} seed={c.id} className="h-10 w-10 text-xs" />
@@ -883,7 +883,7 @@ export default function CustomersPage() {
       {/* Row count */}
       {!isLoading && filtered.length > 0 && (
         <p className="text-xs text-muted-foreground text-right">
-          {filtered.length} {filtered.length === 1 ? "customer" : "customers"}
+          {filtered.length} {filtered.length === 1 ? "client" : "clients"}
           {filtered.length !== customers.length && ` of ${customers.length}`}
         </p>
       )}
@@ -904,7 +904,7 @@ export default function CustomersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{deleteTarget?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove the customer. Transactions linked to this customer will be unaffected.
+              This will permanently remove the client. Transactions linked to this client will be unaffected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

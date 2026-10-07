@@ -127,11 +127,11 @@ function LogModal({
             {customers.length > 0 && (
               <FormField control={form.control} name="customer_id" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer (optional)</FormLabel>
+                  <FormLabel>Client (optional)</FormLabel>
                   <Select value={field.value || "none"} onValueChange={(v) => field.onChange(v === "none" ? "" : v)}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="No customer" /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder="No client" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value="none">No customer</SelectItem>
+                      <SelectItem value="none">No client</SelectItem>
                       {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -328,9 +328,9 @@ export default function ProductionLogPage() {
         ))}
         {customers.length > 0 && (
           <Select value={customerFilter} onValueChange={setCustomerFilter}>
-            <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="All customers" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="All clients" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All customers</SelectItem>
+              <SelectItem value="all">All clients</SelectItem>
               {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -399,7 +399,7 @@ export default function ProductionLogPage() {
           <thead>
             <tr className="border-b border-border text-muted-foreground">
               <th className="px-4 py-3 text-left font-medium">Date</th>
-              <th className="px-4 py-3 text-left font-medium hidden lg:table-cell">Customer</th>
+              <th className="px-4 py-3 text-left font-medium hidden lg:table-cell">Client</th>
               <th className="px-4 py-3 text-right font-medium">Ore (t)</th>
               <th className="px-4 py-3 text-right font-medium">Waste (t)</th>
               <th className="px-4 py-3 text-right font-medium">Grade (g/t)</th>
