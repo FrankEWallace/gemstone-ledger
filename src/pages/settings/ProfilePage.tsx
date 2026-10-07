@@ -14,9 +14,6 @@ import {
   Moon,
   Monitor,
   Bell,
-  AlertTriangle,
-  Copy,
-  Check,
   Pencil,
   Calendar,
   Clock,
@@ -794,60 +791,6 @@ function SitesRolesCard({ sites }: { sites: { id: string; name: string; location
   );
 }
 
-// ─── Danger zone card ────────────────────────────────────────────────────────────
-
-function DangerZoneCard({ userId }: { userId: string }) {
-  const [copied, setCopied] = useState(false);
-
-  function copyId() {
-    navigator.clipboard.writeText(userId).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }
-
-  return (
-    <Card className="border-destructive/40">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-destructive">
-          <AlertTriangle className="h-4 w-4" />
-          Danger Zone
-        </CardTitle>
-        <CardDescription>Irreversible account actions. These require backend setup and are not yet enabled.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
-          <div>
-            <p className="text-sm font-medium">Leave organization</p>
-            <p className="text-sm text-muted-foreground">Remove yourself from this organization.</p>
-          </div>
-          <Button variant="outline" size="sm" disabled title="Requires backend setup">
-            Leave
-          </Button>
-        </div>
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-destructive/40 px-4 py-3">
-          <div>
-            <p className="text-sm font-medium text-destructive">Delete account</p>
-            <p className="text-sm text-muted-foreground">Permanently delete your account and data.</p>
-          </div>
-          <Button variant="destructive" size="sm" disabled title="Requires backend setup">
-            Delete
-          </Button>
-        </div>
-        <button
-          type="button"
-          onClick={copyId}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-          title="Copy user ID"
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          <span className="font-mono">{userId}</span>
-        </button>
-      </CardContent>
-    </Card>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
@@ -896,7 +839,6 @@ export default function ProfilePage() {
 
       <SitesRolesCard sites={sites} />
 
-      {demo && <DangerZoneCard userId={userId} />}
     </div>
   );
 }
