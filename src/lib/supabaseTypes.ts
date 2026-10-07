@@ -1753,6 +1753,22 @@ export interface KpiTarget {
   updated_at: string
 }
 
+export interface InventoryMovement {
+  id: string
+  site_id: string
+  inventory_item_id: string
+  type: "receive" | "use" | "write_off" | "adjustment"
+  quantity: number
+  quantity_after: number
+  unit_cost: number | null
+  transaction_id: string | null
+  write_off_id: string | null
+  customer_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export interface ProductionLog {
   id: string
   site_id: string

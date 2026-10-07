@@ -65,6 +65,7 @@ import { isDemoMode } from "@/lib/demo";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
+import InventoryItemHistorySheet from "@/pages/inventory/InventoryItemHistorySheet";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -604,15 +605,16 @@ interface StockReceiveModalProps {
   onClose: () => void;
   item: InventoryItem;
   siteId: string;
+  userId?: string;
 }
 
-function StockReceiveModal({ open, onClose, item, siteId }: StockReceiveModalProps) {
+function StockReceiveModal({ open, onClose, item, siteId, userId }: StockReceiveModalProps) {
   const queryClient = useQueryClient();
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => receiveInventoryStock(siteId, item, qty, notes || undefined),
+    mutationFn: () => receiveInventoryStock(siteId, item, qty, notes || undefined, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", siteId] });
       toast.success(`Received ${qty} ${item.unit ?? "unit(s)"} of ${item.name}. Stock: ${item.quantity} → ${item.quantity + qty}.`);
@@ -698,6 +700,7 @@ export default function InventoryPage() {
   const [logUsageTarget, setLogUsageTarget] = useState<InventoryItem | null>(null);
   const [writeOffTarget, setWriteOffTarget] = useState<InventoryItem | null>(null);
   const [receiveTarget, setReceiveTarget] = useState<InventoryItem | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<InventoryItem | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory", activeSiteId],
@@ -890,7 +893,7 @@ export default function InventoryPage() {
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={() => { setEditing(row); setModalOpen(true); }}
+            onClick={(e) => { e.stopPropagation(); setEditing(row); setModalOpen(true); }}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -898,7 +901,7 @@ export default function InventoryPage() {
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-            onClick={() => setDeleteTarget(row)}
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(row); }}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -1034,6 +1037,7 @@ export default function InventoryPage() {
         searchKeys={["name", "sku", "category"]}
         pageSize={15}
         isLoading={isLoading}
+        onRowClick={(row) => setHistoryTarget(row as unknown as InventoryItem)}
         emptyMessage={
           categoryFilter !== "all"
             ? `No items in category "${categoryFilter}".`
@@ -1125,6 +1129,16 @@ export default function InventoryPage() {
           open={!!receiveTarget}
           onClose={() => setReceiveTarget(null)}
           item={receiveTarget}
+          siteId={activeSiteId!}
+          userId={user?.id}
+        />
+      )}
+
+      {historyTarget && (
+        <InventoryItemHistorySheet
+          open={!!historyTarget}
+          onClose={() => setHistoryTarget(null)}
+          item={historyTarget}
           siteId={activeSiteId!}
         />
       )}
