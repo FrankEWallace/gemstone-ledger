@@ -156,7 +156,7 @@ export default function AppLayout() {
           <div className="flex items-center gap-3 border-b border-warning/20 bg-warning/10 px-4 py-2 text-warning text-sm">
             <FlaskConical className="h-4 w-4 shrink-0" />
             <span className="flex-1 font-medium">
-              Demo mode — you're exploring FW Mining OS with sample data. Nothing is saved.
+              You're exploring demo mode. Nothing is saved.
             </span>
             <button
               onClick={handleExitDemo}
