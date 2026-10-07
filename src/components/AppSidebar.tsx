@@ -25,8 +25,10 @@ import {
   Eye,
   EyeOff,
   Megaphone,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import BrandMark from "@/components/shared/BrandMark";
 import UserMenuButton from "@/components/shared/UserMenuButton";
 import SiteSwitcher from "@/components/shared/SiteSwitcher";
@@ -182,6 +184,17 @@ function NavItemRow({ item }: { item: NavItem }) {
 
 // ─── NavSection ───────────────────────────────────────────────────────────────
 
+const COLLAPSED_KEY = "navSectionsCollapsed";
+
+function readCollapsed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
 function NavSection({
   title,
   items,
@@ -191,23 +204,54 @@ function NavSection({
   items: NavItem[];
   badge?: React.ReactNode;
 }) {
+  const { state, isMobile } = useSidebar();
+  const iconOnly = state === "collapsed" && !isMobile;
+  const [collapsed, setCollapsed] = useState<Set<string>>(readCollapsed);
+
   if (items.length === 0) return null;
+
+  const menu = (
+    <SidebarGroupContent>
+      <SidebarMenu>
+        {items.map((item) => (
+          <NavItemRow key={item.to} item={item} />
+        ))}
+      </SidebarMenu>
+    </SidebarGroupContent>
+  );
+
+  // Untitled groups can't be folded; icon-only mode always shows every icon.
+  if (!title) return <SidebarGroup>{menu}</SidebarGroup>;
+
+  const open = iconOnly || !collapsed.has(title);
+
+  function toggle(next: boolean) {
+    setCollapsed((prev) => {
+      const set = new Set(prev);
+      if (next) set.delete(title!);
+      else set.add(title!);
+      try {
+        localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set]));
+      } catch {
+        /* storage unavailable — fold state just won't persist */
+      }
+      return set;
+    });
+  }
+
   return (
-    <SidebarGroup>
-      {title && (
-        <SidebarGroupLabel className="flex items-center gap-1.5">
-          {title}
-          {badge}
+    <Collapsible open={open} onOpenChange={toggle} asChild>
+      <SidebarGroup>
+        <SidebarGroupLabel asChild>
+          <CollapsibleTrigger className="group/label flex w-full items-center gap-1.5 hover:text-sidebar-foreground">
+            {title}
+            {badge}
+            <ChevronRight className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=open]/label:rotate-90" />
+          </CollapsibleTrigger>
         </SidebarGroupLabel>
-      )}
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map((item) => (
-            <NavItemRow key={item.to} item={item} />
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+        <CollapsibleContent>{menu}</CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
   );
 }
 
