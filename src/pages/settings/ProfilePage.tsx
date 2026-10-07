@@ -807,7 +807,7 @@ export default function ProfilePage() {
   const userId = user!.id;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-4 lg:p-6">
+    <div className="w-full space-y-6 p-4 lg:p-6">
       <div>
         <h1 className="text-display">My Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">Manage your account, security, and preferences.</p>
@@ -831,13 +831,15 @@ export default function ProfilePage() {
         </p>
       )}
 
-      <AccountCard userId={userId} profile={userProfile} demo={demo} onSaved={applyProfile} />
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        <AccountCard userId={userId} profile={userProfile} demo={demo} onSaved={applyProfile} />
 
-      <SecurityCard email={user?.email ?? null} demo={demo} />
+        <SecurityCard email={user?.email ?? null} demo={demo} />
 
-      <PreferencesCard userId={userId} profile={userProfile} demo={demo} onSaved={applyProfile} />
+        <PreferencesCard userId={userId} profile={userProfile} demo={demo} onSaved={applyProfile} />
 
-      <SitesRolesCard sites={sites} />
+        <SitesRolesCard sites={sites} />
+      </div>
 
     </div>
   );
