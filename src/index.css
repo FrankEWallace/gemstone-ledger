@@ -94,25 +94,25 @@
 :root {
   --radius: 0.625rem;
 
-  --background: #fafaf9;
+  --background: #f5f1e8;
   --foreground: #0c0a09;
 
-  --card: #ffffff;
+  --card: #fbf9f3;
   --card-foreground: #0c0a09;
 
-  --popover: #ffffff;
+  --popover: #fbf9f3;
   --popover-foreground: #0c0a09;
 
   --primary: #0f766e;
   --primary-foreground: #ffffff;
 
-  --secondary: #f4f2f0;
+  --secondary: #ece7db;
   --secondary-foreground: #0c0a09;
 
-  --muted: #f4f2f0;
+  --muted: #ece7db;
   --muted-foreground: #78716c;
 
-  --accent: #ebe8e5;
+  --accent: #e4ddcd;
   --accent-foreground: #0c0a09;
 
   --destructive: #c0492c;
@@ -124,8 +124,8 @@
   --info: #2f6fed;
   --info-foreground: #ffffff;
 
-  --border: #e8e6e5;
-  --input: #d6d3d1;
+  --border: #ded7c6;
+  --input: #cdc5b1;
   --ring: #0f766e;
 
   /* Hairline borders carry structure; shadows stay faint. */
@@ -167,13 +167,13 @@
   --tint-rose-bg: #f0dfe2;  --tint-rose-fg: #85495a;
 
   /* sidebar */
-  --sidebar: #ffffff;
+  --sidebar: #f9f6ee;
   --sidebar-foreground: #44403c;
   --sidebar-primary: #0f766e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ebe8e5;
+  --sidebar-accent: #e4ddcd;
   --sidebar-accent-foreground: #0c0a09;
-  --sidebar-border: #e8e6e5;
+  --sidebar-border: #ded7c6;
   --sidebar-ring: #0f766e;
 
   /* fonts */
