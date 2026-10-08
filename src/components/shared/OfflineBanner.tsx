@@ -13,7 +13,7 @@ export function OfflineBanner() {
   if (!isOffline && pending > 0) {
     // Back online — syncing in progress
     return (
-      <div className="flex items-center gap-2 bg-info text-info-foreground px-4 py-2 text-sm font-medium w-full animate-in slide-in-from-top-2 duration-300">
+      <div className="flex items-center gap-2 border-b border-info/20 bg-info/10 text-info px-4 py-2 text-sm font-medium w-full animate-in slide-in-from-top-2 duration-300">
         <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
         <span>Syncing {pending} pending change{pending !== 1 ? "s" : ""}…</span>
       </div>
@@ -21,7 +21,7 @@ export function OfflineBanner() {
   }
 
   return (
-    <div className="flex items-center gap-2 bg-warning text-warning-foreground px-4 py-2 text-sm font-medium w-full animate-in slide-in-from-top-2 duration-300">
+    <div className="flex items-center gap-2 border-b border-warning/20 bg-warning/10 text-warning px-4 py-2 text-sm font-medium w-full animate-in slide-in-from-top-2 duration-300">
       <WifiOff className="h-4 w-4 shrink-0" />
       <span>
         You're offline — showing cached data.

@@ -20,16 +20,18 @@ import {
   CalendarDays,
   FolderOpen,
   FileText,
-  Activity,
   Clock,
   SlidersHorizontal,
   Eye,
   EyeOff,
   Megaphone,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import BrandMark from "@/components/shared/BrandMark";
-import SitePicker from "@/components/shared/SitePicker";
+import UserMenuButton from "@/components/shared/UserMenuButton";
+import SiteSwitcher from "@/components/shared/SiteSwitcher";
 import { useSite } from "@/hooks/useSite";
 import { getChannelMessageCounts } from "@/services/messages.service";
 import { useNav, type NavSectionKey } from "@/context/NavContext";
@@ -61,8 +63,7 @@ interface NavItem {
 
 const coreItems: NavItem[] = [
   { label: "Dashboard",    icon: LayoutDashboard, to: "/" },
-  { label: "Activity",      icon: Activity,        to: "/activity" },
-  { label: "Customers",    icon: Users,           to: "/customers",     module: "customers" },
+  { label: "Clients",    icon: Users,           to: "/clients",     module: "customers" },
   { label: "Transactions", icon: ArrowLeftRight,  to: "/transactions" },
   { label: "Inventory",    icon: Package,         to: "/inventory" },
   { label: "Reports",      icon: BarChart3,       to: "/reports",       module: "reports" },
@@ -183,6 +184,17 @@ function NavItemRow({ item }: { item: NavItem }) {
 
 // ─── NavSection ───────────────────────────────────────────────────────────────
 
+const COLLAPSED_KEY = "navSectionsCollapsed";
+
+function readCollapsed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
 function NavSection({
   title,
   items,
@@ -192,23 +204,54 @@ function NavSection({
   items: NavItem[];
   badge?: React.ReactNode;
 }) {
+  const { state, isMobile } = useSidebar();
+  const iconOnly = state === "collapsed" && !isMobile;
+  const [collapsed, setCollapsed] = useState<Set<string>>(readCollapsed);
+
   if (items.length === 0) return null;
+
+  const menu = (
+    <SidebarGroupContent>
+      <SidebarMenu>
+        {items.map((item) => (
+          <NavItemRow key={item.to} item={item} />
+        ))}
+      </SidebarMenu>
+    </SidebarGroupContent>
+  );
+
+  // Untitled groups can't be folded; icon-only mode always shows every icon.
+  if (!title) return <SidebarGroup>{menu}</SidebarGroup>;
+
+  const open = iconOnly || !collapsed.has(title);
+
+  function toggle(next: boolean) {
+    setCollapsed((prev) => {
+      const set = new Set(prev);
+      if (next) set.delete(title!);
+      else set.add(title!);
+      try {
+        localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set]));
+      } catch {
+        /* storage unavailable — fold state just won't persist */
+      }
+      return set;
+    });
+  }
+
   return (
-    <SidebarGroup>
-      {title && (
-        <SidebarGroupLabel className="flex items-center gap-1.5">
-          {title}
-          {badge}
+    <Collapsible open={open} onOpenChange={toggle} asChild>
+      <SidebarGroup>
+        <SidebarGroupLabel asChild>
+          <CollapsibleTrigger className="group/label flex w-full items-center gap-1.5 hover:text-sidebar-foreground">
+            {title}
+            {badge}
+            <ChevronRight className="ml-auto h-3.5 w-3.5 transition-transform group-data-[state=open]/label:rotate-90" />
+          </CollapsibleTrigger>
         </SidebarGroupLabel>
-      )}
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map((item) => (
-            <NavItemRow key={item.to} item={item} />
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+        <CollapsibleContent>{menu}</CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
   );
 }
 
@@ -221,8 +264,9 @@ export default function AppSidebar({
 }: {
   variant?: "sidebar" | "inset" | "floating";
 }) {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
+  const { state, isMobile } = useSidebar();
+  // The phone drawer always shows the full sidebar, whatever the desktop state.
+  const isCollapsed = state === "collapsed" && !isMobile;
   const { activeSiteId } = useSite();
   const location = useLocation();
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -264,18 +308,16 @@ export default function AppSidebar({
   return (
     <Sidebar variant={variant} collapsible="icon">
       {/* Logo */}
-      <SidebarHeader className="border-b border-sidebar-border py-[14px] px-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-2">
-        <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shrink-0 shadow-sm">
-            <BrandMark />
-          </div>
-          <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="font-display font-semibold text-sm leading-tight truncate text-sidebar-foreground">
-              FW Mining OS
-            </p>
-            <p className="text-xs text-sidebar-foreground/45 leading-tight">Operations Platform</p>
-          </div>
+      <SidebarHeader className="gap-3 px-3 pt-4 pb-2 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:pt-3">
+        <div className="flex items-center gap-2 px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center text-sidebar-primary">
+            <BrandMark className="h-5 w-5" />
+          </span>
+          <p className="truncate text-sm font-semibold tracking-tight text-foreground group-data-[collapsible=icon]:hidden">
+            FW Mining OS
+          </p>
         </div>
+        <SiteSwitcher variant="card" collapsed={isCollapsed} />
       </SidebarHeader>
 
       {/* Navigation */}
@@ -305,12 +347,12 @@ export default function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer: SitePicker + customizer (hidden when icon-only) */}
+      {/* Footer: UserMenuButton + customizer (hidden when icon-only) */}
       <SidebarFooter className="border-t border-sidebar-border relative">
         {!isCollapsed && (
           <>
             <div className="px-1">
-              <SitePicker />
+              <UserMenuButton />
             </div>
             <button
               onClick={() => setCustomizerOpen((o) => !o)}

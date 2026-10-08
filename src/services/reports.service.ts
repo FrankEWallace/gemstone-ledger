@@ -2,11 +2,11 @@ import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet } from "@/lib/providers/rest/client";
 import { isDemoMode } from "@/lib/demo";
-import type { CustomerSummary } from "@/lib/supabaseTypes";
+import type { CustomerSummary, Transaction } from "@/lib/supabaseTypes";
+import { demoCategoryBreakdown } from "@/lib/demo/filterTransactions";
 import {
   DEMO_MONTHLY_TREND,
-  DEMO_EXPENSES_BY_CATEGORY,
-  DEMO_INCOME_BY_CATEGORY,
+  DEMO_TRANSACTIONS,
   DEMO_REPORT_SUMMARY,
   DEMO_PRODUCTION_BY_DAY,
   DEMO_CUSTOMER_SUMMARIES,
@@ -56,7 +56,8 @@ export async function getExpensesByCategory(
   dateTo: string,
   customerId?: string
 ): Promise<CategoryBreakdown[]> {
-  if (isDemoMode()) return DEMO_EXPENSES_BY_CATEGORY;
+  if (isDemoMode())
+    return demoCategoryBreakdown(DEMO_TRANSACTIONS as unknown as Transaction[], "expense", dateFrom, dateTo, customerId);
   if (isRestActive())
     return restGet<CategoryBreakdown[]>(
       `/reports/expenses-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`
@@ -85,7 +86,8 @@ export async function getIncomeByCategory(
   dateTo: string,
   customerId?: string
 ): Promise<CategoryBreakdown[]> {
-  if (isDemoMode()) return DEMO_INCOME_BY_CATEGORY;
+  if (isDemoMode())
+    return demoCategoryBreakdown(DEMO_TRANSACTIONS as unknown as Transaction[], "income", dateFrom, dateTo, customerId);
   if (isRestActive())
     return restGet<CategoryBreakdown[]>(
       `/reports/income-by-category?site_id=${siteId}&from=${dateFrom}&to=${dateTo}${customerId ? `&customer_id=${customerId}` : ""}`

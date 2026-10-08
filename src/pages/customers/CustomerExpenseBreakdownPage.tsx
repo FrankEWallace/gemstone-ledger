@@ -105,7 +105,7 @@ function CategoryRow({
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-semibold truncate">{category}</span>
-            <span className="text-sm font-bold tabular-nums shrink-0">{fmtCurrency(total)}</span>
+            <span className="text-sm font-semibold tabular-nums shrink-0">{fmtCurrency(total)}</span>
           </div>
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
             <div
@@ -114,7 +114,7 @@ function CategoryRow({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            {transactions.length} transaction{transactions.length !== 1 ? "s" : ""} · {pct}% of customer expenses
+            {transactions.length} transaction{transactions.length !== 1 ? "s" : ""} · {pct}% of client expenses
           </p>
         </div>
 
@@ -128,7 +128,7 @@ function CategoryRow({
       {isOpen && (
         <div className="border-t border-border">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[520px]">
+            <table className="w-full text-xs min-w-130">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-2.5 text-left font-semibold tracking-wider uppercase text-xs text-muted-foreground">
@@ -154,7 +154,7 @@ function CategoryRow({
                   return (
                     <tr key={t.id} className="hover:bg-muted/20 transition-colors">
                       <td className="px-5 py-3">
-                        <span className="font-medium truncate block max-w-[220px]">
+                        <span className="font-medium truncate block max-w-55">
                           {t.description || "—"}
                         </span>
                         {t.reference_no && (
@@ -185,7 +185,7 @@ function CategoryRow({
                   <td colSpan={4} className="px-5 py-2.5 text-xs font-semibold text-muted-foreground">
                     Category total
                   </td>
-                  <td className="px-5 py-2.5 text-right text-sm font-bold tabular-nums">
+                  <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums">
                     {fmtCurrency(total)}
                   </td>
                 </tr>
@@ -326,16 +326,16 @@ export default function CustomerExpenseBreakdownPage() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-5 max-w-[960px] mx-auto">
+    <div className="p-4 lg:p-6 space-y-5 max-w-240 mx-auto">
 
       {/* Header */}
       <div className="space-y-1">
         <Link
-          to={`/customers/${id}`}
+          to={`/clients/${id}`}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1"
         >
           <ArrowLeft className="h-3 w-3" />
-          {customer?.name ?? "Customer"}
+          {customer?.name ?? "Client"}
         </Link>
         <h1 className="text-display">Expense Breakdown</h1>
         {customer && (
@@ -389,15 +389,15 @@ export default function CustomerExpenseBreakdownPage() {
       <div className="grid grid-cols-3 rounded-xl border border-border bg-card divide-x divide-border">
         <div className="px-5 py-4">
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Total Expenses</p>
-          <p className="font-display text-2xl font-bold tabular-nums mt-1">{fmtCurrency(grandTotal)}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{fmtCurrency(grandTotal)}</p>
         </div>
         <div className="px-5 py-4">
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Categories</p>
-          <p className="font-display text-2xl font-bold tabular-nums mt-1">{grouped.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{grouped.length}</p>
         </div>
         <div className="px-5 py-4">
           <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Transactions</p>
-          <p className="font-display text-2xl font-bold tabular-nums mt-1">{filteredTxs.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{filteredTxs.length}</p>
         </div>
       </div>
 
@@ -457,7 +457,7 @@ export default function CustomerExpenseBreakdownPage() {
           placeholder="Search description or ref..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-8 text-xs flex-1 min-w-[180px]"
+          className="h-8 text-xs flex-1 min-w-45"
         />
 
         {/* Status filter */}
@@ -532,7 +532,7 @@ export default function CustomerExpenseBreakdownPage() {
         <div className="rounded-xl border border-border bg-card p-10 text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             {txs.length === 0
-              ? `No expense transactions found for ${customer?.name ?? "this customer"} in this period.`
+              ? `No expense transactions found for ${customer?.name ?? "this client"} in this period.`
               : "No transactions match the current filters."}
           </p>
           {(search || statusFilter !== "all") && (
@@ -546,10 +546,10 @@ export default function CustomerExpenseBreakdownPage() {
           {txs.length === 0 && (
             <div>
               <Link
-                to={`/customers/${id}`}
+                to={`/clients/${id}`}
                 className="text-xs font-semibold text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
               >
-                Go back to {customer?.name ?? "customer"} to add a transaction
+                Go back to {customer?.name ?? "client"} to add a transaction
               </Link>
             </div>
           )}

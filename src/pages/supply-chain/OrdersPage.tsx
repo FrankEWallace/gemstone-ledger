@@ -275,18 +275,18 @@ function CreateOrderModal({
                   name="customer_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Customer (cost attribution)</FormLabel>
+                      <FormLabel>Client (cost attribution)</FormLabel>
                       <Select
                           value={field.value || "__none__"}
                           onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
                         >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="No customer" />
+                            <SelectValue placeholder="No client" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="__none__">No customer</SelectItem>
+                          <SelectItem value="__none__">No client</SelectItem>
                           {customers.map((c) => (
                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}
@@ -451,7 +451,7 @@ function CreateOrderModal({
 
               <div className="flex justify-end mt-3">
                 <p className="text-sm font-medium">
-                  Order Total: <span className="text-base">{fmtCurrency(orderTotal, 2)}</span>
+                  Order Total: <span className="font-semibold">{fmtCurrency(orderTotal, 2)}</span>
                 </p>
               </div>
             </div>

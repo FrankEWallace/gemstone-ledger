@@ -223,7 +223,7 @@ export default function TransactionEditSheet({
               name="customer_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
+                  <FormLabel>Client</FormLabel>
                   <Select
                     value={field.value ?? "__none__"}
                     onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}

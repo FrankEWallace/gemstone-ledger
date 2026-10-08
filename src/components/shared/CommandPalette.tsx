@@ -19,7 +19,6 @@ import {
   Layers,
   Shield,
   Settings,
-  Activity,
   Pickaxe,
   Clock,
 } from "lucide-react";
@@ -41,7 +40,6 @@ interface SearchResult {
 
 const NAV_ITEMS: SearchResult[] = [
   { id: "nav-dashboard",   label: "Dashboard",          icon: LayoutDashboard, href: "/",                         group: "Navigation" },
-  { id: "nav-activity",    label: "Activity",            icon: Activity,        href: "/activity",                 group: "Navigation" },
   { id: "nav-inventory",   label: "Inventory",           icon: Package,         href: "/inventory",                group: "Navigation" },
   { id: "nav-transactions",label: "Transactions",        icon: ArrowLeftRight,  href: "/transactions",             group: "Navigation" },
   { id: "nav-reports",     label: "Reports",             icon: BarChart3,       href: "/reports",                  group: "Navigation" },
@@ -181,7 +179,7 @@ export default function CommandPalette({ open, onClose }: Props) {
             </kbd>
           </div>
 
-          <Command.List className="max-h-[400px] overflow-y-auto p-2">
+          <Command.List className="max-h-100 overflow-y-auto p-2">
             {isSearching && (
               <Command.Loading>
                 <div className="py-6 text-center text-sm text-muted-foreground">Searching…</div>

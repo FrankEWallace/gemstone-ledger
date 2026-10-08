@@ -2,12 +2,14 @@ import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost } from "@/lib/providers/rest/client";
 import type { Notification } from "@/lib/supabaseTypes";
-import type { RealtimeChannel } from "@supabase/supabase-js";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_NOTIFICATIONS } from "@/lib/demo/data";
 
+// Demo data lives in memory so read-state changes stick for the session.
+let demoNotifications: Notification[] = (DEMO_NOTIFICATIONS as unknown as Notification[]).map((n) => ({ ...n }));
+
 export async function getNotifications(userId: string, limit = 30): Promise<Notification[]> {
-  if (isDemoMode()) return DEMO_NOTIFICATIONS as any;
+  if (isDemoMode()) return demoNotifications;
   if (isRestActive())
     return restGet<Notification[]>(`/notifications?user_id=${userId}&limit=${limit}`);
 
@@ -22,6 +24,10 @@ export async function getNotifications(userId: string, limit = 30): Promise<Noti
 }
 
 export async function markAsRead(id: string): Promise<void> {
+  if (isDemoMode()) {
+    demoNotifications = demoNotifications.map((n) => (n.id === id ? { ...n, read: true } : n));
+    return;
+  }
   if (isRestActive()) {
     await restPost(`/notifications/${id}/read`, {});
     return;
@@ -35,6 +41,10 @@ export async function markAsRead(id: string): Promise<void> {
 }
 
 export async function markAllAsRead(userId: string): Promise<void> {
+  if (isDemoMode()) {
+    demoNotifications = demoNotifications.map((n) => ({ ...n, read: true }));
+    return;
+  }
   if (isRestActive()) {
     await restPost("/notifications/read-all", { user_id: userId });
     return;
@@ -56,7 +66,9 @@ export async function markAllAsRead(userId: string): Promise<void> {
 export function subscribeToNotifications(
   userId: string,
   onNew: (notification: Notification) => void
-): RealtimeChannel {
+): () => void {
+  if (isDemoMode()) return () => {};
+
   if (isRestActive()) {
     let lastTimestamp = new Date().toISOString();
     const timer = setInterval(async () => {
@@ -72,10 +84,10 @@ export function subscribeToNotifications(
         // silently ignore poll errors
       }
     }, 8000);
-    return { unsubscribe: () => clearInterval(timer) } as unknown as RealtimeChannel;
+    return () => clearInterval(timer);
   }
 
-  return supabase
+  const channel = supabase
     .channel(`notifications-${userId}`)
     .on(
       "postgres_changes",
@@ -88,4 +100,7 @@ export function subscribeToNotifications(
       (payload) => onNew(payload.new as Notification)
     )
     .subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

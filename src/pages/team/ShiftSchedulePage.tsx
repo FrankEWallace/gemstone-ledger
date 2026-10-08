@@ -79,7 +79,8 @@ type ShiftFormValues = z.infer<typeof shiftSchema>;
 function shiftDuration(start: string, end: string): string {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  const mins = eh * 60 + em - sh * 60 - sm;
+  // Overnight shifts (end time earlier than start time) wrap past midnight.
+  const mins = (((eh * 60 + em) - (sh * 60 + sm)) + 24 * 60) % (24 * 60);
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
@@ -249,8 +250,8 @@ function ShiftChip({
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="group relative rounded-md bg-primary/10 border border-primary/20 px-2 py-1 text-xs">
-      <p className="font-medium text-primary truncate">{workerName}</p>
+    <div className="group relative rounded-md bg-primary/10 border border-primary/20 px-2 py-1 text-xs" title={workerName}>
+      <p className="font-medium text-primary truncate">{workerName.split(" ")[0]}</p>
       <p className="text-muted-foreground tabular-nums">
         {shift.start_time.slice(0, 5)}–{shift.end_time.slice(0, 5)}
         {" "}
@@ -331,7 +332,8 @@ export default function ShiftSchedulePage() {
   const totalHours = shifts.reduce((sum, s) => {
     const [sh, sm] = s.start_time.split(":").map(Number);
     const [eh, em] = s.end_time.split(":").map(Number);
-    return sum + (eh * 60 + em - sh * 60 - sm) / 60;
+    const mins = (((eh * 60 + em) - (sh * 60 + sm)) + 24 * 60) % (24 * 60);
+    return sum + mins / 60;
   }, 0);
 
   return (
@@ -374,7 +376,7 @@ export default function ShiftSchedulePage() {
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-base font-semibold min-w-40 text-center">
+        <h2 className="text-sm font-semibold min-w-40 text-center">
           {viewMode === "week"
             ? `${format(rangeStart, "MMM d")} – ${format(rangeEnd, "MMM d, yyyy")}`
             : format(anchor, "MMMM yyyy")}
@@ -390,7 +392,7 @@ export default function ShiftSchedulePage() {
       {/* Calendar grid */}
       {viewMode === "week" ? (
         // ── Week view: 7 vertical columns ──────────────────────────────────
-        <div className="grid grid-cols-7 gap-1 min-h-[400px]">
+        <div className="grid grid-cols-7 gap-1 min-h-100">
           {days.map((day) => {
             const dayShifts = shiftsForDay(day);
             const isToday = isSameDay(day, today);
@@ -398,7 +400,7 @@ export default function ShiftSchedulePage() {
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "rounded-lg border border-border flex flex-col min-h-[360px]",
+                  "rounded-lg border border-border flex flex-col min-h-90",
                   isToday && "border-primary/40 bg-primary/5"
                 )}
               >
@@ -466,7 +468,7 @@ export default function ShiftSchedulePage() {
           <div className="grid grid-cols-7">
             {/* Leading empty cells */}
             {Array.from({ length: (rangeStart.getDay() + 6) % 7 }).map((_, i) => (
-              <div key={`pre-${i}`} className="border-t border-r border-border min-h-[90px] bg-muted/10" />
+              <div key={`pre-${i}`} className="border-t border-r border-border min-h-22 bg-muted/10" />
             ))}
 
             {days.map((day) => {
@@ -477,7 +479,7 @@ export default function ShiftSchedulePage() {
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    "border-t border-r border-border min-h-[90px] p-1 flex flex-col",
+                    "border-t border-r border-border min-h-22 p-1 flex flex-col",
                     isToday && "bg-primary/5",
                     isWeekend && "bg-muted/20"
                   )}

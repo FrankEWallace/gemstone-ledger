@@ -1,27 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell, CheckCheck, AlertTriangle, Info, AlertCircle, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useSite } from "@/hooks/useSite";
-import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { Notification, NotificationType } from "@/lib/supabaseTypes";
-import {
-  getNotifications,
-  markAsRead,
-  markAllAsRead,
-  subscribeToNotifications,
-} from "@/services/notifications.service";
-import { supabase } from "@/lib/supabase";
+import type { NotificationType } from "@/lib/supabaseTypes";
 import { useSystemAlerts } from "@/hooks/useSystemAlerts";
 
 // ─── Type icon + colour ───────────────────────────────────────────────────────
@@ -35,55 +26,21 @@ const TYPE_META: Record<NotificationType, { icon: React.ElementType; color: stri
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function NotificationBell() {
-  const { user } = useAuth();
   const { activeSiteId } = useSite();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [hasNew, setHasNew] = useState(false);
-  const [fadingIds, setFadingIds] = useState<Set<string>>(new Set());
 
-  const { totalCount: systemAlertCount, criticalCount } = useSystemAlerts(activeSiteId ?? null);
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const totalBadge = unreadCount + systemAlertCount;
-
-  // Initial load
-  useEffect(() => {
-    if (!user?.id) return;
-    getNotifications(user.id).then((data) => {
-      setNotifications(data);
-      setLoaded(true);
-    });
-  }, [user?.id]);
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!user?.id) return;
-    const channel = subscribeToNotifications(user.id, (newNotif) => {
-      setNotifications((prev) => [newNotif, ...prev]);
+  const { notifications, unreadCount, isLoading, isError, markRead, markAllRead } = useNotifications(
+    (n) => {
       setHasNew(true);
       setTimeout(() => setHasNew(false), 3000);
-      toast(newNotif.title ?? "New notification", {
-        description: newNotif.body ?? undefined,
-        icon: newNotif.type === "alert" ? "🚨" : newNotif.type === "warning" ? "⚠️" : "ℹ️",
-      });
-    });
-    return () => { supabase.removeChannel(channel); };
-  }, [user?.id]);
+      toast(n.title ?? "New notification", { description: n.body ?? undefined });
+    }
+  );
 
-  async function handleMarkRead(id: string) {
-    setFadingIds((prev) => new Set(prev).add(id));
-    await new Promise((r) => setTimeout(r, 200));
-    await markAsRead(id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    setFadingIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
-  }
-
-  async function handleMarkAllRead() {
-    if (!user?.id) return;
-    await markAllAsRead(user.id);
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }
+  const { totalCount: systemAlertCount, criticalCount } = useSystemAlerts(activeSiteId ?? null);
+  const totalBadge = unreadCount + systemAlertCount;
+  const loaded = !isLoading;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -99,7 +56,7 @@ export default function NotificationBell() {
                 )} />
               )}
               <span className={cn(
-                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-destructive-foreground",
+                "absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-semibold text-destructive-foreground",
                 "bg-destructive"
               )}>
                 {totalBadge > 9 ? "9+" : totalBadge}
@@ -115,7 +72,7 @@ export default function NotificationBell() {
           <p className="font-semibold text-sm">Notifications</p>
           {unreadCount > 0 && (
             <button
-              onClick={handleMarkAllRead}
+              onClick={markAllRead}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <CheckCheck className="h-3.5 w-3.5" />
@@ -165,21 +122,19 @@ export default function NotificationBell() {
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground animate-in fade-in duration-300">
               <Bell className="h-8 w-8 mb-2 opacity-30" />
-              <p className="text-sm">No notifications yet</p>
+              <p className="text-sm">{isError ? "Couldn't load notifications" : "No notifications yet"}</p>
             </div>
           ) : (
             notifications.map((notif, i) => {
               const meta = TYPE_META[notif.type] ?? TYPE_META["info"];
               const Icon = meta.icon;
-              const fading = fadingIds.has(notif.id);
-              return (
+                            return (
                 <button
                   key={notif.id}
-                  onClick={() => !notif.read && handleMarkRead(notif.id)}
+                  onClick={() => !notif.read && markRead(notif.id)}
                   className={cn(
                     "w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-200 hover:bg-muted/50",
                     !notif.read && "bg-primary/5",
-                    fading && "opacity-40 scale-[0.99]",
                     i < notifications.length - 1 && "border-b border-border/50"
                   )}
                 >

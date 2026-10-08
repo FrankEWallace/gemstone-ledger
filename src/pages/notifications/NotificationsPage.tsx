@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
   AlertCircle,
@@ -11,18 +9,15 @@ import {
   X,
   Package,
   Users,
-  TrendingDown,
+  ArrowDown,
   FileText,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import EmptyState from "@/components/shared/EmptyState";
-import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useSite } from "@/hooks/useSite";
 import { useSystemAlerts, type SystemAlert, type SystemAlertCategory } from "@/hooks/useSystemAlerts";
-import { getNotifications, markAsRead, markAllAsRead } from "@/services/notifications.service";
-import { supabase } from "@/lib/supabase";
-import { subscribeToNotifications } from "@/services/notifications.service";
 import type { Notification, NotificationType } from "@/lib/supabaseTypes";
 
 // ─── System alert config ──────────────────────────────────────────────────────
@@ -53,8 +48,8 @@ const LEVEL_META = {
 
 const CATEGORY_META: Record<SystemAlertCategory, { icon: React.ElementType; label: string }> = {
   contracts: { icon: FileText, label: "Contracts" },
-  customers: { icon: Users,    label: "Customers" },
-  financials: { icon: TrendingDown, label: "Financials" },
+  customers: { icon: Users,    label: "Clients" },
+  financials: { icon: ArrowDown, label: "Financials" },
   inventory:  { icon: Package, label: "Inventory" },
 };
 
@@ -157,44 +152,17 @@ function NotifRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
   const { activeSiteId } = useSite();
 
   const { alerts, totalCount, criticalCount, dismiss, dismissAll } = useSystemAlerts(activeSiteId);
-
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [notifsLoaded, setNotifsLoaded] = useState(false);
-
-  const unreadDbCount = notifications.filter((n) => !n.read).length;
-
-  // Load DB push notifications
-  useEffect(() => {
-    if (!user?.id) return;
-    getNotifications(user.id).then((data) => {
-      setNotifications(data);
-      setNotifsLoaded(true);
-    });
-  }, [user?.id]);
-
-  // Real-time subscription for new push notifications
-  useEffect(() => {
-    if (!user?.id) return;
-    const channel = subscribeToNotifications(user.id, (n) => {
-      setNotifications((prev) => [n, ...prev]);
-    });
-    return () => { supabase.removeChannel(channel); };
-  }, [user?.id]);
-
-  async function handleMarkRead(id: string) {
-    await markAsRead(id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  }
-
-  async function handleMarkAllRead() {
-    if (!user?.id) return;
-    await markAllAsRead(user.id);
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }
+  const {
+    notifications,
+    unreadCount: unreadDbCount,
+    isLoading,
+    markRead: handleMarkRead,
+    markAllRead: handleMarkAllRead,
+  } = useNotifications();
+  const notifsLoaded = !isLoading;
 
   const hasAnything = totalCount > 0 || notifications.length > 0;
 

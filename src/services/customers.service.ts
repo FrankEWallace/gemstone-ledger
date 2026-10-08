@@ -8,6 +8,7 @@ import { DEMO_CUSTOMERS } from "@/lib/demo/data";
 export type CustomerPayload = {
   name: string;
   type?: "external" | "internal";
+  customer_type_id?: string | null;
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;

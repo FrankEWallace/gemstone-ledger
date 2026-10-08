@@ -114,19 +114,19 @@ export default function Register() {
   return (
     <div className="flex min-h-screen">
       {/* ── Left: brand panel ── */}
-      <div className="hidden lg:flex lg:w-[400px] xl:w-[460px] shrink-0 flex-col justify-between bg-[#0f1117] p-10 text-white">
+      <div className="hidden lg:flex lg:w-100 xl:w-115 shrink-0 flex-col justify-between bg-[#1c1917] p-10 text-white">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
             <BrandMark className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-lg tracking-tight">FW Mining OS</span>
+          <span className="font-display text-sm font-semibold tracking-tight">FW Mining OS</span>
         </div>
 
         {/* Pitch */}
         <div className="space-y-8">
           <div className="space-y-3">
-            <h1 className="font-display text-[2rem] font-bold leading-tight">
+            <h1 className="font-display text-[2rem] font-semibold leading-tight">
               Mining operations,<br />organized.
             </h1>
             <p className="text-sm text-white/55 leading-relaxed">
@@ -156,7 +156,7 @@ export default function Register() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <BrandMark className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-display font-bold">FW Mining OS</span>
+          <span className="font-display font-semibold">FW Mining OS</span>
         </div>
 
         <div className="w-full max-w-sm space-y-7">

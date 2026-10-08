@@ -79,7 +79,7 @@ export default function AcceptInvite() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <BrandMark className="h-6 w-6" />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">You've been invited</h1>
+          <h1 className="text-display">You've been invited</h1>
           <p className="text-sm text-muted-foreground text-center">
             Complete your account setup to join your team on FW Mining OS.
           </p>

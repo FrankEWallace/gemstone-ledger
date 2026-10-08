@@ -166,7 +166,7 @@ export default function CsvImportModal<T extends Record<string, unknown>>({
         {importDone ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <CheckCircle2 className="h-12 w-12 text-success" />
-            <p className="font-semibold text-lg">Import complete</p>
+            <p className="text-sm font-semibold">Import complete</p>
             <p className="text-sm text-muted-foreground">
               {validRows.length} {entityName.toLowerCase()} imported successfully.
             </p>
@@ -269,7 +269,7 @@ export default function CsvImportModal<T extends Record<string, unknown>>({
                     {validRows.slice(0, 50).map((r) => (
                       <tr key={r.index} className="border-t border-border">
                         {columns.map((c) => (
-                          <td key={c.header} className="px-3 py-1.5 text-foreground max-w-[180px] truncate">
+                          <td key={c.header} className="px-3 py-1.5 text-foreground max-w-45 truncate">
                             {String((r.data as Record<string, unknown>)[c.key as string] ?? "—")}
                           </td>
                         ))}

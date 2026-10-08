@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subDays, subMonths, startOfMonth, endOfMonth, differenceInDays, parseISO } from "date-fns";
 import {
   ChevronRight, ChevronDown, ArrowLeft, Download,
-  ChevronsUpDown, ArrowLeftRight, TrendingUp, TrendingDown,
+  ChevronsUpDown, ArrowLeftRight, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { Label as ChartLabel, Pie, PieChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -67,7 +67,7 @@ function deltaBadge(curr: number, prev: number) {
   const up = pct >= 0;
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full ${up ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
-      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {up ? "+" : ""}{pct}%
     </span>
   );
@@ -110,7 +110,7 @@ function CategoryRow({
                   {fmtCompact(prevTotal)}
                 </span>
               )}
-              <span className="text-sm font-bold tabular-nums">{fmtCurrency(total)}</span>
+              <span className="text-sm font-semibold tabular-nums">{fmtCurrency(total)}</span>
               {comparing && prevTotal != null && deltaBadge(total, prevTotal)}
             </div>
           </div>
@@ -127,7 +127,7 @@ function CategoryRow({
       {isOpen && (
         <div className="border-t border-border">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[520px]">
+            <table className="w-full text-sm min-w-130">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-2.5 text-left font-medium text-muted-foreground">Description</th>
@@ -143,7 +143,7 @@ function CategoryRow({
                   return (
                     <tr key={t.id} className="hover:bg-muted/20 transition-colors">
                       <td className="px-5 py-3">
-                        <span className="font-medium truncate block max-w-[220px]">{t.description || "—"}</span>
+                        <span className="font-medium truncate block max-w-55">{t.description || "—"}</span>
                         {t.reference_no && <span className="text-xs text-muted-foreground">{t.reference_no}</span>}
                       </td>
                       <td className="px-3 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
@@ -166,7 +166,7 @@ function CategoryRow({
               <tfoot>
                 <tr className="border-t border-border bg-muted/20">
                   <td colSpan={4} className="px-5 py-2.5 text-xs font-medium text-muted-foreground">Category total</td>
-                  <td className="px-5 py-2.5 text-right text-sm font-bold tabular-nums">{fmtCurrency(total)}</td>
+                  <td className="px-5 py-2.5 text-right text-sm font-semibold tabular-nums">{fmtCurrency(total)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -322,7 +322,7 @@ export default function BreakdownReportPage({ type }: Props) {
         <Link to="/reports" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-1">
           <ArrowLeft className="h-3 w-3" /> Reports
         </Link>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
+        <h1 className="text-display">
           {isExpense ? "Expense Breakdown" : "Income Breakdown"}
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -388,7 +388,7 @@ export default function BreakdownReportPage({ type }: Props) {
         <div className="px-3 sm:px-5 py-4 min-w-0 overflow-hidden">
           <p className="text-xs text-muted-foreground truncate">{isExpense ? "Total Expenses" : "Total Income"}</p>
           <div className="flex items-baseline gap-2 mt-1 flex-wrap min-w-0">
-            <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums truncate">{fmtCurrency(grandTotal)}</p>
+            <p className="font-display text-2xl font-medium tracking-tight tabular-nums truncate">{fmtCurrency(grandTotal)}</p>
             {comparing && prevGrandTotal > 0 && deltaBadge(grandTotal, prevGrandTotal)}
           </div>
           {comparing && prevGrandTotal > 0 && (
@@ -399,11 +399,11 @@ export default function BreakdownReportPage({ type }: Props) {
         </div>
         <div className="px-3 sm:px-5 py-4 min-w-0">
           <p className="text-xs text-muted-foreground">Categories</p>
-          <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums mt-1">{grouped.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{grouped.length}</p>
         </div>
         <div className="px-3 sm:px-5 py-4 min-w-0">
           <p className="text-xs text-muted-foreground">Transactions</p>
-          <p className="font-display text-xl sm:text-2xl font-semibold tabular-nums mt-1">{filteredTxs.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums mt-1">{filteredTxs.length}</p>
         </div>
       </div>
 
@@ -454,7 +454,7 @@ export default function BreakdownReportPage({ type }: Props) {
           placeholder="Search description or ref…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-8 text-xs flex-1 min-w-[180px]"
+          className="h-8 text-xs flex-1 min-w-45"
         />
         <div className="flex gap-1">
           {(["all", "success", "pending", "refunded", "cancelled"] as const).map((s) => (

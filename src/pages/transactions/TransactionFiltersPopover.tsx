@@ -77,7 +77,7 @@ export default function TransactionFiltersPopover({
           <SlidersHorizontal className="h-3.5 w-3.5" />
           Filters
           {count > 0 && (
-            <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold h-4 min-w-4 px-1 leading-none">
+            <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold h-4 min-w-4 px-1 leading-none">
               {count}
             </span>
           )}
@@ -193,16 +193,16 @@ export default function TransactionFiltersPopover({
         {/* Customer */}
         {customers.length > 0 && (
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Customer</Label>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wide">Client</Label>
             <Select
               value={filters.customerFilter}
               onValueChange={(v) => onChange({ customerFilter: v })}
             >
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="All customers" />
+                <SelectValue placeholder="All clients" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All customers</SelectItem>
+                <SelectItem value="all">All clients</SelectItem>
                 {customers.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}

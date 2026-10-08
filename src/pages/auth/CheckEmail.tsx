@@ -17,7 +17,7 @@ export default function CheckEmail() {
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <MailCheck className="h-6 w-6" />
         </div>
-        <h1 className="text-xl font-semibold">Check your email</h1>
+        <h1 className="text-display">Check your email</h1>
         <p className="text-sm text-muted-foreground">
           We sent a confirmation link{email ? <> to <span className="font-medium text-foreground">{email}</span></> : null}.
           Click it to activate your account, then sign in.

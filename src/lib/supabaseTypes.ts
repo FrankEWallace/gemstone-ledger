@@ -203,6 +203,41 @@ export type Database = {
           },
         ]
       }
+      customer_types: {
+        Row: {
+          archived: boolean
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+          sort_order: number
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+          sort_order?: number
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_types_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           contact_email: string | null
@@ -211,6 +246,7 @@ export type Database = {
           contract_end: string | null
           contract_start: string | null
           created_at: string
+          customer_type_id: string | null
           daily_rate: number | null
           id: string
           name: string
@@ -228,6 +264,7 @@ export type Database = {
           contract_end?: string | null
           contract_start?: string | null
           created_at?: string
+          customer_type_id?: string | null
           daily_rate?: number | null
           id?: string
           name: string
@@ -245,6 +282,7 @@ export type Database = {
           contract_end?: string | null
           contract_start?: string | null
           created_at?: string
+          customer_type_id?: string | null
           daily_rate?: number | null
           id?: string
           name?: string
@@ -1670,6 +1708,7 @@ export type UserProfile       = Database["public"]["Tables"]["user_profiles"]["R
 export type UserSiteRole      = Database["public"]["Tables"]["user_site_roles"]["Row"]
 export type Customer          = Database["public"]["Tables"]["customers"]["Row"]
 export type CustomerType      = Customer["type"]
+export type ClientType        = Database["public"]["Tables"]["customer_types"]["Row"]
 export type CustomerStatus    = Customer["status"]
 export type ExpenseCategory   = Database["public"]["Tables"]["expense_categories"]["Row"]
 export type Supplier          = Database["public"]["Tables"]["suppliers"]["Row"]
@@ -1751,6 +1790,22 @@ export interface KpiTarget {
   created_by: string | null
   created_at: string
   updated_at: string
+}
+
+export interface InventoryMovement {
+  id: string
+  site_id: string
+  inventory_item_id: string
+  type: "receive" | "use" | "write_off" | "adjustment"
+  quantity: number
+  quantity_after: number
+  unit_cost: number | null
+  transaction_id: string | null
+  write_off_id: string | null
+  customer_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
 }
 
 export interface ProductionLog {

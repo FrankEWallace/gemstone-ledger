@@ -1,110 +1,95 @@
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Coins, Fuel, HardHat, Pickaxe, Receipt, Truck, Wrench, type LucideIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fmtCurrency } from "@/lib/formatCurrency";
+import EntityAvatar from "@/components/shared/EntityAvatar";
+import StatusBadge from "@/components/shared/StatusBadge";
 import type { Transaction } from "@/lib/supabaseTypes";
 
-const income = "var(--chart-1)";
-const expense = "var(--chart-2)";
+const CATEGORY_ICONS: Array<[RegExp, LucideIcon]> = [
+  [/fuel|diesel|petrol/i, Fuel],
+  [/labou?r|wage|salar|crew|payroll/i, HardHat],
+  [/haul|transport|logistic|freight/i, Truck],
+  [/mainten|repair|equipment|spare/i, Wrench],
+  [/explosive|drill|blast|extract|dig/i, Pickaxe],
+];
+
+function iconFor(t: Transaction): LucideIcon {
+  if (t.type === "income") return Coins;
+  const hit = CATEGORY_ICONS.find(([re]) => re.test(t.category ?? ""));
+  return hit ? hit[1] : Receipt;
+}
+
+function Row({ t, customerName }: { t: Transaction; customerName: string | undefined }) {
+  const total = t.quantity * t.unit_price;
+  const isIncome = t.type === "income";
+  const Icon = iconFor(t);
+  const title = customerName ?? (t.description || t.category || (isIncome ? "Income" : "Expense"));
+  const meta = [customerName ? t.description : null, t.category, format(new Date(t.transaction_date), "d MMM")]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <li className="flex items-center gap-3 px-4 py-3">
+      {customerName ? (
+        <EntityAvatar name={customerName} seed={t.customer_id ?? undefined} className="h-9 w-9 text-xs" />
+      ) : (
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Icon className="h-4 w-4" />
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{title}</p>
+        <p className="truncate text-xs text-muted-foreground">{meta}</p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className={`text-sm font-semibold tabular-nums ${isIncome ? "text-success" : ""}`}>
+          {isIncome ? "+" : "−"}
+          {fmtCurrency(total)}
+        </span>
+        <StatusBadge status={t.status} />
+      </div>
+    </li>
+  );
+}
 
 export default function RecentTransactions({
   txs,
   isLoading,
+  customerNames,
 }: {
   txs: Transaction[];
   isLoading: boolean;
+  customerNames: Map<string, string>;
 }) {
   const recent = txs.slice(0, 5);
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <p className="text-sm font-medium">Recent Transactions</p>
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-card">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <p className="text-sm font-semibold">Recent transactions</p>
         <Link
           to="/transactions"
-          className="inline-flex items-center gap-0.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           View all <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
       {isLoading ? (
-        <div className="p-5 space-y-3">
+        <div className="space-y-3 p-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-8 animate-pulse bg-muted rounded" />
+            <div key={i} className="h-10 animate-pulse rounded-md bg-muted" />
           ))}
         </div>
+      ) : recent.length === 0 ? (
+        <p className="px-4 py-8 text-center text-sm text-muted-foreground">No transactions yet.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[480px]">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="px-5 py-3 text-left font-medium text-muted-foreground">Description</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Category</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Date</th>
-                <th className="px-5 py-3 text-right font-medium text-muted-foreground">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {recent.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
-                    No transactions yet.
-                  </td>
-                </tr>
-              ) : (
-                recent.map((t) => {
-                  const total = t.quantity * t.unit_price;
-                  const isIncome = t.type === "income";
-                  return (
-                    <tr key={t.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-5 py-3">
-                        <span className="font-medium truncate block max-w-[200px]">
-                          {t.description || "—"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
-                        {t.category || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
-                            t.status === "success"
-                              ? "bg-foreground/8 text-foreground"
-                              : t.status === "pending"
-                              ? "bg-muted text-muted-foreground"
-                              : "bg-muted text-muted-foreground line-through"
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              t.status === "success"
-                                ? "bg-success"
-                                : t.status === "pending"
-                                ? "bg-warning"
-                                : "bg-muted-foreground"
-                            }`}
-                          />
-                          {t.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground tabular-nums hidden sm:table-cell">
-                        {format(new Date(t.transaction_date), "d MMM")}
-                      </td>
-                      <td className="px-5 py-3 text-right tabular-nums font-semibold">
-                        <span style={{ color: isIncome ? income : expense }}>
-                          {isIncome ? "+" : "−"}
-                          {fmtCurrency(total)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ul className="divide-y divide-border">
+          {recent.map((t) => (
+            <Row key={t.id} t={t} customerName={t.customer_id ? customerNames.get(t.customer_id) : undefined} />
+          ))}
+        </ul>
       )}
     </div>
   );

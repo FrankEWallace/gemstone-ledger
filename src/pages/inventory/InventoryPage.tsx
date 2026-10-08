@@ -65,6 +65,7 @@ import { isDemoMode } from "@/lib/demo";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
+import InventoryItemHistorySheet from "@/pages/inventory/InventoryItemHistorySheet";
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -433,13 +434,13 @@ function LogUsageModal({ open, onClose, item, siteId, orgId, userId }: LogUsageM
 
           {customers.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-xs">Customer (optional)</Label>
+              <Label className="text-xs">Client (optional)</Label>
               <Select value={customerId || "none"} onValueChange={(v) => setCustomerId(v === "none" ? "" : v)}>
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="No customer" />
+                  <SelectValue placeholder="No client" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No customer</SelectItem>
+                  <SelectItem value="none">No client</SelectItem>
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -604,15 +605,16 @@ interface StockReceiveModalProps {
   onClose: () => void;
   item: InventoryItem;
   siteId: string;
+  userId?: string;
 }
 
-function StockReceiveModal({ open, onClose, item, siteId }: StockReceiveModalProps) {
+function StockReceiveModal({ open, onClose, item, siteId, userId }: StockReceiveModalProps) {
   const queryClient = useQueryClient();
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => receiveInventoryStock(siteId, item, qty, notes || undefined),
+    mutationFn: () => receiveInventoryStock(siteId, item, qty, notes || undefined, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory", siteId] });
       toast.success(`Received ${qty} ${item.unit ?? "unit(s)"} of ${item.name}. Stock: ${item.quantity} → ${item.quantity + qty}.`);
@@ -698,6 +700,7 @@ export default function InventoryPage() {
   const [logUsageTarget, setLogUsageTarget] = useState<InventoryItem | null>(null);
   const [writeOffTarget, setWriteOffTarget] = useState<InventoryItem | null>(null);
   const [receiveTarget, setReceiveTarget] = useState<InventoryItem | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<InventoryItem | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inventory", activeSiteId],
@@ -890,7 +893,7 @@ export default function InventoryPage() {
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={() => { setEditing(row); setModalOpen(true); }}
+            onClick={(e) => { e.stopPropagation(); setEditing(row); setModalOpen(true); }}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -898,7 +901,7 @@ export default function InventoryPage() {
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-            onClick={() => setDeleteTarget(row)}
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(row); }}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -953,15 +956,15 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Stat strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 rounded-xl border border-border overflow-hidden divide-y divide-border lg:divide-y-0 lg:divide-x">
         {/* Total Items */}
-        <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1.5">
+        <div className="bg-card p-4 flex flex-col gap-1.5">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Boxes className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Total Items</span>
           </div>
-          <p className="font-display text-2xl font-semibold tabular-nums leading-none">{items.length}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums leading-none">{items.length}</p>
           <p className="text-xs text-muted-foreground">{categoryFilter !== "all" ? `${filteredItems.length} in filter` : "across all categories"}</p>
         </div>
 
@@ -969,19 +972,19 @@ export default function InventoryPage() {
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === "out" ? "all" : "out")}
-          className={`rounded-xl border p-4 flex flex-col gap-1.5 text-left transition-colors ${
+          className={`p-4 flex flex-col gap-1.5 text-left transition-colors ${
             statusFilter === "out"
-              ? "border-destructive/40 bg-destructive/10"
+              ? "bg-destructive/10"
               : outOfStockCount > 0
-              ? "border-destructive/20 bg-destructive/5 hover:border-destructive/30"
-              : "border-border bg-card hover:border-foreground/20"
+              ? "bg-destructive/5 hover:bg-destructive/10"
+              : "bg-card hover:bg-muted/40"
           }`}
         >
           <div className={`flex items-center gap-2 ${outOfStockCount > 0 ? "text-destructive" : "text-muted-foreground"}`}>
             <PackageX className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Out of Stock</span>
           </div>
-          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${outOfStockCount > 0 ? "text-destructive" : ""}`}>
+          <p className={`font-display text-2xl font-medium tracking-tight tabular-nums leading-none ${outOfStockCount > 0 ? "text-destructive" : ""}`}>
             {outOfStockCount}
           </p>
           <p className="text-xs text-muted-foreground">{statusFilter === "out" ? "click to clear filter" : "click to filter table"}</p>
@@ -991,31 +994,31 @@ export default function InventoryPage() {
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === "low" ? "all" : "low")}
-          className={`rounded-xl border p-4 flex flex-col gap-1.5 text-left transition-colors ${
+          className={`p-4 flex flex-col gap-1.5 text-left transition-colors ${
             statusFilter === "low"
-              ? "border-warning/40 bg-warning/10"
+              ? "bg-warning/10"
               : lowStockCount > 0
-              ? "border-warning/20 bg-warning/5 hover:border-warning/30"
-              : "border-border bg-card hover:border-foreground/20"
+              ? "bg-warning/5 hover:bg-warning/10"
+              : "bg-card hover:bg-muted/40"
           }`}
         >
           <div className={`flex items-center gap-2 ${lowStockCount > 0 ? "text-warning" : "text-muted-foreground"}`}>
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Low Stock</span>
           </div>
-          <p className={`font-display text-2xl font-semibold tabular-nums leading-none ${lowStockCount > 0 ? "text-warning" : ""}`}>
+          <p className={`font-display text-2xl font-medium tracking-tight tabular-nums leading-none ${lowStockCount > 0 ? "text-warning" : ""}`}>
             {lowStockCount}
           </p>
           <p className="text-xs text-muted-foreground">{statusFilter === "low" ? "click to clear filter" : "click to filter table"}</p>
         </button>
 
         {/* Total Value */}
-        <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1.5">
+        <div className="bg-card p-4 flex flex-col gap-1.5">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Wallet className="h-4 w-4 shrink-0" />
             <span className="text-xs font-medium">Stock Value</span>
           </div>
-          <p className="font-display text-2xl font-semibold tabular-nums leading-none">{fmtCurrency(totalValue, 0)}</p>
+          <p className="font-display text-2xl font-medium tracking-tight tabular-nums leading-none">{fmtCurrency(totalValue, 0)}</p>
           <p className="text-xs text-muted-foreground">
             {items.length - itemsWithCost > 0
               ? `excl. ${items.length - itemsWithCost} item${items.length - itemsWithCost !== 1 ? "s" : ""} without cost`
@@ -1034,6 +1037,7 @@ export default function InventoryPage() {
         searchKeys={["name", "sku", "category"]}
         pageSize={15}
         isLoading={isLoading}
+        onRowClick={(row) => setHistoryTarget(row as unknown as InventoryItem)}
         emptyMessage={
           categoryFilter !== "all"
             ? `No items in category "${categoryFilter}".`
@@ -1125,6 +1129,16 @@ export default function InventoryPage() {
           open={!!receiveTarget}
           onClose={() => setReceiveTarget(null)}
           item={receiveTarget}
+          siteId={activeSiteId!}
+          userId={user?.id}
+        />
+      )}
+
+      {historyTarget && (
+        <InventoryItemHistorySheet
+          open={!!historyTarget}
+          onClose={() => setHistoryTarget(null)}
+          item={historyTarget}
           siteId={activeSiteId!}
         />
       )}

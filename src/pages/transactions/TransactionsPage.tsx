@@ -46,7 +46,7 @@ import {
 import { getCustomers } from "@/services/customers.service";
 import { getProductionPhases } from "@/services/production-phases.service";
 import CsvImportModal, { type CsvColumn } from "@/components/shared/CsvImportModal";
-import StatCard from "@/components/shared/StatCard";
+import KpiCell from "@/components/shared/KpiCell";
 import StatusBadge from "@/components/shared/StatusBadge";
 import {
   RecordPaymentModal,
@@ -80,7 +80,7 @@ function statusBadge(status: TransactionStatus) {
 }
 
 function exportCSV(txs: Transaction[], customerMap: Map<string, string>, phaseMap: Map<string, string>) {
-  const header = "Date,Reference,Description,Category,Customer,Phase,Type,Status,Qty,Unit Price,Total";
+  const header = "Date,Reference,Description,Category,Client,Phase,Type,Status,Qty,Unit Price,Total";
   const rows = txs.map((t) =>
     [
       t.transaction_date,
@@ -325,7 +325,7 @@ export default function TransactionsPage() {
     },
     {
       key: "customer_id",
-      header: "Customer",
+      header: "Client",
       className: "hidden md:table-cell",
       render: (val) => {
         const name = val ? customerMap.get(String(val)) : null;
@@ -438,27 +438,27 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 rounded-xl border border-border bg-card divide-y divide-border sm:divide-y-0 sm:divide-x">
+        <KpiCell
           label="Collected Income"
           value={fmtCurrency(totalIncome)}
           sub="success status only"
           color={C.income}
         />
-        <StatCard
+        <KpiCell
           label="Total Expenses"
           value={fmtCurrency(totalExpenses)}
           sub="success status only"
           color={C.expense}
         />
-        <StatCard
+        <KpiCell
           label="Net Profit"
           value={fmtCurrency(totalIncome - totalExpenses)}
           sub="income − expenses"
           color={totalIncome - totalExpenses >= 0 ? C.income : C.expense}
         />
-        <StatCard
+        <KpiCell
           label="Transactions"
           value={transactions.length.toString()}
           sub={`${transactions.filter((t) => t.type === "income").length} income · ${transactions.filter((t) => t.type === "expense").length} expense`}

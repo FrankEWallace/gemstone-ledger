@@ -26,7 +26,7 @@ export default function EmptyState({
           <Icon className="h-8 w-8 text-muted-foreground opacity-50" />
         </div>
       )}
-      <h3 className="text-base font-semibold">{title}</h3>
+      <h3 className="text-sm font-semibold">{title}</h3>
       {description && (
         <p className="mt-1 text-sm text-muted-foreground max-w-sm">{description}</p>
       )}

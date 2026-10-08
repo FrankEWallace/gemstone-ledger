@@ -422,7 +422,7 @@ export default function EntryPad({
               {/* Phase only exists once the site has production phases — otherwise
                   there's nothing to assign, so show Customer alone (saves phase null). */}
               <div className={cn("grid gap-3", phases.length > 0 ? "grid-cols-2" : "grid-cols-1")}>
-                <Field label="Customer">
+                <Field label="Client">
                   <Select value={customerId} onValueChange={setCustomerId}>
                     <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                     <SelectContent>
@@ -537,7 +537,7 @@ function ExpenseItemField({
         </div>
       )}
       {q.length > 0 && matches.length === 0 && (
-        <p className="text-[11px] text-muted-foreground">Not in catalog — saved as a one-off expense.</p>
+        <p className="text-xs text-muted-foreground">Not in catalog — saved as a one-off expense.</p>
       )}
     </div>
   );

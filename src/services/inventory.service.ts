@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isRestActive } from "@/lib/providers/backendConfig";
 import { restGet, restPost, restPut, restDel } from "@/lib/providers/rest/client";
-import type { InventoryItem, TablesInsert } from "@/lib/supabaseTypes";
+import type { InventoryItem, InventoryMovement, TablesInsert } from "@/lib/supabaseTypes";
 import { createTransaction } from "@/services/transactions.service";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_INVENTORY, DEMO_INVENTORY_WRITE_OFFS, DEMO_INVENTORY_USAGE } from "@/lib/demo/data";
@@ -135,17 +135,49 @@ export async function getInventoryConsumptionRates(
   return rates;
 }
 
+// ─── Movement ledger ────────────────────────────────────────────────────────
+// Explicit, item-scoped history over receive/use/write-off/adjustment events,
+// each carrying a running `quantity_after` balance — see migration 034.
+
+type MovementInsert = {
+  site_id: string;
+  inventory_item_id: string;
+  type: InventoryMovement["type"];
+  quantity: number;
+  quantity_after: number;
+  unit_cost?: number | null;
+  transaction_id?: string | null;
+  write_off_id?: string | null;
+  customer_id?: string | null;
+  notes?: string | null;
+  created_by?: string | null;
+};
+
+async function insertMovement(row: MovementInsert): Promise<void> {
+  if (isDemoMode()) return; // nothing is persisted in demo mode
+  const { error } = await supabase.from("inventory_movements" as any).insert(row as any);
+  if (error) throw error;
+}
+
 export async function receiveInventoryStock(
   siteId: string,
   item: InventoryItem,
   qty: number,
-  notes?: string
+  notes?: string,
+  userId?: string
 ): Promise<void> {
-  // Receiving stock only adjusts the on-hand quantity. (There is no inventory
-  // movement-ledger table; usage/consumption is tracked via `source: 'inventory'`
-  // transactions, and reductions via inventory_write_offs.)
-  void notes;
-  await updateInventoryItem(item.id, { quantity: item.quantity + qty });
+  const quantityAfter = item.quantity + qty;
+  await updateInventoryItem(item.id, { quantity: quantityAfter });
+  await insertMovement({
+    site_id: siteId,
+    inventory_item_id: item.id,
+    type: "receive",
+    quantity: qty,
+    quantity_after: quantityAfter,
+    unit_cost: item.unit_cost ?? null,
+    notes: notes || null,
+    created_by: userId ?? null,
+  });
 }
 
 /**
@@ -164,11 +196,13 @@ export async function consumeInventoryItem(
     transactionDate?: string;
   } = {}
 ): Promise<void> {
-  await updateInventoryItem(item.id, { quantity: item.quantity - qty });
+  const quantityAfter = item.quantity - qty;
+  await updateInventoryItem(item.id, { quantity: quantityAfter });
 
+  let transactionId: string | null = null;
   const unitCost = Number(item.unit_cost ?? 0);
   if (unitCost > 0) {
-    await createTransaction(
+    const tx = await createTransaction(
       siteId,
       {
         description: `${item.name} usage — ${qty} ${item.unit ?? "units"}${opts.notes ? ` (${opts.notes})` : ""}`,
@@ -185,7 +219,21 @@ export async function consumeInventoryItem(
       },
       opts.userId
     );
+    transactionId = tx.id ?? null;
   }
+
+  await insertMovement({
+    site_id: siteId,
+    inventory_item_id: item.id,
+    type: "use",
+    quantity: -qty,
+    quantity_after: quantityAfter,
+    unit_cost: unitCost || null,
+    transaction_id: transactionId,
+    customer_id: opts.customerId ?? null,
+    notes: opts.notes || null,
+    created_by: opts.userId ?? null,
+  });
 }
 
 // ─── Write-offs ───────────────────────────────────────────────────────────────
@@ -230,9 +278,10 @@ export async function writeOffInventoryItem(
     return;
   }
 
-  await updateInventoryItem(item.id, { quantity: item.quantity - qty });
+  const quantityAfter = item.quantity - qty;
+  await updateInventoryItem(item.id, { quantity: quantityAfter });
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("inventory_write_offs" as any)
     .insert({
       site_id: siteId,
@@ -242,8 +291,22 @@ export async function writeOffInventoryItem(
       notes: notes || null,
       written_off_at: new Date().toISOString().slice(0, 10),
       written_off_by: userId ?? null,
-    });
+    })
+    .select("id")
+    .single();
   if (error) throw error;
+
+  await insertMovement({
+    site_id: siteId,
+    inventory_item_id: item.id,
+    type: "write_off",
+    quantity: -qty,
+    quantity_after: quantityAfter,
+    unit_cost: item.unit_cost ?? null,
+    write_off_id: (data as unknown as { id: string } | null)?.id ?? null,
+    notes: `${reason}${notes ? ` — ${notes}` : ""}`,
+    created_by: userId ?? null,
+  });
 }
 
 export async function getInventoryWriteOffsForReport(
@@ -343,6 +406,90 @@ export async function getInventoryUsageForReport(
       transactionDate: row.transaction_date,
     };
   });
+}
+
+// ─── Item history ───────────────────────────────────────────────────────────
+
+export interface InventoryMovementRow {
+  id: string;
+  type: InventoryMovement["type"];
+  quantity: number;
+  quantityAfter: number;
+  unitCost: number | null;
+  customerId: string | null;
+  customerName: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+/**
+ * Full receive/use/write-off/adjustment history for one item, newest first.
+ * `currentQuantity` is only used to anchor the synthesized demo-mode timeline
+ * (demo data predates this ledger, so there's nothing stored to read back).
+ */
+export async function getInventoryMovements(
+  siteId: string,
+  itemId: string,
+  currentQuantity: number
+): Promise<InventoryMovementRow[]> {
+  if (isDemoMode()) {
+    const usage = DEMO_INVENTORY_USAGE
+      .filter((u) => u.inventoryItemId === itemId)
+      .map((u) => ({
+        id: u.id,
+        type: "use" as const,
+        quantity: -u.quantityConsumed,
+        unitCost: u.quantityConsumed ? u.valueConsumed / u.quantityConsumed : null,
+        customerId: u.customerId,
+        customerName: u.customerName,
+        notes: null as string | null,
+        createdAt: u.transactionDate,
+      }));
+    const writeOffs = (DEMO_INVENTORY_WRITE_OFFS as any[])
+      .filter((w) => w.inventory_item_id === itemId)
+      .map((w) => ({
+        id: w.id,
+        type: "write_off" as const,
+        quantity: -w.quantity,
+        unitCost: null,
+        customerId: null,
+        customerName: null,
+        notes: `${w.reason}${w.notes ? ` — ${w.notes}` : ""}`,
+        createdAt: w.written_off_at,
+      }));
+
+    // Walk forward chronologically to build a self-consistent running balance,
+    // then shift it so the most recent entry lands on the item's actual stock.
+    const chrono = [...usage, ...writeOffs].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    let running = 0;
+    const withRunning = chrono.map((m) => { running += m.quantity; return { ...m, quantityAfter: running }; });
+    const shift = currentQuantity - (withRunning.at(-1)?.quantityAfter ?? currentQuantity);
+    return withRunning.map((m) => ({ ...m, quantityAfter: m.quantityAfter + shift })).reverse();
+  }
+
+  const { data, error } = await supabase
+    .from("inventory_movements" as any)
+    .select("id, type, quantity, quantity_after, unit_cost, notes, created_at, customer_id, customers(name)")
+    .eq("site_id", siteId)
+    .eq("inventory_item_id", itemId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("inventory_movements query failed:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    type: row.type,
+    quantity: Number(row.quantity),
+    quantityAfter: Number(row.quantity_after),
+    unitCost: row.unit_cost != null ? Number(row.unit_cost) : null,
+    customerId: row.customer_id ?? null,
+    customerName: (row.customers as any)?.name ?? null,
+    notes: row.notes ?? null,
+    createdAt: row.created_at,
+  }));
 }
 
 export async function getInventoryCategories(siteId: string): Promise<string[]> {

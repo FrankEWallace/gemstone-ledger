@@ -57,7 +57,7 @@ export default function CaptureLedger() {
       segment === "phase"
         ? t.phase_id ? phaseName[t.phase_id] ?? "Unknown phase" : "No phase"
         : segment === "customer"
-        ? t.customer_id ? customerName[t.customer_id] ?? "Unknown customer" : "No customer"
+        ? t.customer_id ? customerName[t.customer_id] ?? "Unknown client" : "No client"
         : t.category || "Uncategorized";
 
     const by = new Map<string, Transaction[]>();
@@ -76,7 +76,7 @@ export default function CaptureLedger() {
 
   return (
     <div className="p-4">
-      <h1 className="mb-3 text-2xl font-bold">Ledger</h1>
+      <h1 className="mb-3 text-display">Ledger</h1>
 
       <div className="grid grid-cols-3 divide-x rounded-2xl bg-card shadow-sm p-3 text-center">
         <Stat to="/capture/breakdown/income" label="Income" value={fmtCompact(income)} className="text-success" />
@@ -94,7 +94,7 @@ export default function CaptureLedger() {
               segment === s ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
             )}
           >
-            {s}
+            {s === "customer" ? "client" : s}
           </button>
         ))}
       </div>
@@ -135,7 +135,7 @@ export default function CaptureLedger() {
 function Stat({ to, label, value, className }: { to?: string; label: string; value: string; className?: string }) {
   const inner = (
     <>
-      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
       <div className={cn("mt-0.5 text-sm font-medium tabular-nums", className)}>{value}</div>
     </>
   );

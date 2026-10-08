@@ -110,13 +110,13 @@ export default function CaptureBreakdown() {
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <h1 className="truncate px-11 text-base font-semibold">{isIncome ? "Income" : "Expense"} breakdown</h1>
+        <h1 className="truncate px-11 text-sm font-semibold">{isIncome ? "Income" : "Expense"} breakdown</h1>
       </div>
 
       {/* Total hero */}
       <div className="mb-4 text-center">
         <div className="text-sm text-muted-foreground">Total {isIncome ? "income" : "expense"}</div>
-        <div className={cn("text-4xl font-semibold tracking-tight tabular-nums", accent)}>{fmtCurrency(total)}</div>
+        <div className={cn("font-display text-2xl font-medium tracking-tight tabular-nums", accent)}>{fmtCurrency(total)}</div>
         {filtered && <div className="text-xs text-muted-foreground">Filtered</div>}
       </div>
 
@@ -131,7 +131,7 @@ export default function CaptureBreakdown() {
         <FilterSelect
           value={cust}
           onChange={setCust}
-          allLabel="All customers"
+          allLabel="All clients"
           options={[
             ...(hasUnassigned ? [{ value: UNASSIGNED, label: "Unassigned" }] : []),
             ...custOptions.map((c) => ({ value: c.id, label: c.name })),
@@ -166,7 +166,7 @@ export default function CaptureBreakdown() {
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div className={cn("h-full rounded-full", barBg)} style={{ width: `${Math.max(2, g.share)}%` }} />
                       </div>
-                      <span className="w-10 shrink-0 text-right text-[11px] text-muted-foreground tabular-nums">
+                      <span className="w-10 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
                         {g.share.toFixed(0)}%
                       </span>
                     </div>

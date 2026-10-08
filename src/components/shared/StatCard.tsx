@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { fmtCompact } from "@/lib/formatCurrency";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +24,30 @@ interface StatCardProps {
   trendPct?: number | null;
   /** Small muted label beside the trend badge. */
   vsLabel?: string;
-  /** Larger value type for the hero stat in a row. */
-  prominent?: boolean;
+  /** Which direction of `trendPct` is good news (expenses: "down"). */
+  trendGoodWhen?: "up" | "down";
+  /** Bar sparkline; the first `dimFirst` bars (the previous period) are drawn faded. */
+  spark?: { values: number[]; dimFirst?: number; tone?: "primary" | "muted" };
   className?: string;
+}
+
+function Sparkline({ values, dimFirst = 0, tone = "primary" }: NonNullable<StatCardProps["spark"]>) {
+  const max = Math.max(...values.map(Math.abs), 1);
+  return (
+    <div className="flex h-6 items-end gap-1" aria-hidden="true">
+      {values.map((v, i) => (
+        <span
+          key={i}
+          className={cn(
+            "w-full max-w-2 rounded-sm",
+            v < 0 ? "bg-destructive" : tone === "muted" ? "bg-muted-foreground/60" : "bg-primary",
+            i < dimFirst && "opacity-30",
+          )}
+          style={{ height: `${Math.max(8, (Math.abs(v) / max) * 100)}%` }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function StatCard({
@@ -40,23 +61,25 @@ export default function StatCard({
   href,
   trendPct,
   vsLabel,
-  prominent,
+  trendGoodWhen = "up",
+  spark,
   className,
 }: StatCardProps) {
   const hasTrend = trendPct != null;
   const up = (trendPct ?? 0) >= 0;
+  const flat = trendPct === 0;
+  const good = trendGoodWhen === "up" ? up : !up;
   const display = value ?? (rawValue != null ? fmtCompact(rawValue) : "—");
 
   const content = (
     <>
-      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         {icon}
         {label}
       </div>
       <p
         className={cn(
-          "font-display font-semibold tracking-tight tabular-nums leading-none",
-          prominent ? "text-3xl" : "text-2xl",
+          "font-display text-2xl font-medium tracking-tight tabular-nums leading-none",
           valueClassName,
         )}
         style={color ? { color } : undefined}
@@ -68,11 +91,15 @@ export default function StatCard({
           {hasTrend && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
-                up ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
+                "inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full tabular-nums",
+                flat
+                  ? "bg-muted text-muted-foreground"
+                  : good
+                    ? "bg-success/10 text-success"
+                    : "bg-destructive/10 text-destructive",
               )}
             >
-              {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
               {up ? "+" : ""}
               {trendPct!.toFixed(1)}%
             </span>
@@ -81,14 +108,15 @@ export default function StatCard({
         </div>
       )}
       {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+      {spark && spark.values.length > 0 && <Sparkline {...spark} />}
     </>
   );
 
-  const base = "rounded-xl border border-border bg-card p-4 flex flex-col gap-2";
+  const base = "rounded-lg border border-border bg-card shadow-card p-4 flex flex-col gap-3";
 
   if (href) {
     return (
-      <Link to={href} className={cn(base, "group hover:border-foreground/20 transition-colors", className)}>
+      <Link to={href} className={cn(base, "group hover:border-input hover:bg-accent/40 transition-colors", className)}>
         {content}
       </Link>
     );

@@ -151,10 +151,10 @@ export async function generateContractInvoices(
   createdBy?: string
 ): Promise<GenerateInvoicesResult> {
   if (!customer.daily_rate || Number(customer.daily_rate) <= 0) {
-    throw new Error("Customer has no daily rate configured.");
+    throw new Error("Client has no daily rate configured.");
   }
   if (!customer.contract_start) {
-    throw new Error("Customer has no contract start date.");
+    throw new Error("Client has no contract start date.");
   }
 
   const rate      = Number(customer.daily_rate);

@@ -24,10 +24,10 @@ function applyTheme(theme: Theme) {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
+    return (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "light";
   });
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() =>
-    applyTheme((localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system")
+    applyTheme((localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "light")
   );
 
   // Listen for system preference changes when in "system" mode

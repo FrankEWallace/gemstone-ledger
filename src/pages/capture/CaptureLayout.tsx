@@ -14,7 +14,7 @@ export type CaptureContext = { openEntry: (tx?: Transaction) => void };
 const TABS = [
   { to: "/capture", label: "Ledger", icon: LayoutList, end: true },
   { to: "/capture/prices", label: "Prices", icon: Tag, end: false },
-  { to: "/capture/customers", label: "Customers", icon: Users, end: false },
+  { to: "/capture/clients", label: "Clients", icon: Users, end: false },
   { to: "/capture/more", label: "More", icon: Ellipsis, end: false },
 ];
 
@@ -99,7 +99,7 @@ function Tab({ to, label, icon: Icon, end }: { to: string; label: string; icon: 
       end={end}
       className={({ isActive }) =>
         cn(
-          "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px]",
+          "flex flex-1 flex-col items-center gap-1 py-2.5 text-xs",
           isActive ? "text-primary" : "text-muted-foreground",
         )
       }
