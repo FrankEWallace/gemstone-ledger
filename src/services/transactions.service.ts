@@ -181,6 +181,7 @@ registerHandler("transactions", "delete", async (item) => {
 });
 
 export async function getTransactionCategories(siteId: string): Promise<string[]> {
+  if (isDemoMode()) return [...new Set(DEMO_TRANSACTIONS.map(t => t.category).filter(Boolean))] as string[];
   if (isRestActive())
     return restGet<string[]>(`/transactions/categories?site_id=${siteId}`);
 

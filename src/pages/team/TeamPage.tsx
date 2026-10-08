@@ -673,7 +673,7 @@ export default function TeamPage() {
                   borderRadius: "8px",
                   fontSize: "12px",
                 }}
-                formatter={(v: number) => [`${v}h`, "Hours"]}
+                formatter={(v): [string, string] => [`${v}h`, "Hours"]}
               />
               <Bar dataKey="hours" fill="var(--primary)" radius={[4, 4, 0, 0]} />
             </BarChart>

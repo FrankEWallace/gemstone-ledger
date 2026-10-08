@@ -95,8 +95,8 @@ export default function SalesTrendChart() {
                 borderRadius: "8px",
                 fontSize: "13px",
               }}
-              formatter={(value: number, name: string) => [
-                `${(value / 1000).toFixed(0)}k`,
+              formatter={(value, name): [string, string] => [
+                `${(Number(value) / 1000).toFixed(0)}k`,
                 name === "newUser" ? "Expenses" : "Income",
               ]}
             />

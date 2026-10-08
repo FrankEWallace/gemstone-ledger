@@ -18,7 +18,7 @@ export async function createSite(name: string, location?: string): Promise<strin
 
   const { data, error } = await supabase.rpc("create_site", {
     p_name: name.trim(),
-    p_location: location?.trim() ? location.trim() : null,
+    p_location: location?.trim() || undefined,
   });
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Site was not created.");
