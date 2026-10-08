@@ -854,7 +854,7 @@ export default function InventoryPage() {
       ),
     },
     {
-      key: "id",
+      key: "actions",
       header: "",
       className: "w-40 text-center",
       render: (_, row) => (
