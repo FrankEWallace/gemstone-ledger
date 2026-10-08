@@ -33,6 +33,24 @@ serve(async (req: Request) => {
       });
     }
 
+    // Cap requests per user so the form can't be looped to burn email quota.
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: withinLimit, error: limitErr } = await supabaseAdmin.rpc("hit_rate_limit", {
+      p_bucket: "send-support-message",
+      p_subject: user.id,
+      p_max: 5,
+      p_window: "1 hour",
+    });
+    if (limitErr || withinLimit !== true) {
+      return new Response(
+        JSON.stringify({ error: "Too many support requests. Try again later." }),
+        { status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
     const { name, email, subject, message } = await req.json();
 
     if (!name || !email || !subject || !message) {

@@ -35,12 +35,15 @@ export async function updateUserRole(
     return;
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("user_site_roles")
     .update({ role })
     .eq("user_id", userId)
-    .eq("site_id", siteId);
+    .eq("site_id", siteId)
+    .select("user_id");
   if (error) throw error;
+  // RLS-blocked updates match zero rows instead of erroring.
+  if (!data?.length) throw new Error("You don't have permission to change this role.");
 }
 
 export async function removeUserFromSite(userId: string, siteId: string): Promise<void> {
@@ -49,12 +52,14 @@ export async function removeUserFromSite(userId: string, siteId: string): Promis
     return;
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("user_site_roles")
     .delete()
     .eq("user_id", userId)
-    .eq("site_id", siteId);
+    .eq("site_id", siteId)
+    .select("user_id");
   if (error) throw error;
+  if (!data?.length) throw new Error("You don't have permission to remove this user.");
 }
 
 export async function inviteUser(payload: {

@@ -106,8 +106,31 @@ serve(async (req: Request) => {
       );
     }
 
+    // Cap invites per inviter so one account can't mass-send email.
+    const { data: withinLimit, error: limitErr } = await supabaseAdmin.rpc("hit_rate_limit", {
+      p_bucket: "invite-user",
+      p_subject: inviter.id,
+      p_max: 20,
+      p_window: "1 hour",
+    });
+    if (limitErr || withinLimit !== true) {
+      return new Response(
+        JSON.stringify({ error: "Too many invitations. Try again later." }),
+        { status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // No localhost fallback: a missing APP_URL would put localhost links in real invite emails.
+    const appUrl = Deno.env.get("APP_URL");
+    if (!appUrl) {
+      return new Response(JSON.stringify({ error: "APP_URL not configured" }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      });
+    }
+
     // Send invitation — user_metadata carries org/site/role for display only
-    const appUrl = Deno.env.get("APP_URL") ?? "http://localhost:5173";
+
     const { data, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       redirectTo: `${appUrl}/accept-invite`,
       data: {

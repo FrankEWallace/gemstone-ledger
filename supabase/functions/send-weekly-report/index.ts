@@ -13,6 +13,11 @@ const RESEND_KEY   = Deno.env.get("RESEND_API_KEY") ?? "";
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
+// Org, site and item names are user-entered; escape before putting them in HTML.
+function esc(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
@@ -79,7 +84,7 @@ async function buildSiteReport(siteId: string, siteName: string, from: string, t
     `<td style="padding:8px 16px;background:${color}10;border-radius:8px;text-align:center;"><div style="font-size:11px;color:#666;margin-bottom:2px;">${label}</div><div style="font-size:18px;font-weight:700;color:${color};">${value}</div></td>`;
 
   return `
-    <h2 style="font-size:16px;font-weight:700;margin:24px 0 8px;">${siteName}</h2>
+    <h2 style="font-size:16px;font-weight:700;margin:24px 0 8px;">${esc(siteName)}</h2>
     <table style="border-collapse:separate;border-spacing:8px;margin-bottom:16px;">
       <tr>
         ${pill("Revenue", fmt(revenue), "#16a34a")}
@@ -91,7 +96,7 @@ async function buildSiteReport(siteId: string, siteName: string, from: string, t
     </table>
     ${openIncidents ? `<p style="color:#ea580c;font-size:13px;">${openIncidents} open safety incident(s)</p>` : ""}
     ${overdueEquipment ? `<p style="color:#dc2626;font-size:13px;">${overdueEquipment} equipment item(s) overdue for service</p>` : ""}
-    ${lowStock.length > 0 ? `<p style="color:#b45309;font-size:13px;">Low stock: ${lowStock.slice(0, 5).map((i: any) => i.name).join(", ")}${lowStock.length > 5 ? ` +${lowStock.length - 5} more` : ""}</p>` : ""}
+    ${lowStock.length > 0 ? `<p style="color:#b45309;font-size:13px;">Low stock: ${lowStock.slice(0, 5).map((i: any) => esc(i.name)).join(", ")}${lowStock.length > 5 ? ` +${lowStock.length - 5} more` : ""}</p>` : ""}
   `;
 }
 
@@ -176,13 +181,13 @@ serve(async (req) => {
       .select("id, name")
       .eq("org_id", org.id);
 
-    let body = `<div style="font-family:system-ui,sans-serif;max-width:600px;margin:auto;padding:24px;color:#111;"><h1 style="font-size:20px;font-weight:800;margin-bottom:4px;">Weekly KPI Report</h1><p style="color:#666;font-size:13px;margin-top:0;">${org.name} - Week of ${from} to ${to}</p>`;
+    let body = `<div style="font-family:system-ui,sans-serif;max-width:600px;margin:auto;padding:24px;color:#111;"><h1 style="font-size:20px;font-weight:800;margin-bottom:4px;">Weekly KPI Report</h1><p style="color:#666;font-size:13px;margin-top:0;">${esc(org.name)} - Week of ${from} to ${to}</p>`;
 
     for (const site of sites ?? []) {
       body += await buildSiteReport(site.id, site.name, from, to);
     }
 
-    body += `<hr style="border:none;border-top:1px solid #eee;margin:24px 0;" /><p style="font-size:11px;color:#999;">You're receiving this because weekly reports are enabled for ${org.name}. Manage settings in FW Mining OS - Settings - System Settings.</p></div>`;
+    body += `<hr style="border:none;border-top:1px solid #eee;margin:24px 0;" /><p style="font-size:11px;color:#999;">You're receiving this because weekly reports are enabled for ${esc(org.name)}. Manage settings in FW Mining OS - Settings - System Settings.</p></div>`;
 
     try {
       const res = await fetch("https://api.resend.com/emails", {
