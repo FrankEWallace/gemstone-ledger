@@ -303,7 +303,7 @@ export async function writeOffInventoryItem(
     quantity: -qty,
     quantity_after: quantityAfter,
     unit_cost: item.unit_cost ?? null,
-    write_off_id: (data as { id: string } | null)?.id ?? null,
+    write_off_id: (data as unknown as { id: string } | null)?.id ?? null,
     notes: `${reason}${notes ? ` — ${notes}` : ""}`,
     created_by: userId ?? null,
   });
