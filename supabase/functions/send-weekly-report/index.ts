@@ -13,8 +13,8 @@ const RESEND_KEY   = Deno.env.get("RESEND_API_KEY") ?? "";
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-function fmt(n: number) {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+function fmt(n: number, currency: string) {
+  return n.toLocaleString("en-US", { style: "currency", currency, maximumFractionDigits: 0 });
 }
 
 function weekRange() {
@@ -28,7 +28,7 @@ function weekRange() {
   return { from: f(lastMonday), to: f(lastSunday) };
 }
 
-async function buildSiteReport(siteId: string, siteName: string, from: string, to: string): Promise<string> {
+async function buildSiteReport(siteId: string, siteName: string, currency: string, from: string, to: string): Promise<string> {
   const { data: txs } = await supabase
     .from("transactions")
     .select("type, quantity, unit_price, status")
@@ -82,9 +82,9 @@ async function buildSiteReport(siteId: string, siteName: string, from: string, t
     <h2 style="font-size:16px;font-weight:700;margin:24px 0 8px;">${siteName}</h2>
     <table style="border-collapse:separate;border-spacing:8px;margin-bottom:16px;">
       <tr>
-        ${pill("Revenue", fmt(revenue), "#16a34a")}
-        ${pill("Expenses", fmt(expenses), "#dc2626")}
-        ${pill("Net", fmt(revenue - expenses), revenue >= expenses ? "#16a34a" : "#dc2626")}
+        ${pill("Revenue", fmt(revenue, currency), "#16a34a")}
+        ${pill("Expenses", fmt(expenses, currency), "#dc2626")}
+        ${pill("Net", fmt(revenue - expenses, currency), revenue >= expenses ? "#16a34a" : "#dc2626")}
         ${totalOre > 0 ? pill("Ore Extracted", `${totalOre.toLocaleString()}t`, "#b45309") : ""}
         ${avgGrade != null ? pill("Avg Grade", `${avgGrade.toFixed(3)} g/t`, "#7c3aed") : ""}
       </tr>
@@ -159,7 +159,7 @@ serve(async (req) => {
 
   const query = supabase
     .from("organizations")
-    .select("id, name, weekly_report_email")
+    .select("id, name, currency, weekly_report_email")
     .eq("weekly_report_enabled", true)
     .not("weekly_report_email", "is", null);
 
@@ -179,7 +179,7 @@ serve(async (req) => {
     let body = `<div style="font-family:system-ui,sans-serif;max-width:600px;margin:auto;padding:24px;color:#111;"><h1 style="font-size:20px;font-weight:800;margin-bottom:4px;">Weekly KPI Report</h1><p style="color:#666;font-size:13px;margin-top:0;">${org.name} - Week of ${from} to ${to}</p>`;
 
     for (const site of sites ?? []) {
-      body += await buildSiteReport(site.id, site.name, from, to);
+      body += await buildSiteReport(site.id, site.name, org.currency ?? "TZS", from, to);
     }
 
     body += `<hr style="border:none;border-top:1px solid #eee;margin:24px 0;" /><p style="font-size:11px;color:#999;">You're receiving this because weekly reports are enabled for ${org.name}. Manage settings in FW Mining OS - Settings - System Settings.</p></div>`;

@@ -49,15 +49,6 @@ import type { InventoryItem } from "@/lib/supabaseTypes";
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
 
-const CURRENCIES = [
-  { code: "TZS", label: "TZS — Tanzanian Shilling" },
-  { code: "USD", label: "USD — US Dollar" },
-  { code: "EUR", label: "EUR — Euro" },
-  { code: "GBP", label: "GBP — British Pound" },
-  { code: "ZAR", label: "ZAR — South African Rand" },
-  { code: "KES", label: "KES — Kenyan Shilling" },
-];
-
 const INCOME_STATUSES = ["pending", "success", "cancelled"] as const;
 const EXPENSE_STATUSES = ["pending", "success", "cancelled"] as const;
 
@@ -83,7 +74,6 @@ const paymentSchema = z.object({
   category: z.string().optional(),
   quantity: z.coerce.number().min(1, "Must be ≥ 1"),
   unit_price: z.coerce.number().min(0, "Must be ≥ 0"),
-  currency: z.string().min(1),
   transaction_date: z.string().min(1, "Date is required"),
   status: z.enum(["pending", "success", "cancelled"]),
 });
@@ -118,7 +108,6 @@ export function RecordPaymentModal({
       category: "Sales",
       quantity: 1,
       unit_price: 0,
-      currency: "TZS",
       transaction_date: format(new Date(), "yyyy-MM-dd"),
       status: "pending",
     },
@@ -137,7 +126,6 @@ export function RecordPaymentModal({
           category: v.category || undefined,
           quantity: v.quantity,
           unit_price: v.unit_price,
-          currency: v.currency,
           transaction_date: v.transaction_date,
           status: v.status,
         },
@@ -331,32 +319,6 @@ export function RecordPaymentModal({
                   </FormItem>
                 )}
               />
-
-              {/* Currency */}
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Currency</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CURRENCIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             {/* Total preview */}
@@ -395,7 +357,6 @@ const expenseSchema = z.object({
   phase_id: z.string().optional(),
   quantity: z.coerce.number().min(1, "Must be ≥ 1"),
   unit_price: z.coerce.number().min(0, "Must be ≥ 0"),
-  currency: z.string().min(1),
   transaction_date: z.string().min(1, "Date is required"),
   status: z.enum(["pending", "success", "cancelled"]),
 });
@@ -428,7 +389,6 @@ export function RecordExpenseModal({
       phase_id: "",
       quantity: 1,
       unit_price: 0,
-      currency: "TZS",
       transaction_date: format(new Date(), "yyyy-MM-dd"),
       status: "pending",
     },
@@ -454,7 +414,6 @@ export function RecordExpenseModal({
           phase_id: v.phase_id || null,
           quantity: v.quantity,
           unit_price: v.unit_price,
-          currency: v.currency,
           transaction_date: v.transaction_date,
           status: v.status,
         },
@@ -646,32 +605,6 @@ export function RecordExpenseModal({
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Currency */}
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Currency</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CURRENCIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
