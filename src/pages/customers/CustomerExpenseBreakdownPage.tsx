@@ -422,7 +422,7 @@ export default function CustomerExpenseBreakdownPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(v: number) => [fmtCurrency(v), "Amount"]}
+                  formatter={(v): [string, string] => [fmtCurrency(Number(v)), "Amount"]}
                   contentStyle={{
                     fontSize: "11px",
                     borderRadius: "8px",

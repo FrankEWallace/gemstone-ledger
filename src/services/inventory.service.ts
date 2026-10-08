@@ -14,8 +14,8 @@ export type InventoryItemPayload = {
   sku?: string;
   quantity: number;
   unit?: string;
-  unit_cost?: number;
-  reorder_level?: number;
+  unit_cost?: number | null;
+  reorder_level?: number | null;
   supplier_id?: string;
 };
 
