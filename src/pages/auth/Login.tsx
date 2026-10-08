@@ -10,6 +10,7 @@ import { enterDemoMode, exitDemoMode } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { safeRedirect } from "@/lib/safeRedirect";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -20,7 +21,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function Login() {
   const [searchParams] = useSearchParams();
-  const redirect = searchParams.get("redirect") ?? "/";
+  const redirect = safeRedirect(searchParams.get("redirect"));
   const [serverError, setServerError] = useState<string | null>(null);
 
   function handleTryDemo() {
